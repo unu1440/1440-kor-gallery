@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>1440</title>
+  <meta name="description" content="나만의 전시 공간, 이름.kor.gallery">
+  <meta property="og:title" content="1440 — 나만의 전시 공간">
+  <meta property="og:url" content="https://1440.kor.gallery/">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23111'/%3E%3Ctext x='16' y='21' font-family='Arial' font-size='11' font-weight='700' fill='%23fff' text-anchor='middle'%3E1440%3C/text%3E%3C/svg%3E">
+  <!-- first-visit intro: hide everything but the title before the first paint -->
+  <script>
+    /* play the intro only on a fresh load: a first visit (typed address, bookmark,
+       link from another site) or a refresh. Skip it when arriving from a page of this
+       site (e.g. the 1440 logo) or via back/forward. */
+    (function () {
+      if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      var nav = performance.getEntriesByType && performance.getEntriesByType("navigation")[0];
+      var type = nav ? nav.type : "navigate";
+      var internal = false;
+      try { internal = !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (e) {}
+      if (type === "reload" || (type === "navigate" && !internal)) document.documentElement.classList.add("intro");
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="assets/site.css?v=11">
+</head>
+<body>
+
+<header class="bar">
+  <a class="home" href="./">1440</a>
+  <nav class="menu" aria-label="주 메뉴">
+    <a href="templates.html">템플릿</a>
+    <a href="#" title="준비 중">정보</a>
+  </nav>
+</header>
+
+<main class="hero">
+  <div class="lines">
+    <h1 aria-label="나만의 졸업전시, 포트폴리오, 갤러리, 아카이브, 스튜디오, 웹사이트">
+      <span class="typed" id="typed" aria-hidden="true"></span>
+      <span class="real" aria-hidden="true">나만의 <span class="rot" id="rot"><span class="w is-on">졸업전시</span><span class="w">포트폴리오</span><span class="w">갤러리</span><span class="w">아카이브</span><span class="w">스튜디오</span><span class="w">웹사이트</span></span></span>
+    </h1>
+    <div class="line2">
+    <p class="tagline" id="tagline" aria-hidden="true">내가 원하는 주소로.</p>
+    <form class="claim" id="claim" novalidate>
+      <label class="name" for="site">
+        <span class="sizer" id="sizer" aria-hidden="true"></span>
+        <input id="site" name="site" type="text" size="1" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="30" aria-label="원하는 주소 이름">
+        <span class="caret" aria-hidden="true"></span>
+      </label><span class="tld">.kor.gallery<button type="submit" class="go" aria-label="이 주소로 시작하기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg></button></span>
+    </form>
+    </div>
+    <p class="status" id="status" role="status"></p>
+  </div>
+  <div class="minute" title="하루 1,440분 중 지금"><span id="minute">0.0</span>/1440</div>
+</main>
+
+<footer class="biz">
+  <dl>
+    <div><dt>사업자등록번호</dt><dd>000-00-00000</dd></div>
+    <div><dt>통신판매업 신고번호</dt><dd>제0000-서울○○-0000호</dd></div>
+    <div><dt>연락처</dt><dd>00-0000-0000 · hello@1440.kor.gallery</dd></div>
+  </dl>
+</footer>
+
+<script src="assets/common.js?v=1"></script>
+<script src="assets/site.js?v=11"></script>
+</body>
+</html>

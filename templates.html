@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>1440: 템플릿</title>
+  <meta name="description" content="이름.kor.gallery에 쓸 템플릿을 고르세요.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23111'/%3E%3Ctext x='16' y='21' font-family='Arial' font-size='11' font-weight='700' fill='%23fff' text-anchor='middle'%3E1440%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="assets/site.css?v=11">
+  <link rel="stylesheet" href="assets/templates.css?v=4">
+</head>
+<body class="page-templates">
+
+<header class="bar">
+  <a class="home" href="./">1440</a>
+  <nav class="menu" aria-label="주 메뉴">
+    <a href="templates.html" aria-current="page">템플릿</a>
+    <a href="#" title="준비 중">정보</a>
+  </nav>
+</header>
+
+<nav class="cats" aria-label="템플릿 분류">
+  <div class="cats-links">
+    <a href="#shuffle">셔플</a>
+    <a href="#basic">기본</a>
+    <a href="#graphic">그래픽</a>
+    <a href="#blank">빈 템플릿</a>
+  </div>
+  <div class="cats-addr" id="catsAddr"></div>
+</nav>
+
+<main class="pick" id="pick">
+  <section class="sec" id="shuffle" aria-labelledby="shuffleT">
+    <h2 class="sec-t" id="shuffleT">셔플 (전체 템플릿)</h2>
+    <div class="shuffle" id="shuffleStage"></div>
+  </section>
+
+  <section class="sec" id="basic">
+    <h2 class="sec-t">기본 피드 템플릿</h2>
+    <div class="row" data-family="feed"></div>
+    <h2 class="sec-t">기본 그리드 템플릿</h2>
+    <div class="row" data-family="grid"></div>
+    <h2 class="sec-t">기본 슬라이드쇼 템플릿</h2>
+    <div class="row" data-family="slide"></div>
+  </section>
+
+  <section class="sec" id="graphic">
+    <h2 class="sec-t">그래픽 템플릿</h2>
+    <div class="row" data-family="graphic"></div>
+  </section>
+
+  <section class="sec" id="blank">
+    <h2 class="sec-t">빈 템플릿</h2>
+    <div class="row" data-family="blank"></div>
+  </section>
+</main>
+
+<div class="pickbar" id="pickbar" hidden>
+  <span class="pickbar-t" id="pickbarT"></span>
+  <button type="button" class="pickbar-go" id="pickbarGo">이 템플릿으로 시작 <span aria-hidden="true">→</span></button>
+</div>
+<p class="sr-only" id="pickStatus" role="status"></p>
+
+<div class="minute" title="하루 1,440분 중 지금"><span id="minute">0.0</span>/1440</div>
+
+<footer class="biz">
+  <dl>
+    <div><dt>사업자등록번호</dt><dd>000-00-00000</dd></div>
+    <div><dt>통신판매업 신고번호</dt><dd>제0000-서울○○-0000호</dd></div>
+    <div><dt>연락처</dt><dd>00-0000-0000 · hello@1440.kor.gallery</dd></div>
+  </dl>
+</footer>
+
+<script src="assets/common.js?v=1"></script>
+<script src="assets/templates.js?v=3"></script>
+</body>
+</html>
