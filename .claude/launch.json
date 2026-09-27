@@ -6,6 +6,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "8440"],
       "port": 8440
+    },
+    {
+      "name": "1440-static-mac",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8440"],
+      "port": 8440
     }
   ]
 }
