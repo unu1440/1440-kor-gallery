@@ -1,6 +1,3 @@
-# Cargo 벤치마킹 원본 자료: 용량이 크고(약 100MB) 제3자 사이트의 원본 HTML이 들어 있어 저장소에 올리지 않음
-research/
-
 # 운영체제·편집기 부산물
 .DS_Store
 Thumbs.db
