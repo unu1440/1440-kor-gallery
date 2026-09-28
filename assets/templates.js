@@ -1107,6 +1107,7 @@
   function fitHeight(view) {
     var tp = view.querySelector(".tp"), cv = view.querySelector(".canvas"); if (!tp || !cv) return;
     var g = geom(tp), more = tp.querySelector(".tp-more"), low = 0;
+    var st = view.scrollTop; /* the page shrinks for a moment while it is measured: keep the reader where they are */
     /* measure from one screen every time: things set against the bottom would otherwise follow the grown page down,
        and each later call (pictures arriving late) would make the page longer again */
     /* (a hand-made page reflowed for a phone is one column in the flow: squeezing it would change its layout) */
@@ -1126,6 +1127,7 @@
     /* on a phone the part below already follows the first screen in the flow: moving it down would leave an empty gap */
     if (more) { if (more.style.position === "absolute") more.style.top = Math.max(g.H, Math.ceil(low) + 40) + "px"; low =Math.max(low, (more.getBoundingClientRect().bottom - R.top) / g.k); }
     cv.style.height = Math.max(g.H, Math.ceil(low + 8)) + "px";
+    if (view.scrollTop !== st) view.scrollTop = st;
   }
   /* pinned menu and marquee: they stay on screen while the page moves under them */
   function pinOnScroll(view, b) {
@@ -2021,6 +2023,8 @@
       go(view, max * 0.4);
       if (hide) navs.forEach(function (n) { if (n.style.opacity === "0") sNote(b, mob, "menu did not come back on the way up"); });
       go(view, max);
+      fitHeight(view); /* the late re-measure (pictures arriving) must leave the reader where they are */
+      if (Math.abs(view.scrollTop - max) > 2) sNote(b, mob, "jumps up when the page is measured again (" + Math.round(max - view.scrollTop) + "px)");
       var last = 0; $$(tp, "*").forEach(function (el) { if (el.closest(".lv-layer, .bd, .tp-nav, .mq") || !el.getClientRects().length) return; var r = el.getBoundingClientRect(); if (r.height) last = Math.max(last, r.bottom); }); /* empty boxes of no height are invisible */
       if (last > vr().bottom + 4) sNote(b, mob, "end of the page cannot be reached (" + Math.round(last - vr().bottom) + "px below)");
       go(view, 0);
