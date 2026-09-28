@@ -35,20 +35,29 @@ var use = {};
 specs.forEach(function (s) {
   /* the second layer of a before/after and the loupe lens magnify the same picture on purpose */
   var r = G.render(s, env), out = r.html.replace(/<img data-dup[^>]*>/g, "").replace(/background-image:url\([^)]*\)/g, "");
-  var seen = {};
+  var seen = {}, basicOk = s.cat === "basic"; /* basic templates share pictures, as Cargo's do */
   (out.match(/samples\/[a-z0-9-]+\.jpg/g) || []).concat((out.match(/data-img="[a-z0-9-]+"/g) || []).map(function (m) { return "samples/" + m.slice(10, -1) + ".jpg"; })).forEach(function (m) {
-    if (seen[m]) bad(s.no + " uses " + m + " twice"); seen[m] = 1;
+    if (seen[m] && !(basicOk && s.photos.length > G.SHARED.length)) bad(s.no + " uses " + m + " twice"); seen[m] = 1;
   });
   /* pictures waiting in a slideshow, a floor-plan room or a name list count as shown */
   (out.match(/data-(imgs|rf)="[^"]+"/g) || []).forEach(function (m) { m.replace(/^[^"]*"|"$/g, "").split(",").forEach(function (f) { if (f) seen["samples/" + f + ".jpg"] = 1; }); });
   var shown = Object.keys(seen).length; for (var k = 1; k < (r.slides || 0); k++) if (!seen["samples/" + s.photos[k] + ".jpg"]) shown++;
-  if (s.cat !== "blank" && shown !== s.photos.length) bad(s.no + " (" + s.layout + ") shows " + Object.keys(seen).length + " of its " + s.photos.length + " photographs");
-  Object.keys(seen).forEach(function (m) { use[m] = (use[m] || 0) + 1; });
+  if (s.cat !== "blank" && !basicOk && shown !== s.photos.length) bad(s.no + " (" + s.layout + ") shows " + Object.keys(seen).length + " of its " + s.photos.length + " photographs");
+  if (s.cat !== "basic") Object.keys(seen).forEach(function (m) { use[m] = (use[m] || 0) + 1; });
 });
+/* the hand-made list in tpl-gen.js must match what templates.js shows */
+var names = {}; photos.forEach(function (p) { names[p[0]] = 1; });
+var pageSrc = fs.readFileSync(path.join(root, "assets/templates.js"), "utf8"), hs = {};
+(pageSrc.slice(pageSrc.indexOf("  F.graphic = ["), pageSrc.indexOf("/* ---------- the catalogue")).match(/[a-z]+-[a-z0-9-]+/g) || []).forEach(function (f) { if (names[f]) hs[f] = 1; });
+var hl = Object.keys(hs).sort().join(), gl = G.HAND_USED.slice().sort().join();
+if (hl !== gl) bad("tpl-gen.js HAND_USED is out of date with the hand-made templates");
+G.HAND_USED.forEach(function (f) { use["samples/" + f + ".jpg"] = (use["samples/" + f + ".jpg"] || 0) + 1; });
 var counts = Object.keys(use).map(function (k) { return use[k]; }).sort(function (a, b) { return a - b; });
 console.log("generated " + specs.length + " + hand-made " + hand + " = " + (specs.length + hand));
 console.log("unique nav+layout+features: " + Object.keys(sk).length + ", unique combinations: " + Object.keys(fk).length);
-console.log("photographs: " + photos.length + " in the pool, " + counts.length + " used; per photograph min " + counts[0] + " / median " + counts[counts.length >> 1] + " / max " + counts[counts.length - 1]);
+console.log("photographs: " + photos.length + " in the pool; basic templates share " + G.SHARED.length);
+console.log("other templates: " + counts.length + " photographs used; per photograph min " + counts[0] + " / median " + counts[counts.length >> 1] + " / max " + counts[counts.length - 1]);
+console.log(specs.strict ? "✓ no photograph is shared between templates (outside the basic set)" : "! photographs are still shared between templates: " + specs.demand + " needed for none to be, " + specs.pool + " available — add about " + (specs.demand - specs.pool) + " more");
 var layouts = {}; specs.forEach(function (s) { layouts[s.layout] = (layouts[s.layout] || 0) + 1; });
 console.log("layouts: " + Object.keys(layouts).length);
 if (fail) { console.error(fail + " problem(s)"); process.exit(1); }

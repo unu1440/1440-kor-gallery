@@ -751,9 +751,24 @@
       var fs = parseFloat(el.style.fontSize); if (fs > 34) el.style.fontSize = Math.max(26, Math.round(fs * .34)) + "px";
     });
   }
+  /* a phone in Safari: status bar on top, the address bar and toolbar at the bottom */
+  var SAFARI = {
+    sig: '<svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx=".6"/><rect x="5" y="5.5" width="3" height="6.5" rx=".6"/><rect x="10" y="3" width="3" height="9" rx=".6"/><rect x="15" y="0" width="3" height="12" rx=".6"/></svg>',
+    wifi: '<svg viewBox="0 0 16 12"><path d="M8 11.5 5.6 9a3.4 3.4 0 0 1 4.8 0zM3.4 6.8a6.5 6.5 0 0 1 9.2 0l-1.1 1.1a5 5 0 0 0-7 0zM1.1 4.5a9.8 9.8 0 0 1 13.8 0l-1.1 1.1a8.2 8.2 0 0 0-11.6 0z"/></svg>',
+    bat: '<svg viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" opacity=".4"/><rect x="2.5" y="2.5" width="19" height="8" rx="2"/><path d="M25 4.5v4a2 2 0 0 0 0-4z" opacity=".4"/></svg>',
+    reload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>',
+    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+    fwd: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity=".35"><path d="M9 5l7 7-7 7"/></svg>',
+    share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4M6 11H5v10h14V11h-1"/></svg>',
+    book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 6c-2-1.5-5-2-8-1.5v14c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-14C17 4 14 4.5 12 6zM12 6v14"/></svg>',
+    tabs: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="7" width="13" height="13" rx="2.5"/><path d="M8 4h9.5A2.5 2.5 0 0 1 20 6.5V16"/></svg>'
+  };
   function phoneFor(b) {
-    return '<div class="mac phone" aria-hidden="true"><div class="mac-bar"><span class="m">9:41</span><div class="mac-url">' + ICON.lock + '<span>' + esc(host) + '</span></div><span></span></div>' +
-      '<div class="mac-view" data-w="390"><div class="canvas mob">' + pageFor(b, true) + '</div></div></div>';
+    return '<div class="mac phone" aria-hidden="true">' +
+      '<div class="ph-status"><span>9:41</span><span class="ph-sys">' + SAFARI.sig + SAFARI.wifi + SAFARI.bat + '</span></div>' +
+      '<div class="mac-view" data-w="390"><div class="canvas mob">' + pageFor(b, true) + '</div></div>' +
+      '<div class="ph-bar"><div class="ph-url"><span class="ph-aa">가<small>가</small></span><span class="ph-host">' + ICON.lock + esc(host) + '</span>' + SAFARI.reload + '</div>' +
+      '<div class="ph-tools">' + SAFARI.back + SAFARI.fwd + SAFARI.share + SAFARI.book + SAFARI.tabs + '</div><i class="ph-home"></i></div></div>';
   }
   function windowFor(b) {
     return '<div class="mac" aria-hidden="true"><div class="mac-bar">' +
@@ -767,11 +782,12 @@
   try { stars = JSON.parse(localStorage.getItem("1440-stars") || "{}"); } catch (e) {}
   function saveStars() { try { localStorage.setItem("1440-stars", JSON.stringify(stars)); } catch (e) {} }
 
-  function card(b) {
+  /* a card: in the lists just the page, like a screenshot; the shuffle stage shows it in a browser window */
+  function card(b, framed) {
     var n = b.first;
     return '<article class="tpl" data-n="' + n + '">' +
       '<button type="button" class="tpl-open" aria-label="' + tag(n) + ' 미리보기">' +
-        '<div class="tpl-slot" data-n="' + n + '"><div class="mac mac-empty"><div class="mac-bar"></div><div class="mac-view"></div></div></div></button>' +
+        '<div class="tpl-slot" data-n="' + n + '">' + (framed ? '<div class="mac mac-empty"><div class="mac-bar"></div><div class="mac-view"></div></div>' : '<div class="shot shot-empty"><div class="mac-view"></div></div>') + '</div></button>' +
       '<div class="tpl-cap">' +
         '<span class="nm"><span class="no m">' + tag(n) + '</span><span class="dsc">' + b.label + '</span></span>' +
         '<button type="button" class="star" aria-pressed="' + (!!stars[n]) + '" aria-label="' + tag(n) + ' 즐겨찾기">' + (stars[n] ? "★" : "☆") + '</button></div></article>';
@@ -787,9 +803,10 @@
     var k = view.clientWidth / (+view.dataset.w || 1440);
     if (ZOOM) { c.style.zoom = k; c.style.transform = ""; } else c.style.transform = "scale(" + k + ")";
   }
+  function shotFor(b) { return '<div class="shot"><div class="mac-view"><div class="canvas">' + pageFor(b) + '</div></div></div>'; }
   function fill(slot, live) {
     var b = find(+slot.dataset.n);
-    slot.innerHTML = windowFor(b);
+    slot.innerHTML = slot.closest(".shuffle") ? windowFor(b) : shotFor(b);
     var view = slot.querySelector(".mac-view");
     scale(view); if (ro) ro.observe(view);
     INITS.forEach(function (f) { f(view, !!live); });
@@ -801,7 +818,7 @@
   }, { rootMargin: "600px 0px" }) : null;
   function watch(scope) {
     (scope || document).querySelectorAll(".tpl-slot").forEach(function (s) {
-      if (s.querySelector(".mac-empty")) { if (io) io.observe(s); else fill(s); }
+      if (s.querySelector(".mac-empty, .shot-empty")) { if (io) io.observe(s); else fill(s); }
     });
   }
 
@@ -826,19 +843,48 @@
   var more = "IntersectionObserver" in window ? new IntersectionObserver(function (es) {
     es.forEach(function (e) { if (e.isIntersecting) addBatch(e.target.parentNode); });
   }, { rootMargin: "1200px 0px" }) : null;
+  function colsOf(r) { return getComputedStyle(r).gridTemplateColumns.split(" ").length || 1; }
   function addBatch(r) {
-    var list = r._list || famOf(r.dataset.family), from = +(r.dataset.shown || 0), to = Math.min(list.length, from + BATCH);
+    var list = famOf(r.dataset.family), from = +(r.dataset.shown || 0), folded = r.classList.contains("is-folded");
+    var to = Math.min(list.length, folded ? Math.max(from, colsOf(r) * 2) : from + BATCH);
     var old = r.querySelector(".row-more"); if (old) { if (more) more.unobserve(old); old.remove(); }
     r.insertAdjacentHTML("beforeend", list.slice(from, to).map(function (b) { return card(b); }).join(""));
     r.dataset.shown = to;
-    if (to < list.length) {
+    if (to < list.length && !folded) {
       var s = document.createElement("div"); s.className = "row-more"; s.setAttribute("aria-hidden", "true");
       r.appendChild(s);
       if (more) more.observe(s); else addBatch(r);
     }
     watch(r); markPicked();
   }
-  document.querySelectorAll(".row[data-family]").forEach(addBatch);
+  /* the fold: first row whole, second row about 70%, then a fade */
+  function fold(r) {
+    if (!r.classList.contains("is-folded")) { r.style.maxHeight = ""; return; }
+    var c = colsOf(r), cards = r.querySelectorAll(".tpl");
+    if (cards.length < c * 2) addBatch(r);
+    var second = r.querySelectorAll(".tpl")[c]; if (!second) { r.style.maxHeight = ""; return; }
+    r.style.maxHeight = Math.round(second.offsetTop + second.offsetHeight * 0.7) + "px";
+  }
+  document.querySelectorAll(".row[data-family]").forEach(function (r) {
+    var n = famOf(r.dataset.family).length;
+    r.classList.add("is-folded");
+    addBatch(r);
+    var t = document.createElement("div"); t.className = "row-toggle";
+    t.innerHTML = '<button type="button" aria-expanded="false"><span>펼치기</span> <span class="m">' + n + '개</span> <span aria-hidden="true">↓</span></button>';
+    r.after(t);
+    var btn = t.querySelector("button");
+    btn.addEventListener("click", function () {
+      var open = r.classList.toggle("is-folded") === false;
+      btn.setAttribute("aria-expanded", open);
+      btn.firstChild.textContent = open ? "접기" : "펼치기";
+      btn.lastChild.textContent = open ? "↑" : "↓";
+      if (open) { r.style.maxHeight = ""; addBatch(r); }
+      else { fold(r); r.closest(".sec").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" }); }
+    });
+    fold(r);
+    /* the fold follows the card height: re-measure when pictures and layout settle */
+    if ("ResizeObserver" in window) new ResizeObserver(function () { fold(r); }).observe(r.querySelector(".tpl"));
+  });
   function range(fams) {
     var bs = BASES.filter(function (b) { return fams.indexOf(b.fam) >= 0; });
     return tag(bs[0].first).slice(0, 4) + "–" + tag(bs[bs.length - 1].first) + " · " + bs.length + "개";
@@ -846,82 +892,6 @@
   document.getElementById("basicN").textContent = range(["feed", "grid", "slide"]);
   document.querySelectorAll("[data-count]").forEach(function (el) { el.textContent = range([el.dataset.count]); });
 
-  /* ---------- find: open by number, or narrow 1440 down by kind, menu position and feature ---------- */
-  var FIND = {
-    cat: [["basic", "기본"], ["grad", "졸업전시"], ["graphic", "그래픽"], ["blank", "빈 템플릿"], ["populated", "채워진 템플릿"]],
-    nav: [["top3", "위 3단"], ["top2", "위 양끝"], ["left", "왼쪽 세로"], ["right", "오른쪽 세로"], ["bottom", "아래 바"], ["center", "가운데 제목"], ["corners", "네 구석"], ["burger", "메뉴 버튼"]],
-    feat: [["slides", "슬라이드쇼"], ["shop", "상점·장바구니"], ["audio", "오디오"], ["filter", "분류 필터"], ["pages", "페이지 넘김"], ["sort", "표 정렬"], ["accordion", "펼침 목록"],
-      ["form", "문의 양식"], ["hours", "영업시간"], ["countdown", "남은 날"], ["lang", "한/영 전환"], ["search", "검색"], ["news", "뉴스레터"], ["clock", "시계"],
-      ["marquee", "흘러가는 글자"], ["backdrop", "배경 효과"], ["pin", "고정 메뉴"], ["grad3d", "3D 뷰어"]]
-  };
-  /* what each template carries, as the keys above */
-  function tagsOf(b) {
-    if (b._tags) return b._tags;
-    var t = {}, s = b.gen;
-    t["cat:" + ({ feed: "basic", grid: "basic", slide: "basic" }[b.fam] || b.fam)] = 1;
-    if (s) {
-      t["nav:" + s.nav] = 1;
-      s.feats.forEach(function (f) {
-        var k = /^slides/.test(f) ? "slides" : f === "products" || f === "tickets" ? "shop" : f === "model" ? "grad3d" : f;
-        t["feat:" + k] = 1;
-      });
-      if (s.pin) t["feat:pin"] = 1;
-    } else {
-      var h = b.html();
-      [["audio", /data-play/], ["filter", /data-filter/], ["sort", /data-sort/], ["accordion", /data-acc/], ["hours", /data-hours/], ["countdown", /data-until/], ["clock", /data-clock/],
-        ["shop", /Cart \(|장바구니 \(|data-add/], ["slides", /\d{2} \/ \d{2}|>←</], ["grad3d", /model-viewer/], ["form", /<form/]]
-        .forEach(function (x) { if (x[1].test(h)) t["feat:" + x[0]] = 1; });
-    }
-    return (b._tags = t);
-  }
-  var findOn = {}, favOnly = false;
-  var fGroups = document.getElementById("findGroups"), fRow = document.getElementById("findRow"), fN = document.getElementById("findN");
-  function findChip(k, label) { return '<button type="button" class="chip" data-k="' + k + '" aria-pressed="false">' + label + '</button>'; }
-  fGroups.innerHTML =
-    '<div class="find-g"><span class="find-l">즐겨찾기</span><div class="chips"><button type="button" class="chip" data-fav aria-pressed="false">★ 즐겨찾기만</button></div></div>' +
-    '<div class="find-g"><span class="find-l">분류</span><div class="chips">' + FIND.cat.map(function (x) { return findChip("cat:" + x[0], x[1]); }).join("") + '</div></div>' +
-    '<div class="find-g"><span class="find-l">메뉴 위치</span><div class="chips">' + FIND.nav.map(function (x) { return findChip("nav:" + x[0], x[1]); }).join("") + '</div></div>' +
-    '<div class="find-g"><span class="find-l">기능</span><div class="chips">' + FIND.feat.map(function (x) { return findChip("feat:" + x[0], x[1]); }).join("") + '</div></div>' +
-    '<div class="find-g find-end"><button type="button" class="chip chip-clear" data-clear hidden>조건 지우기</button></div>';
-  /* within a group any chosen chip may match; across groups all must */
-  function runFind() {
-    var keys = Object.keys(findOn), groups = {};
-    keys.forEach(function (k) { var g = k.split(":")[0]; (groups[g] = groups[g] || []).push(k); });
-    var any = keys.length || favOnly;
-    fGroups.querySelector("[data-clear]").hidden = !any;
-    if (!any) { fRow.hidden = true; fRow.innerHTML = ""; fN.textContent = ""; return; }
-    var list = BASES.filter(function (b) {
-      if (favOnly && !stars[b.first]) return false;
-      var t = tagsOf(b);
-      return Object.keys(groups).every(function (g) { return groups[g].some(function (k) { return t[k]; }); });
-    });
-    fN.textContent = list.length + "개";
-    fRow.hidden = false; fRow.innerHTML = list.length ? "" : '<p class="find-none">조건에 맞는 템플릿이 없습니다. 조건을 하나 빼 보세요.</p>';
-    fRow._list = list; fRow.dataset.shown = 0;
-    if (list.length) addBatch(fRow);
-  }
-  fGroups.addEventListener("click", function (e) {
-    var c = e.target.closest(".chip"); if (!c) return;
-    if (c.hasAttribute("data-clear")) { findOn = {}; favOnly = false; [].forEach.call(fGroups.querySelectorAll(".chip"), function (x) { x.setAttribute("aria-pressed", "false"); }); }
-    else if (c.hasAttribute("data-fav")) { favOnly = !favOnly; c.setAttribute("aria-pressed", favOnly); }
-    else { var k = c.dataset.k; if (findOn[k]) delete findOn[k]; else findOn[k] = 1; c.setAttribute("aria-pressed", !!findOn[k]); }
-    runFind();
-  });
-  document.getElementById("findNo").addEventListener("submit", function (e) {
-    e.preventDefault();
-    var inp = document.getElementById("findNoIn"), n = parseInt(inp.value, 10);
-    if (n >= 1 && n <= TOTAL) { inp.setCustomValidity(""); openPreview(n); }
-    else { inp.setCustomValidity("1부터 1440 사이의 번호를 넣어 주세요"); inp.reportValidity(); }
-  });
-  document.getElementById("findNoIn").addEventListener("input", function (e) { e.target.setCustomValidity(""); e.target.value = e.target.value.replace(/\D/g, ""); });
-  /* the star count in the header opens the favourites */
-  function favCount() { document.getElementById("favN").textContent = Object.keys(stars).length; }
-  favCount();
-  document.getElementById("favLink").addEventListener("click", function (e) {
-    e.preventDefault();
-    favOnly = true; fGroups.querySelector("[data-fav]").setAttribute("aria-pressed", "true"); runFind();
-    document.getElementById("find").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
-  });
   /* about 1440 */
   var about = document.getElementById("about");
   document.getElementById("aboutLink").addEventListener("click", function (e) { e.preventDefault(); about.hidden = false; document.body.style.overflow = "hidden"; about.querySelector(".pv-close").focus(); });
@@ -932,7 +902,7 @@
   var stage = document.getElementById("shuffleStage");
   var cur = 1 + Math.floor(Math.random() * TOTAL);
   function showShuffle() {
-    stage.innerHTML = '<button type="button" class="shuffle-btn shuffle-prev" aria-label="이전 템플릿">' + ICON.prev + '</button>' + card(find(cur)) +
+    stage.innerHTML = '<button type="button" class="shuffle-btn shuffle-prev" aria-label="이전 템플릿">' + ICON.prev + '</button>' + card(find(cur), true) +
       '<button type="button" class="shuffle-btn shuffle-next" aria-label="다른 템플릿">' + ICON.next + '</button>';
     fill(stage.querySelector(".tpl-slot"), true);
     document.getElementById("shuffleNo").textContent = tag(cur);
@@ -1097,7 +1067,7 @@
     markOn(tp, "cart");
   }
   /* ---------- a page longer than the screen: it scrolls inside the window ----------
-     The window shows one screen (1440 × 900, or 390 × 844 on a phone); the page below it scrolls.
+     The window shows one screen (1440 × 900, or 390 × 697 inside Safari on a phone); the page below it scrolls.
      Layers and notices open where the reader is, and the page holds still while one is open. */
   function geom(tp) {
     var view = tp.closest(".mac-view"), W = tp._w || 1440, H = tp._h || 900, r = tp.getBoundingClientRect();
@@ -1657,7 +1627,7 @@
     var view = mStage.querySelector(".mac-view");
     view.classList.add("live");
     var tp0 = view.querySelector(".tp");
-    tp0._w = mob ? 390 : 1440; tp0._h = mob ? 844 : 900; tp0._no = b.first;
+    tp0._w = mob ? 390 : 1440; tp0._h = mob ? 697 : 900; tp0._no = b.first;
     if (mob && !b.gen) reflowType(tp0);
     [].forEach.call(modal.querySelectorAll("[data-mode]"), function (x) { x.setAttribute("aria-pressed", x.dataset.mode === pvMode); });
     scale(view); if (ro) ro.observe(view);
@@ -1689,7 +1659,7 @@
     var mob = mac.classList.contains("phone"), full = modal.classList.contains("pv-full");
     for (var k = 0; k < 3; k++) {
       var extra = pvBox.offsetHeight - mac.offsetHeight, bar = mac.firstElementChild.offsetHeight;
-      var w = Math.floor(Math.min(mStage.clientWidth, Math.max(160, (availH - extra - bar) * (mob ? 390 / 844 : 1.6))));
+      var w = Math.floor(Math.min(mStage.clientWidth, Math.max(160, mob ? (availH - extra) * 390 / 844 : (availH - extra - bar) * 1.6)));
       var side = pvBox.offsetWidth - mStage.clientWidth;
       mac.style.width = w + "px";
       /* a phone is narrow: keep the window wide enough for its title and buttons */
@@ -1755,7 +1725,6 @@
       if (stars[n]) delete stars[n]; else stars[n] = 1;
       saveStars();
       document.querySelectorAll('.tpl[data-n="' + n + '"] .star').forEach(function (b) { b.setAttribute("aria-pressed", !!stars[n]); b.textContent = stars[n] ? "★" : "☆"; });
-      favCount();
       return;
     }
     var open = e.target.closest(".tpl-open");

@@ -790,6 +790,14 @@
   }
   function navFor(r, lay) { var L0 = L[lay], ok = NAVS.filter(function (n) { return !(L0.bleed && (n === "left" || n === "right")); }); return pick(r, ok); }
 
+  /* basic templates share one set of pictures, as Cargo's basic templates do */
+  var SHARED = ["ld-lake-dusk", "ld-sea-deep", "ch-black-stage", "ld-dark-hill", "int-light-line", "arch-white-wall", "ld-dune-gold", "fm-street", "ld-sea-gradient", "pt-bw-studio",
+    "st-pear", "st-bottles", "ld-sea-blue", "fm-water-sparkle", "arch-brutal-long", "ld-palm-beach", "arch-curve", "ld-blue-hills", "arch-window-sky", "cl-white-cloud", "ab-blue-gradient", "ch-white-curve", "gl-shadow", "st-light-flower"];
+  /* pictures the hand-made graduation, graphic, blank and populated templates already show (tools/check-templates.js keeps this list honest) */
+  var HAND_USED = ["int-m2", "sh-window-light", "paint-ochre", "arch-reflection", "arch-grid-facade", "arch-concrete-blocks", "int-skylight-tree", "int-stairs", "pt-bw-woman", "sh-walker", "ld-dune-bw", "pt-bw-man", "sh-bars",
+    "st-bw-roses", "hd-bw", "sc-hand", "cer-dark-jug", "cer-cup-speckle", "cer-vases-beige", "ch-tulip", "gl-green", "ch-yellow", "cer-blue-set", "gl-flower", "st-yellow-jars", "dn-blur", "fa-white-suit", "fa-coat", "fa-profile",
+    "fa-black-coat", "cer-shelf", "arch-steps-teal", "st-tulip", "fa-yellow-sky", "ch-orange", "bk-red-fan", "sh-palm", "ab-waves-white", "hd-blue", "st-coffee", "dn-jump", "paint-knife", "paint-violet",
+    "art-green-abstract-painting", "sc-kintsugi", "mu-blue-spotlight-stage", "ab-pastel-spheres", "paint-grey", "art-red-brown-abstract", "mu-stage-greyscale", "tx-blue-stain", "paint-green", "paint-white"];
   function build(photos, plan) {
     var specs = [], used = {}, skeys = {}, fkeys = {};
     /* plan: [[cat, fam-list, count, firstNo], …] */
@@ -820,9 +828,20 @@
         specs.push(spec); no++;
       }
     });
-    /* photographs: least used first, from the template's subjects, never twice in one template */
-    var P0 = photos.map(function (p, i) { return { f: p[0], ko: p[1], g: p[2], i: i }; });
+    /* photographs. Basic templates take the shared set. Every other template takes pictures no other
+       template has used yet; while the pool is too small for that, the least used ones, never twice in one template. */
+    var shared = SHARED.filter(function (f) { return photos.some(function (p) { return p[0] === f; }); });
+    var P0 = photos.filter(function (p) { return shared.indexOf(p[0]) < 0; }).map(function (p, i) { return { f: p[0], ko: p[1], g: p[2], i: i }; });
+    HAND_USED.forEach(function (f) { used[f] = 1; });
+    var demand = HAND_USED.length;
+    specs.forEach(function (s) { if (s.cat !== "basic" && s.cat !== "blank") demand += Math.min(L[s.layout].need(s, boxOf(s)) || 0, P0.length); });
+    var strict = P0.length >= demand; /* enough pictures for every template to have its own */
     specs.forEach(function (s) {
+      if (s.cat === "basic") {
+        var nb = Math.min(L[s.layout].need(s, boxOf(s)) || 0, 60), off0 = (s.no * 5) % shared.length;
+        s.photos = []; for (var q = 0; q < nb; q++) s.photos.push(shared[(off0 + q) % shared.length]);
+        return;
+      }
       var B = boxOf(s), need = Math.min(L[s.layout].need(s, B) || 0, P0.length);
       if (s.feats.indexOf("model") >= 0 || s.cat === "blank") need = 0; /* wireframes show no photographs */
       if (s.cat === "grad") s.groups = /rake|compare|loupe|daylight|scale/.test(s.feats.join()) ? ART_G : ["art", "obj", "space"];
@@ -830,10 +849,12 @@
       var pref = P0.filter(like), rest = P0.filter(function (p) { return !like(p); });
       var off = (s.no * 37) % P0.length;
       function order(a) { return a.slice().sort(function (x, y) { return (used[x.f] || 0) - (used[y.f] || 0) || ((x.i - off + P0.length) % P0.length) - ((y.i - off + P0.length) % P0.length); }); }
-      var got = order(pref).slice(0, need);
-      if (got.length < need) got = got.concat(order(rest).slice(0, need - got.length));
+      var got;
+      if (strict) got = order(P0).sort(function (x, y) { return (used[x.f] || 0) - (used[y.f] || 0) || (like(x) ? 0 : 1) - (like(y) ? 0 : 1); }).slice(0, need);
+      else { got = order(pref).slice(0, need); if (got.length < need) got = got.concat(order(rest).slice(0, need - got.length)); }
       s.photos = got.map(function (p) { used[p.f] = (used[p.f] || 0) + 1; return p.f; });
     });
+    specs.strict = strict; specs.demand = demand; specs.pool = P0.length;
     return specs;
   }
 
@@ -946,7 +967,7 @@
     return { plan: pl, specs: build(photos, pl.map(function (p) { return [p.cat, p.lays, p.gen, p.first + p.hand]; })) };
   }
 
-  var API = { icon: icon, renderMobile: renderMobile, build: build, plan: plan, catalogue: catalogue, SECTIONS: SECTIONS, HAND: HAND, render: render, describe: describe, FAMS: FAMS, FACES: FACES, FEAT_KO: FEAT_KO, enName: enName, layouts: L };
+  var API = { SHARED: SHARED, HAND_USED: HAND_USED, icon: icon, renderMobile: renderMobile, build: build, plan: plan, catalogue: catalogue, SECTIONS: SECTIONS, HAND: HAND, render: render, describe: describe, FAMS: FAMS, FACES: FACES, FEAT_KO: FEAT_KO, enName: enName, layouts: L };
   if (typeof module !== "undefined" && module.exports) module.exports = API;
   root.TPLGEN = API;
 })(typeof window !== "undefined" ? window : globalThis);
