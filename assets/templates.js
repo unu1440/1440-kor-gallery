@@ -189,8 +189,8 @@
       var rows = [["2026", "Harbour Library", "Annual report", "Print"], ["2026", "Mullae Metalworks", "Website", "Screen"], ["2025", "Oryu Gallery", "Exhibition identity", "Space"], ["2025", "Seoul Photo Annual", "Book", "Print"],
         ["2024", "Margin Notes", "Magazine", "Print"], ["2024", "Moraenae Film Days", "Posters", "Print"], ["2023", "Paper & Pencil", "Packaging", "Object"], ["2023", "Bada Records", "Sleeves", "Print"], ["2022", "Small Museum", "Catalogue", "Print"], ["2021", "Studio Halla", "Type specimen", "Print"]];
       return at("left:28px;right:28px;top:20px;display:grid;grid-template-columns:1fr 1fr auto;font-size:13px;line-height:1.3", '<span><b>' + N + '</b><br>Graphic design</span><span>Index of projects<br>2021 — 2026</span><span style="text-align:right">Contact<br>Instagram ↗</span>') +
-        at("left:28px;right:28px;top:190px;display:grid;grid-template-columns:120px 1.3fr 1.3fr auto;font-size:13px;opacity:.6", "<span>Year</span><span>Client</span><span>Project " + ko("프로젝트", "") + "</span><span>Type</span>") +
-        at("left:28px;right:28px;top:214px;font-family:var(--f-cond);font-stretch:80%;font-weight:600;font-size:32px;line-height:1.26", rows.map(function (r) { return '<div style="display:grid;grid-template-columns:120px 1.3fr 1.3fr auto;border-bottom:1px solid rgba(0,0,0,.15)"><span class="m" style="font-size:24px">' + r[0] + '</span><span>' + r[1] + '</span><span>' + r[2] + '</span><span>' + r[3] + '</span></div>'; }).join(""));
+        at("left:28px;right:28px;top:190px;display:grid;grid-template-columns:120px 1.3fr 1.3fr auto;font-size:13px;opacity:.6", '<span data-sort="0">Year</span><span data-sort="1">Client</span><span data-sort="2">Project</span><span data-sort="3">Type</span>') +
+        at("left:28px;right:28px;top:214px;font-family:var(--f-cond);font-stretch:80%;font-weight:600;font-size:32px;line-height:1.26", '<div data-sortbody>' + rows.map(function (r) { return '<div style="display:grid;grid-template-columns:120px 1.3fr 1.3fr auto;border-bottom:1px solid rgba(0,0,0,.15)"><span class="m" style="font-size:24px">' + r[0] + '</span><span>' + r[1] + '</span><span>' + r[2] + '</span><span>' + r[3] + '</span></div>'; }).join("") + '</div>');
     } },
     { desc: "블랙레터 · 신문", bg: "#141c33", ink: "#f2ead8", html: function () {
       return at("left:28px;right:28px;top:22px;display:flex;justify-content:space-between;font-size:14px;border-bottom:1px solid;padding-bottom:10px", "<span>Vol. 1 — No. 1440</span><span>" + N + " Press</span><span>Price: one hour</span>") +
@@ -214,6 +214,7 @@
     } },
     { desc: "세리프 이탤릭 · 밤 운영", bg: "#39402a", ink: "#efe8d2", html: function () {
       return at("left:28px;right:28px;top:22px;display:grid;grid-template-columns:repeat(4,1fr);font-size:12px;line-height:1.35", '<span>' + N + '<br>Library of Things</span><span>Thursdays 6pm — 11pm</span><span>Borrow · Return · Repair</span><span style="text-align:right">' + CLOCK + '</span>') +
+        at("left:0;right:0;top:112px;text-align:center;font-size:15px", '<span data-hours="18,23" data-days="4" style="border:1px solid;border-radius:99px;padding:5px 16px">Thursdays 18–23</span>') +
         at("left:0;right:0;top:170px;text-align:center;font-family:var(--f-serif);font-size:124px;line-height:1;letter-spacing:-.02em", "<i>Open Late</i><br>on Thursdays") +
         at("left:0;right:0;top:470px;text-align:center;font-family:var(--f-serif);font-size:30px;line-height:1.3", "Borrow a drill, a tent, a projector,<br>or a sewing machine until eleven.") +
         at("left:0;right:0;top:600px;text-align:center;font-family:var(--f-kserif);font-size:22px", ko("목요일은 밤 11시까지 — 물건 도서관", "opacity:.72"));
@@ -231,7 +232,7 @@
         at("left:28px;bottom:14px;font-size:14px", ko("형태 연구 — 여섯 개의 도형", "opacity:.6"));
     } },
     { desc: "서체 견본", bg: "#ffffff", ink: "#111", html: function () {
-      return at("left:28px;right:28px;top:22px;display:grid;grid-template-columns:1fr auto 1fr;font-size:13px;font-family:var(--mono)", '<span>TYPE SPECIMEN</span><span style="background:#f7e437;padding:0 6px">ARCHIVO — OMNIBUS-TYPE</span><span style="text-align:right">SIL OFL 1.1</span>') +
+      return at("left:28px;right:28px;top:22px;display:grid;grid-template-columns:1fr auto 1fr;font-size:13px;font-family:var(--mono)", '<span>TYPE SPECIMEN</span><span style="background:#f7e437;padding:0 6px">ARCHIVO — SPECIMEN 01</span><span style="text-align:right">SIL OFL 1.1</span>') +
         at("left:0;right:0;top:120px;text-align:center;font-family:var(--f-cond);font-size:230px;font-weight:500;letter-spacing:-.04em", "Archivo") +
         at("left:28px;right:28px;top:470px;border-top:1px solid #111;padding-top:14px;display:grid;grid-template-columns:2fr 1fr;gap:40px",
           '<div style="font-family:var(--f-cond);font-size:34px;line-height:1.2">A grotesque with a width axis from 62 to 125. <i>Narrow for posters,</i> wide for signs, and anywhere between for the text in the middle.</div>' +
@@ -285,7 +286,7 @@
     { desc: "트랙 리스트 · A/B면", bg: "#d9ccf2", ink: "#1b1330", html: function () {
       var a = [["Morning Ferry", "3:12"], ["Salt on the Window", "4:05"], ["Slow Bus", "2:48"], ["Paper Moon Bakery", "3:37"], ["1440", "6:00"]];
       var b = [["Tunnel Echo", "3:51"], ["Night Market", "4:22"], ["Soft Signals", "2:59"], ["Last Train Home", "5:10"], ["Blank Page", "1:44"]];
-      var list = function (side, t) { return '<div style="background:#fff;padding:18px 20px;font-size:22px;line-height:1.4"><b style="font-weight:500;font-size:15px">' + side + '</b><br>' + t.map(function (x, i) { return '<div style="display:flex;justify-content:space-between"><span><span class="m" style="opacity:.4;font-size:14px">0' + (i + 1) + '</span>&nbsp; ' + x[0] + '</span><span class="m" style="opacity:.45;font-size:16px">' + x[1] + '</span></div>'; }).join("") + '</div>'; };
+      var list = function (side, t) { return '<div style="background:#fff;padding:18px 20px;font-size:22px;line-height:1.4"><b style="font-weight:500;font-size:15px">' + side + '</b><br>' + t.map(function (x, i) { return '<div data-play="' + i + '" data-len="' + x[1] + '" style="position:relative;display:flex;justify-content:space-between"><span><span class="m" data-pi style="opacity:.4;font-size:14px">0' + (i + 1) + '</span>&nbsp; ' + x[0] + '</span><span class="m" style="opacity:.45;font-size:16px">' + x[1] + '</span><i data-prog style="position:absolute;left:0;bottom:0;height:2px;width:0;background:currentColor"></i></div>'; }).join("") + '</div>'; };
       return at("left:28px;top:28px;width:560px", list("Side A", a)) + at("left:620px;top:28px;width:560px", list("Side B", b)) +
         at("left:28px;bottom:26px;font-family:var(--f-cond);font-stretch:62%;font-weight:800;font-size:150px;line-height:.85;text-transform:uppercase", "Soft<br>Signals") +
         at("right:28px;bottom:26px;text-align:right;font-size:15px;line-height:1.45", N + " — 12-inch LP, 45 rpm<br>" + ko("부드러운 신호 — 열 곡", "opacity:.7"));
@@ -306,9 +307,9 @@
     } },
     { desc: "쌓인 대문자 목록 · 띠", bg: "#101a3a", ink: "#f3ede5", html: function () {
       var l = ["Museum Shop", "Postcards", "Candles", "Tote Bags", "Posters"], m = ["Catalogues", "Pencils", "Tea Towels", "Gift Cards"];
-      var big = function (x) { return '<div style="font-family:var(--f-cond);font-stretch:112%;font-weight:900;font-size:74px;line-height:.93;text-transform:uppercase;text-align:center">' + x + '</div>'; };
+      var big = function (x) { return '<div data-add="p" style="font-family:var(--f-cond);font-stretch:112%;font-weight:900;font-size:74px;line-height:.93;text-transform:uppercase;text-align:center">' + x + '</div>'; };
       return at("left:28px;top:14px;font-size:11px;line-height:1.3;text-transform:uppercase", N + " Museum<br>Ground floor") +
-        at("left:0;right:0;top:10px", l.map(big).join("") + '<div style="background:#ff7a1f;color:#101a3a;margin:8px 0;font-family:var(--f-cond);font-stretch:112%;font-weight:900;font-size:128px;line-height:1.05;text-align:center">Open 11 — 19</div>' + m.map(big).join("")) +
+        at("left:0;right:0;top:10px", l.map(big).join("") + '<div data-hours="11,19" data-days="023456" style="background:#ff7a1f;color:#101a3a;margin:8px 0;font-family:var(--f-cond);font-stretch:112%;font-weight:900;font-size:128px;line-height:1.05;text-align:center">Open 11 — 19</div>' + m.map(big).join("")) +
         at("left:28px;bottom:14px;font-size:12px;line-height:1.3", "Closed on Mondays<br>" + ko("뮤지엄 숍 — 월요일 휴무", ""));
     } }
   ];
@@ -359,15 +360,17 @@
     { name: "채워진 템플릿 P303", n: 2, bg: "#fff", ink: "#111", html: function () {
       return '<div style="position:absolute;left:28px;top:22px;width:420px;display:grid;gap:22px;font-size:17px"><b class="tp-name">' + N + ' 갤러리</b>' +
         '<div style="font-size:44px;font-weight:500;letter-spacing:-.04em;line-height:1.1">사물의 시간<br><span class="dim">Time of Objects</span></div>' +
-        '<div class="m" style="font-size:15px;line-height:1.7">2026. 10. 02 — 11. 15<br>화–일 11:00 — 19:00<br>입장 무료</div><p style="opacity:.75">손과 그릇, 빛에 관한 사진 여덟 점을 모은 전시입니다.</p></div>' +
+        '<div class="m" style="font-size:15px;line-height:1.7">2026. 10. 02 — 11. 15<br>화–일 11:00 — 19:00<br>입장 무료<br><span data-until="2026-10-02" data-ko="1">개막 10월 2일</span></div><p style="opacity:.75">손과 그릇, 빛에 관한 사진 여덟 점을 모은 전시입니다.</p></div>' +
         ph("sc-hand", "left:480px;top:22px;width:450px;bottom:22px") + ph("cer-dark-jug", "left:950px;right:28px;top:22px;height:420px") + ph("cer-cup-speckle", "left:950px;right:28px;top:462px;bottom:22px");
     } },
     { name: "채워진 템플릿 P404", n: 3, bg: "#f6f4f0", ink: "#1b1a14", html: function () {
       var items = [["cer-vases-beige", "백자 세 병", "₩ 128,000"], ["ch-tulip", "튤립 의자", "₩ 340,000"], ["gl-green", "녹색 유리 화병", "₩ 86,000"], ["cer-cup-speckle", "점박이 컵", "₩ 34,000"],
         ["ch-yellow", "노란 의자", "₩ 420,000"], ["cer-blue-set", "푸른 도자 세트", "₩ 210,000"], ["gl-flower", "유리 꽃", "₩ 58,000"], ["st-yellow-jars", "노란 항아리", "₩ 96,000"]];
-      return row(N + " 상점", "전체 · 도자 · 가구 · 유리", "장바구니 (0)") +
+      var fl = ["전체", "도자", "가구", "유리"].map(function (c, k) { return '<button type="button" class="lv-a" data-filter="' + (k ? c : "*") + '" style="' + (k ? "opacity:.5" : "font-weight:600") + '">' + c + '</button>'; }).join(" · ");
+      var catOf = function (f) { return /^ch-/.test(f) ? "가구" : /^gl-/.test(f) ? "유리" : "도자"; };
+      return row(N + " 상점", fl, "장바구니 (0)") +
         '<div style="position:absolute;left:28px;right:28px;top:80px;display:grid;grid-template-columns:repeat(4,1fr);gap:30px 16px">' + items.map(function (x) {
-          return '<div style="display:grid;gap:8px"><div style="aspect-ratio:1;background:#ece9e2;overflow:hidden"><img src="' + src(x[0]) + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover"></div><div style="display:flex;justify-content:space-between;font-size:15px"><span>' + x[1] + '</span><span class="m">' + x[2] + '</span></div></div>';
+          return '<div data-cat="' + catOf(x[0]) + '" style="display:grid;gap:8px"><div style="aspect-ratio:1;background:#ece9e2;overflow:hidden"><img src="' + src(x[0]) + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover"></div><div style="display:flex;justify-content:space-between;font-size:15px"><span>' + x[1] + '</span><span class="m">' + x[2] + '</span></div></div>';
         }).join("") + '</div>';
     } },
     { name: "채워진 템플릿 P505", n: 2, bg: "#000", ink: "#fff", html: function () {
@@ -436,7 +439,8 @@
       return row(N, "", "1 / 4") + b.map(function (x) { return wf("left:" + x[0] + "px;top:" + x[1] + "px;width:" + x[2] + "px;height:" + x[3] + "px"); }).join("");
     } },
     { name: "와이어프레임 W910", n: 2, bg: "#fff", ink: "#111", html: function () {
-      var rows = ""; for (var i = 0; i < 7; i++) rows += '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #eee"><div class="wl" style="width:' + (40 + i * 11 % 40) + '%;height:26px;' + (i === 1 ? "background:#cfcfcf" : "") + '"></div><div class="wl" style="width:60px"></div></div>';
+      var rows = ""; for (var i = 0; i < 7; i++) rows += '<div data-acc style="padding:12px 0;border-bottom:1px solid #eee"><div style="display:flex;justify-content:space-between;align-items:center"><div class="wl" style="width:' + (40 + i * 11 % 40) + '%;height:26px;' + (i === 1 ? "background:#cfcfcf" : "") + '"></div><div class="wl" style="width:60px"></div></div>' +
+        '<div class="acc-more"><div style="display:grid;gap:8px;padding-top:12px"><div class="wl" style="width:90%"></div><div class="wl" style="width:62%"></div></div></div></div>';
       return row(N, "색인 · 정보", CLOCK) + '<div style="position:absolute;left:28px;top:100px;width:560px">' + rows + '</div>' + wf("left:640px;right:28px;top:100px;bottom:70px");
     } },
     { name: "와이어프레임 W011", n: 2, bg: "#fff", ink: "#111", html: function () {
@@ -444,7 +448,7 @@
         lines("left:790px;right:28px;top:110px", ["80%", "55%"], "60px") + lines("left:790px;right:28px;top:380px", ["100%", "96%", "90%", "94%", "70%"]);
     } },
     { name: "와이어프레임 W112", n: 3, bg: "#fff", ink: "#111", html: function () {
-      var cells = ""; for (var i = 0; i < 5; i++) cells += '<div style="display:grid;gap:6px"><div class="wf in" style="--ar:4/3"></div><div class="wl" style="width:70%"></div></div>';
+      var cells = ""; for (var i = 0; i < 5; i++) cells += '<div style="display:grid;gap:6px"><div class="wf in" style="--ar:4/3"></div><div style="display:flex;justify-content:space-between;align-items:center"><div class="wl" style="width:60%"></div><button type="button" class="lv-a" data-add="p" style="font-size:13px">담기 +</button></div></div>';
       return row(N, "상점 · 공방 · 수업", "장바구니 (0)") + wf("left:28px;top:80px;width:880px;height:560px") + lines("left:940px;right:28px;top:80px", ["60%", "100%", "95%", "80%", "50%"], "22px") +
         '<div style="position:absolute;left:28px;right:28px;top:668px;display:grid;grid-template-columns:repeat(5,1fr);gap:14px">' + cells + '</div>';
     } }
@@ -618,7 +622,7 @@
       return gradHead("Process") +
         '<div class="ba" style="position:absolute;left:28px;top:80px;width:1000px;height:760px;overflow:hidden;cursor:ew-resize">' +
           '<img src="' + src("paint-violet") + '" alt="" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">' +
-          '<div class="ba-top" style="position:absolute;inset:0;clip-path:inset(0 50% 0 0)"><img src="' + src("paint-violet") + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;filter:grayscale(1) contrast(2.2) brightness(1.4)"></div>' +
+          '<div class="ba-top" style="position:absolute;inset:0;clip-path:inset(0 50% 0 0)"><img data-dup src="' + src("paint-violet") + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;filter:grayscale(1) contrast(2.2) brightness(1.4)"></div>' +
           '<div class="ba-bar" style="position:absolute;top:0;bottom:0;left:50%;width:2px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.3)"><span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;background:#fff;color:#111;display:grid;place-items:center;font-size:18px">⇆</span></div>' +
           '<span style="position:absolute;left:16px;bottom:14px;color:#fff;font-size:14px;text-shadow:0 1px 3px #000">Underdrawing, week 2</span><span style="position:absolute;right:16px;bottom:14px;color:#fff;font-size:14px;text-shadow:0 1px 3px #000">Finished, week 14</span>' +
         '</div>' +
@@ -626,10 +630,10 @@
           '<p style="font-size:16px;line-height:1.55;opacity:.8">Drag across the picture to go from the first underdrawing to the last layer.</p>' + ko("그림 위를 좌우로 움직여 밑그림과 완성작을 비교하세요.", "font-size:15px;opacity:.65"));
     } },
     { desc: "전시장 평면도", bg: "#f6f5f1", ink: "#111", html: function () {
-      var rooms = [["A", 40, 40, 420, 300, "Painting", "Kim · Lee · Oh"], ["B", 480, 40, 300, 300, "Ceramics", "Park · Seo"], ["C", 800, 40, 360, 200, "Sculpture", "Jung · Han"], ["D", 800, 260, 360, 300, "Video", "Choi · Yoon"], ["E", 40, 360, 740, 200, "Design", "Kang · Lim · Shin"]];
+      var rooms = [["A", 40, 40, 420, 300, "Painting", "Kim · Lee · Oh", "paint-ochre,art-green-abstract-painting"], ["B", 480, 40, 300, 300, "Ceramics", "Park · Seo", "cer-vases-beige,cer-blue-set"], ["C", 800, 40, 360, 200, "Sculpture", "Jung · Han", "sc-kintsugi,sc-hand"], ["D", 800, 260, 360, 300, "Video", "Choi · Yoon", "dn-blur,mu-blue-spotlight-stage"], ["E", 40, 360, 740, 200, "Design", "Kang · Lim · Shin", "bk-red-fan,ab-pastel-spheres"]];
       return gradHead("Floor Plan") +
         '<svg viewBox="0 0 1200 600" style="position:absolute;left:28px;top:90px;width:1040px;height:520px" font-family="Inter,Pretendard Variable,sans-serif">' +
-          rooms.map(function (r) { return '<g class="room"><rect x="' + r[1] + '" y="' + r[2] + '" width="' + r[3] + '" height="' + r[4] + '" fill="#fff" stroke="#111" stroke-width="3"/><text x="' + (r[1] + 20) + '" y="' + (r[2] + 52) + '" font-size="44" font-weight="700">' + r[0] + '</text><text x="' + (r[1] + 20) + '" y="' + (r[2] + 88) + '" font-size="22">' + r[5] + '</text><text x="' + (r[1] + 20) + '" y="' + (r[2] + 118) + '" font-size="18" opacity=".55">' + r[6] + '</text></g>'; }).join("") +
+          rooms.map(function (r) { return '<g class="room" data-imgs="' + r[7] + '"><rect x="' + r[1] + '" y="' + r[2] + '" width="' + r[3] + '" height="' + r[4] + '" fill="#fff" stroke="#111" stroke-width="3"/><text x="' + (r[1] + 20) + '" y="' + (r[2] + 52) + '" font-size="44" font-weight="700">' + r[0] + '</text><text x="' + (r[1] + 20) + '" y="' + (r[2] + 88) + '" font-size="22">' + r[5] + '</text><text x="' + (r[1] + 20) + '" y="' + (r[2] + 118) + '" font-size="18" opacity=".55">' + r[6] + '</text></g>'; }).join("") +
           '<path d="M600 580v-20" stroke="#111" stroke-width="3"/><text x="560" y="598" font-size="16">Entrance</text></svg>' +
         at("left:1100px;right:28px;top:90px;display:grid;gap:18px", label("Visit", "3rd floor, Building 2<br>June 5 — 14, 2026, 10 — 18", "2관 3층, 6월 5일 — 14일") +
           '<p style="font-size:15px;line-height:1.5;opacity:.75">Choose a room to see who is showing there.</p>' + ko("방을 누르면 그 방의 작가와 작업이 보입니다.", "font-size:14px;opacity:.6")) +
@@ -639,10 +643,11 @@
       var names = ["Kim Haneul", "Lee Dohyun", "Oh Mina", "Park Seoyun", "Seo Jiwoo", "Jung Woojin", "Han Sora", "Choi Yerin", "Yoon Jae", "Kang Minho", "Lim Dain", "Shin Hayoung", "Baek Siwoo", "Ryu Nari", "Moon Gaeun", "Hwang Eunbi", "Song Taeho", "Jeon Haru"];
       var majors = ["Painting", "Ceramics", "Sculpture", "Video", "Design", "Printmaking"];
       var imgs = ["paint-ochre", "cer-vases-beige", "sc-kintsugi", "dn-blur", "bk-red-fan", "paint-grey"];
+      var extra = { Painting: "art-red-brown-abstract", Ceramics: "cer-blue-set", Sculpture: "sc-hand", Video: "mu-stage-greyscale", Design: "ab-pastel-spheres", Printmaking: "tx-blue-stain" };
       return gradHead("Artists") +
-        at("left:28px;top:84px;width:880px;columns:2;column-gap:40px;font-size:40px;line-height:1.18;letter-spacing:-.03em", names.map(function (n, i) { return '<div style="' + (i === 3 ? "" : "opacity:.35") + '">' + n + ' <span style="font-size:15px;opacity:.6;letter-spacing:0">' + majors[i % 6] + '</span></div>'; }).join("")) +
-        ph(imgs[3], "left:940px;right:28px;top:84px;height:520px") +
-        at("left:940px;right:28px;top:630px", label("Park Seoyun", "Video · Motion After Image, 2026", "박서윤 — 영상")) +
+        at("left:28px;top:84px;width:880px;columns:2;column-gap:40px;font-size:40px;line-height:1.18;letter-spacing:-.03em", names.map(function (n, i) { var mj = majors[i % 6]; return '<div data-rf="' + (i % 2 ? extra[mj] : imgs[i % 6]) + '" data-role="' + mj + '" style="' + (i === 3 ? "" : "opacity:.35") + '">' + n + ' <span style="font-size:15px;opacity:.6;letter-spacing:0">' + majors[i % 6] + '</span></div>'; }).join("")) +
+        '<div data-rimg>' + ph(imgs[3], "left:940px;right:28px;top:84px;height:520px") + '</div>' +
+        '<div data-rlab style="position:absolute;left:940px;right:28px;top:630px">' + label("Park Seoyun", "Video · Motion After Image, 2026", "박서윤 — 영상") + '</div>' +
         at("left:28px;bottom:24px;font-size:14px;opacity:.55", "42 graduates " + ko("· 졸업생 42명 — 이름에 마우스를 올리면 작업이 보입니다", ""));
     } },
     { desc: "루페 · 붓질 확대", bg: "#e9e6df", ink: "#141414", init: loupe, html: function () {
@@ -682,35 +687,46 @@
     } }
   ];
 
-  /* ---------- the catalogue: 80 designs × 18 variants = 1440, numbered n/1440 ---------- */
-  var PALETTES = [["#fcfcfc", "#111"], ["#f3efe6", "#1b1a14"], ["#141414", "#ececec"], ["#e8ebee", "#15181c"], ["#f4d9cf", "#2d1f1c"], ["#dfe8d5", "#1c2a17"], ["#1f3fd1", "#eef1ff"]];
-  var TYPES = [
-    { name: "그로테스크", font: "'Inter', 'Pretendard Variable', sans-serif", stretch: "100%" },
-    { name: "콘덴스드", font: "'Archivo', 'Pretendard Variable', sans-serif", stretch: "75%" },
-    { name: "세리프", font: "'Newsreader', 'Nanum Myeongjo', serif", stretch: "100%" }
-  ];
-  var ORDER = [
-    ["feed", "기본", "기본 피드"], ["grid", "기본", "기본 그리드"], ["slide", "기본", "기본 슬라이드쇼"],
-    ["grad", "졸업전시", "졸업전시"], ["graphic", "그래픽", "그래픽"], ["blank", "빈 템플릿", "와이어프레임"], ["populated", "채워진 템플릿", "채워진 템플릿"]
-  ];
-  var BASES = [], no = 1;
-  ORDER.forEach(function (o) {
-    F[o[0]].forEach(function (b, i) {
-      b.fam = o[0]; b.cat = o[1]; b.label = b.desc || (o[2] + " " + String(i + 1).padStart(2, "0"));
-      var own = [b.bg, b.ink];
-      b.palettes = [own].concat(PALETTES.filter(function (p) { return p[0].toLowerCase() !== own[0].toLowerCase(); }).slice(0, 5));
-      b.first = no; no += 18;
-      BASES.push(b);
+  /* hand-made slideshows that play by themselves (ms per picture) */
+  F.feed[2].auto = 3400; F.slide[1].auto = 3400; F.slide[2].auto = 5000; F.slide[4].auto = 2600;
+
+  /* ---------- the catalogue: 1440 templates, each its own, numbered n/1440 ----------
+     Every section starts with its hand-made templates; the generator (tpl-gen.js) fills the rest.
+     Colour and type are chosen later, in the editor, so here a template is one layout with one set of features. */
+  var CAT_KO = { basic: "기본", grad: "졸업전시", graphic: "그래픽", blank: "빈 템플릿", populated: "채워진 템플릿" };
+  var FAM_KO = { feed: "기본 피드", grid: "기본 그리드", slide: "기본 슬라이드쇼", grad: "졸업전시", graphic: "그래픽", blank: "와이어프레임", populated: "채워진 템플릿" };
+  var PH = {};
+  (window.PHOTOS || []).forEach(function (p) { PH[p[0]] = p; });
+  var GEN = window.TPLGEN;
+  var genEnv = {
+    N: N, plain: site || "이름", esc: esc, src: src,
+    photo: function (f) { var p = PH[f] || [f, f, "art"]; return { f: f, ko: p[1], g: p[2], en: GEN.enName(f) }; }
+  };
+  var HAND = {};
+  Object.keys(F).forEach(function (k) { HAND[k] = F[k].length; });
+  if (window.console && JSON.stringify(HAND) !== JSON.stringify(GEN.HAND)) console.warn("tpl-gen.js HAND does not match templates.js", HAND);
+  var CATALOGUE = GEN.catalogue(window.PHOTOS || [], HAND);
+  var BASES = [], BYNO = {};
+  CATALOGUE.plan.forEach(function (p) {
+    F[p.fam].forEach(function (b, i) {
+      b.fam = p.fam; b.cat = CAT_KO[p.cat]; b.label = b.desc || (FAM_KO[p.fam] + " " + String(i + 1).padStart(2, "0"));
+      b.first = p.first + i;
+      BASES.push(b); BYNO[b.first] = b;
     });
   });
-  var TOTAL = no - 1; /* 1440 */
+  CATALOGUE.specs.forEach(function (s) {
+    var fam = CATALOGUE.plan.filter(function (p) { return s.no >= p.first && s.no < p.first + p.hand + p.gen; })[0];
+    var face = GEN.FACES[s.face];
+    var b = { gen: s, fam: fam.fam, cat: CAT_KO[s.cat], label: GEN.describe(s).label, first: s.no, bg: s.bg, ink: s.ink, font: face[0], stretch: face[1],
+      items: s.photos.map(function (f) { var p = genEnv.photo(f); return { src: src(f), cap: s.ko ? p.ko : p.en }; }),
+      html: function () { var r = GEN.render(s, genEnv); b.style = r.style; return r.html; } };
+    BASES.push(b); BYNO[b.first] = b;
+  });
+  BASES.sort(function (a, b) { return a.first - b.first; });
+  var TOTAL = BASES.length; /* 1440 */
   function pad(n) { return String(n).padStart(4, "0"); }
-  function numOf(b, v) { return b.first + v; }
   function tag(n) { return pad(n) + "/1440"; }
-  function find(n) {
-    for (var i = 0; i < BASES.length; i++) { var b = BASES[i]; if (n >= b.first && n < b.first + 18) return { b: b, v: n - b.first }; }
-    return null;
-  }
+  function find(n) { return BYNO[n] || null; }
 
   /* ---------- rendering a template ---------- */
   var ICON = {
@@ -722,25 +738,24 @@
     next: '<svg viewBox="0 0 24 24"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg>',
     prev: '<svg viewBox="0 0 24 24"><path d="M19 12H5M10.5 6.5 5 12l5.5 5.5"/></svg>'
   };
-  function pageFor(b, v) {
-    var pal = b.palettes[Math.floor(v / 3)], ty = TYPES[v % 3];
-    return '<div class="tp" style="--t-bg:' + pal[0] + ';--t-ink:' + pal[1] + ';--t-font:' + ty.font + ';--t-stretch:' + ty.stretch + '">' + b.html() + '</div>';
+  function pageFor(b) {
+    var inner = b.html();
+    return '<div class="tp" style="--t-bg:' + b.bg + ';--t-ink:' + b.ink + (b.font ? ';--t-font:' + b.font + ';--t-stretch:' + b.stretch : "") + ';' + (b.style || "") + '">' + inner + '</div>';
   }
-  function windowFor(b, v) {
+  function windowFor(b) {
     return '<div class="mac" aria-hidden="true"><div class="mac-bar">' +
       '<div class="mac-left"><span class="lights"><i></i><i></i><i></i></span><span class="mac-nav">' + ICON.back + ICON.fwd + '</span></div>' +
       '<div class="mac-url">' + ICON.lock + '<span>' + esc(host) + '</span></div>' +
       '<div class="mac-tools">' + ICON.share + ICON.plus + '</div></div>' +
-      '<div class="mac-view"><div class="canvas">' + pageFor(b, v) + '</div></div></div>';
+      '<div class="mac-view"><div class="canvas">' + pageFor(b) + '</div></div></div>';
   }
 
   var stars = {};
   try { stars = JSON.parse(localStorage.getItem("1440-stars") || "{}"); } catch (e) {}
   function saveStars() { try { localStorage.setItem("1440-stars", JSON.stringify(stars)); } catch (e) {} }
 
-  function card(b, v) {
-    v = v || 0;
-    var n = numOf(b, v);
+  function card(b) {
+    var n = b.first;
     return '<article class="tpl" data-n="' + n + '">' +
       '<button type="button" class="tpl-open" aria-label="' + tag(n) + ' 미리보기">' +
         '<div class="tpl-slot" data-n="' + n + '"><div class="mac mac-empty"><div class="mac-bar"></div><div class="mac-view"></div></div></div></button>' +
@@ -749,7 +764,7 @@
         '<button type="button" class="star" aria-pressed="' + (!!stars[n]) + '" aria-label="' + tag(n) + ' 즐겨찾기">' + (stars[n] ? "★" : "☆") + '</button></div></article>';
   }
 
-  /* fill a card's window only when it comes near the screen, so 80 designs stay light */
+  /* fill a card's window only when it comes near the screen, so the page stays light */
   var ro = "ResizeObserver" in window ? new ResizeObserver(function (es) { es.forEach(function (e) { scale(e.target); }); }) : null;
   /* shrink the 1440 × 900 page with CSS zoom rather than transform: zoom changes layout,
      so the 3D viewer and pointer maths measure the page at the size it is shown */
@@ -760,11 +775,12 @@
     if (ZOOM) { c.style.zoom = k; c.style.transform = ""; } else c.style.transform = "scale(" + k + ")";
   }
   function fill(slot, live) {
-    var f = find(+slot.dataset.n);
-    slot.innerHTML = windowFor(f.b, f.v);
+    var b = find(+slot.dataset.n);
+    slot.innerHTML = windowFor(b);
     var view = slot.querySelector(".mac-view");
     scale(view); if (ro) ro.observe(view);
-    if (f.b.init) f.b.init(view, !!live);
+    INITS.forEach(function (f) { f(view, !!live); });
+    liveText(view);
     tick();
   }
   var io = "IntersectionObserver" in window ? new IntersectionObserver(function (es) {
@@ -777,25 +793,42 @@
   }
 
   /* ---------- sections ---------- */
+  function famOf(f) { return BASES.filter(function (b) { return b.fam === f; }); }
+  /* basic: feed / grid / slideshow side by side, one large card each and the list of its numbers */
   var basic = document.getElementById("basicCols");
   basic.innerHTML = ["feed", "grid", "slide"].map(function (f) {
-    var fam = BASES.filter(function (b) { return b.fam === f; });
-    return '<div class="fam" data-fam="' + f + '"><h3 class="fam-t">' + { feed: "기본 피드", grid: "기본 그리드", slide: "기본 슬라이드쇼" }[f] + '</h3><div class="fam-card">' + card(fam[0]) + '</div>' +
-      '<ul class="vlist">' + fam.map(function (b, i) { return '<li><button type="button" data-n="' + b.first + '" aria-current="' + (i === 0) + '">' + tag(b.first) + '</button></li>'; }).join("") + '</ul></div>';
+    var fam = famOf(f);
+    return '<div class="fam" data-fam="' + f + '"><h3 class="fam-t">' + FAM_KO[f] + ' <span class="fam-n m">' + fam.length + '</span></h3><div class="fam-card">' + card(fam[0]) + '</div>' +
+      '<ul class="vlist">' + fam.map(function (b, i) { return '<li><button type="button" data-n="' + b.first + '" aria-current="' + (i === 0) + '">' + tag(b.first).slice(0, 4) + '</button></li>'; }).join("") + '</ul></div>';
   }).join("");
   basic.addEventListener("click", function (e) {
     var btn = e.target.closest(".vlist button"); if (!btn) return;
-    var fam = btn.closest(".fam"), f = find(+btn.dataset.n);
-    fam.querySelector(".fam-card").innerHTML = card(f.b, f.v);
+    var fam = btn.closest(".fam");
+    fam.querySelector(".fam-card").innerHTML = card(find(+btn.dataset.n));
     fam.querySelectorAll(".vlist button").forEach(function (x) { x.setAttribute("aria-current", x === btn); });
-    watch(fam);
+    watch(fam); markPicked();
   });
-  document.querySelectorAll(".row[data-family]").forEach(function (r) {
-    r.innerHTML = BASES.filter(function (b) { return b.fam === r.dataset.family; }).map(function (b) { return card(b); }).join("");
-  });
+  /* other sections: cards are added in batches as the page scrolls, so 1440 never sit in the page at once */
+  var BATCH = 24;
+  var more = "IntersectionObserver" in window ? new IntersectionObserver(function (es) {
+    es.forEach(function (e) { if (e.isIntersecting) addBatch(e.target.parentNode); });
+  }, { rootMargin: "1200px 0px" }) : null;
+  function addBatch(r) {
+    var list = famOf(r.dataset.family), from = +(r.dataset.shown || 0), to = Math.min(list.length, from + BATCH);
+    var old = r.querySelector(".row-more"); if (old) { if (more) more.unobserve(old); old.remove(); }
+    r.insertAdjacentHTML("beforeend", list.slice(from, to).map(function (b) { return card(b); }).join(""));
+    r.dataset.shown = to;
+    if (to < list.length) {
+      var s = document.createElement("div"); s.className = "row-more"; s.setAttribute("aria-hidden", "true");
+      r.appendChild(s);
+      if (more) more.observe(s); else addBatch(r);
+    }
+    watch(r); markPicked();
+  }
+  document.querySelectorAll(".row[data-family]").forEach(addBatch);
   function range(fams) {
     var bs = BASES.filter(function (b) { return fams.indexOf(b.fam) >= 0; });
-    return tag(bs[0].first).slice(0, 4) + "–" + tag(bs[bs.length - 1].first + 17) + " · " + (bs.length * 18) + "개";
+    return tag(bs[0].first).slice(0, 4) + "–" + tag(bs[bs.length - 1].first) + " · " + bs.length + "개";
   }
   document.getElementById("basicN").textContent = range(["feed", "grid", "slide"]);
   document.querySelectorAll("[data-count]").forEach(function (el) { el.textContent = range([el.dataset.count]); });
@@ -804,8 +837,7 @@
   var stage = document.getElementById("shuffleStage");
   var cur = 1 + Math.floor(Math.random() * TOTAL);
   function showShuffle() {
-    var f = find(cur);
-    stage.innerHTML = '<button type="button" class="shuffle-btn shuffle-prev" aria-label="이전 템플릿">' + ICON.prev + '</button>' + card(f.b, f.v) +
+    stage.innerHTML = '<button type="button" class="shuffle-btn shuffle-prev" aria-label="이전 템플릿">' + ICON.prev + '</button>' + card(find(cur)) +
       '<button type="button" class="shuffle-btn shuffle-next" aria-label="다른 템플릿">' + ICON.next + '</button>';
     fill(stage.querySelector(".tpl-slot"), true);
     document.getElementById("shuffleNo").textContent = tag(cur);
@@ -828,8 +860,14 @@
      menus open overlay pages, pictures open a quick view, slideshows, thumbnails and lists
      switch the picture, and a shop keeps a cart. Only in the preview; cards stay still. */
   var NAMES = {};
-  [OBJ, PHOTO, SPACE, SKY].forEach(function (a) { a.forEach(function (x) { NAMES[x[0]] = x[1]; }); });
-  var POOL = PHOTO.concat(SKY, SPACE, OBJ).map(function (x) { return x[0]; });
+  (window.PHOTOS || []).forEach(function (p) { NAMES[p[0]] = p[1]; });
+  /* pictures a hand-made slideshow may bring in: every subject, a few at a time */
+  var POOL = (function () {
+    var by = {}, out = [];
+    (window.PHOTOS || []).forEach(function (p) { (by[p[2]] = by[p[2]] || []).push(p[0]); });
+    for (var i = 0; out.length < (window.PHOTOS || []).length; i++) Object.keys(by).forEach(function (g) { if (by[g][i]) out.push(by[g][i]); });
+    return out;
+  })();
   var LINKS = [
     ["index", "Back Issues|Reading list|Exhibitions|Projects|Project|Selected|Archive|Writing|Issues|Index|Works|Work|Talks|Books|Shop|Photographs|작업|색인|프로젝트|전시|사진|상점"],
     ["info", "Information|Contributors|Company|Classes|Studio|Office|Press|About|Info|Artists|Words|정보|소개|이력|사무소|공방|수업"],
@@ -890,8 +928,10 @@
     });
     return out;
   }
-  function poolItems(n, first) {
-    var files = POOL.filter(function (f) { return f !== first; });
+  function poolItems(n, first, tp) {
+    var on = {};
+    if (tp) [].forEach.call(tp.querySelectorAll("img"), function (im) { on[fileOf(im)] = 1; });
+    var files = POOL.filter(function (f) { return f !== first && !on[f]; });
     if (first) files.unshift(first);
     return files.slice(0, n).map(function (f) { return { src: src(f), cap: NAMES[f] || "" }; });
   }
@@ -934,7 +974,7 @@
     markOn(tp, "info");
   }
   function openIndex(tp, ko) {
-    var items = gallery(tp); if (items.length < 3) items = poolItems(8);
+    var items = tp._lv && tp._lv.items && tp._lv.items.length ? tp._lv.items : gallery(tp); if (items.length < 3) items = poolItems(8, null, tp);
     items = items.slice(0, 10);
     var d = layer(tp, "lv-index",
       '<div class="lv-top"><span>' + (ko ? "작업" : "Index") + ' <span class="m" style="opacity:.5">(' + items.length + ')</span></span><button type="button" class="lv-x">' + (ko ? "닫기" : "Close") + ' ✕</button></div>' +
@@ -988,7 +1028,7 @@
     if (!st.main || (!counter && !arrows.length)) return;
     var cur = 1, total = 8;
     if (counter) { var m = /(\d+) \/ (\d+)/.exec(counter.textContent); cur = +m[1]; total = +m[2]; counter.classList.add("lv-hot"); counter.dataset.step = 1; st.two = m[1].length === 2; }
-    var items = poolItems(total, fileOf(st.main));
+    var items = poolItems(total, fileOf(st.main), tp);
     items.unshift.apply(items, items.splice(total - (cur - 1)));   /* the picture on show sits at its own number */
     st.slide = { items: items, i: cur - 1, counter: counter };
     arrows.forEach(function (a) { a.classList.add("lv-hot"); a.dataset.step = a.textContent.trim() === "←" ? -1 : 1; });
@@ -1024,46 +1064,72 @@
     });
     var im = c.querySelector("img"), f = im ? fileOf(im) : "";
     if (!f) for (var k in NAMES) if (c.textContent.indexOf(NAMES[k]) >= 0) { f = k; break; }
-    if (!f) f = POOL[i % POOL.length];
+    if (!f) f = poolItems(i + 1, null, tp)[i].src.replace(/^.*\/|\.jpg$/g, "");
     if (st.main && !(im && im === st.main)) swap(st.main, src(f));
   }
 
   function liven(view, b) {
-    var tp = view.querySelector(".tp"); if (!tp) return;
-    linkify(tp);
-    var st = tp._lv = { cart: [], ko: isKo(tp.querySelector(".lv-a") ? tp.querySelector(".lv-a").textContent : "작업"), own: !!b.init };
+    var tp = view.querySelector(".tp"); if (!tp) return [];
+    if (!b.gen) linkify(tp);
+    var first = tp.querySelector(".tp-nav .lv-a:not(.tp-name)") || tp.querySelector(".lv-a");
+    var st = tp._lv = { cart: [], ko: b.gen ? b.gen.ko : isKo(first ? first.textContent : "작업"), own: !!b.gen || b.fam === "grad", items: b.items || null };
     st.shop = !!tp.querySelector('.lv-a[data-lv="cart"]');
-    if (!st.own) { setupSlides(tp, st); setupLists(tp, st); }
+    if (b.gen) genSlides(tp, st, b);
+    else if (!st.own) {
+      setupSlides(tp, st); setupLists(tp, st);
+      if (b.auto && st.slide) { st.autoplay = true; autoSlides(tp, st, b.auto); }
+    }
+    audioSetup(tp, st);
+    $$(tp, "[data-filter],[data-page],[data-sort],[data-acc],[data-add]").forEach(function (el) { el.classList.add("lv-hot"); });
     /* type specimen: the big word is a type tester */
     [].forEach.call(tp.querySelectorAll("div"), function (el) {
       if (el.children.length || el.textContent !== "Archivo" || !/font-size:\s*2\d\dpx/.test(el.getAttribute("style") || "")) return;
       el.contentEditable = "true"; el.spellcheck = false; el.classList.add("lv-edit"); el.title = "눌러서 직접 입력해 보세요";
     });
-    var fx = st.own ? null : FX[b.name || b.desc || b.label];
-    if (fx) { try { fx.run(tp, st); } catch (err) { if (window.console) console.error(err); } }
 
     tp.addEventListener("mouseover", function (e) {
       var row = e.target.closest(".lv-row");
-      if (row) {
+      if (row && row.dataset.i != null) {
         var d = row.closest(".lv-index");
         d.querySelector(".lv-idx-img img").src = d._items[+row.dataset.i].src;
         [].forEach.call(d.querySelectorAll(".lv-row"), function (r) { r.classList.toggle("on", r === row); });
         return;
       }
+      if (e.target.closest(".lv-layer")) return;
+      var sl = e.target.closest("[data-sl]");
+      if (sl && st.gs && +sl.dataset.sl < st.gs.n && +sl.dataset.sl !== st.gs.i) { st.gs.show(+sl.dataset.sl); return; }
       var li = e.target.closest("[data-li]");
-      if (li && !li.querySelector("img") && !e.target.closest(".lv-layer")) { var p = li.dataset.li.split(":"); listPick(tp, st, +p[0], +p[1]); }
+      if (li && !li.querySelector("img")) { var p = li.dataset.li.split(":"); listPick(tp, st, +p[0], +p[1]); }
+    });
+
+    tp.addEventListener("submit", function (e) {
+      var f = e.target.closest("form[data-form]"); if (!f) return;
+      e.preventDefault();
+      toast(tp, f.dataset.form === "news" ? (st.ko ? "구독 신청을 받았습니다 (미리보기)" : "Subscribed (preview only)") : (st.ko ? "보냈습니다 — 미리보기에서는 실제로 보내지 않습니다" : "Sent — nothing is sent from the preview"));
+      f.reset();
     });
 
     tp.addEventListener("click", function (e) {
       var t = e.target, lb = t.closest(".lv-lb");
       if (t.closest(".lv-x")) return closeTop(tp);
+      if (t.closest("input, textarea, form button")) return;
+      var hit = t.closest("[data-hit]");
+      if (hit) { openLightbox(tp, hit.closest(".lv-layer")._items, +hit.dataset.hit); return; }
       var a = t.closest(".lv-a, .lv-pay");
-      if (a) {
+      if (a && a.dataset.add != null) { addToCart(tp, st, a.dataset.add, a.closest("[data-add]") !== a ? a : null); return; }
+      if (a && a.dataset.filter != null) { filterBy(tp, a); return; }
+      if (a && a.dataset.page != null) { pageTo(tp, a); return; }
+      if (a && a.dataset.lv) {
         var k = a.dataset.lv;
-        if (a.closest(".lv-layer") == null) st.ko = isKo(a.textContent);
-        if (k === "info") openInfo(tp, st.ko);
+        if (a.closest(".lv-layer") == null && !b.gen) st.ko = isKo(a.textContent);
+        if (k === "home") { [].forEach.call(tp.querySelectorAll(".lv-layer"), function (l) { l.remove(); }); markOn(tp); }
+        else if (k === "info") openInfo(tp, st.ko);
         else if (k === "index") openIndex(tp, st.ko);
         else if (k === "cart") openCart(tp, st.ko);
+        else if (k === "menu") openMenu(tp, st);
+        else if (k === "search") openSearch(tp, st);
+        else if (k === "news") openNews(tp, st);
+        else if (k === "lang") langSwap(tp, st);
         else if (k === "contact") {
           try { navigator.clipboard.writeText(mail()); } catch (err) {}
           toast(tp, mail() + " 주소를 복사했습니다");
@@ -1084,1032 +1150,293 @@
         return;
       }
       var row = t.closest(".lv-row");
-      if (row) { var d = row.closest(".lv-index"); openLightbox(tp, d._items, +row.dataset.i); return; }
+      if (row && row.dataset.i != null) { var d = row.closest(".lv-index"); openLightbox(tp, d._items, +row.dataset.i); return; }
       if (t.closest(".lv-layer")) return;
-      if (t.closest("[data-fx]")) return;
+      var add = t.closest("[data-add]"); if (add) { addToCart(tp, st, add.dataset.add, add); return; }
+      var srt = t.closest("[data-sort]"); if (srt) { sortBy(tp, srt); return; }
+      var acc = t.closest("[data-acc]"); if (acc) { accToggle(acc); return; }
+      var pl = t.closest("[data-play]"); if (pl) { st.audio.play(st.audio.rows.indexOf(pl)); return; }
       if (t.closest(".tp-name")) { [].forEach.call(tp.querySelectorAll(".lv-layer"), function (l) { l.remove(); }); markOn(tp); return; }
-      if (st.own) return;
+      if (st.gs) {
+        var G = st.gs, th = t.closest("[data-st]"), sg = t.closest("[data-sg]"), sd = t.closest("[data-sd]"), sl = t.closest("[data-sl]");
+        if (th) return G.thumb(th);
+        if (sg) return G.show(G.i + +sg.dataset.sg);
+        if (sd) return G.show(+sd.dataset.sd);
+        if (sl && +sl.dataset.sl < G.n) return openLightbox(tp, G.items, +sl.dataset.sl);
+        if (t.closest("[data-sprev]")) return G.show(G.i - 1);
+        if (t.closest("[data-snext]")) return G.show(G.i + 1);
+        if (t.closest("[data-sm]")) {
+          if (G.click) { var r = G.main.getBoundingClientRect(); return G.show(G.i + (e.clientX < r.left + r.width / 3 ? -1 : 1)); }
+          return openLightbox(tp, G.items, G.i);
+        }
+      }
+      if (st.own && !b.gen) return;
       var step = t.closest("[data-step]");
       if (step && st.slide) return slideStep(st, +step.dataset.step);
       var li = t.closest("[data-li]");
       if (li) { var p = li.dataset.li.split(":"); listPick(tp, st, +p[0], +p[1]); return; }
       if (t.tagName === "IMG") {
         if (st.slide && t === st.main) return slideStep(st, 1);
-        var items = gallery(tp), s = t.getAttribute("src"), i = 0;
+        var items = st.items && st.items.length ? st.items : gallery(tp), s = t.getAttribute("src"), i = 0;
         items.forEach(function (it, k) { if (it.src === s) i = k; });
         openLightbox(tp, items, i);
       }
     });
+    return featureList(tp, st);
   }
 
-  /* ---------- a wider pool of free photographs (Unsplash licence, see assets/img/samples/CREDITS.md) ---------- */
-  var DREAM = [["dc-green-corridor", "초록 복도"], ["dc-ferris-wheel", "관람차"], ["dc-tree-lined-road", "가로수 길"], ["dc-floating-eye-fountain", "떠 있는 눈"], ["dc-bridge-railing", "안개 다리"],
-    ["dc-empty-parking-escalator", "빈 에스컬레이터"], ["dc-night-road", "밤길"], ["dc-waiting-room-window", "대기실"], ["dc-pool-building-aerial", "수영장"], ["dc-pool-ladder-wall", "수영장 사다리"],
-    ["dc-green-lit-room", "초록 방"], ["dc-desert-geometry", "사막의 문"], ["dc-white-chair-on-hill", "언덕 위 의자"], ["dc-iridescent-bubbles", "비눗방울"], ["dc-bubble-close-up", "방울 하나"],
-    ["dc-clear-bubbles", "맑은 방울"], ["dc-green-bubbles", "초록 방울"], ["dc-prism-spectrum", "프리즘"], ["dc-soft-rainbow", "무지개"], ["dc-rainbow-in-water", "물 위 무지개"],
-    ["dc-night-rainbow-mountains", "밤 무지개"], ["dc-grey-brown-mountain", "회갈색 산"], ["dc-desert-aerial-rocks", "사막 위에서"]];
-  var CLOUD = [["cl-cloudy-sky", "구름 낀 하늘"], ["cl-white-grey-clouds", "흰 구름"], ["cl-pink-clouds", "분홍 구름"], ["cl-white-cloud", "구름 한 점"], ["cl-pink-purple-clouds", "보랏빛 구름"]];
-  var MOUNT = [["mt-green-ridges", "초록 능선"], ["mt-orange-ridges", "노을 능선"], ["mt-green-mountain", "푸른 산"], ["mt-rock-mountain", "바위산"], ["mt-meadow-mountain", "초원과 산"],
-    ["mt-snow-mountain", "설산"], ["mt-black-white-mountain", "흑백 설산"], ["mt-snow-peak", "눈 덮인 봉우리"], ["mt-misty-mountain", "안개 산"]];
-  var SPRING = [["spr-blossom-by-water", "물가의 벚꽃"], ["spr-pink-blossom", "분홍 벚꽃"], ["spr-white-blossom", "흰 벚꽃"], ["spr-blossom-river", "강가 벚나무"], ["spr-pink-bloom", "꽃가지"]];
-  var SUMMER = [["sum-clear-beach", "맑은 해변"], ["sum-green-field-town", "초록 논"], ["sum-beach-clouds", "여름 구름"], ["sum-beach-umbrella", "파라솔"], ["sum-beach-from-above", "위에서 본 해변"], ["sum-farm-field", "논길"], ["sum-green-grass", "여름 풀"]];
-  var AUTUMN = [["aut-maple-bokeh", "단풍"], ["aut-red-purple-leaves", "붉은 잎"], ["aut-orange-leaf", "주황 잎"], ["aut-dry-leaves-concrete", "마른 잎"], ["aut-three-leaves", "잎 세 장"]];
-  var WINTER = [["win-snowy-pines", "눈 쌓인 소나무"], ["win-falling-snow", "내리는 눈"], ["win-icy-branches", "얼음 가지"], ["win-snow-surface", "눈밭"], ["win-balloons-bare-tree", "겨울 나무"]];
-  var FOREST = [["fo-misty-forest", "안개 숲"], ["fo-pine-forest", "소나무 숲"], ["fo-forest-aerial", "숲 위에서"], ["fo-grey-fog-forest", "회색 안개 숲"], ["fo-fog-trees", "안개 나무"]];
-  var DESERT = [["de-dune-white-sky", "흰 하늘 사구"], ["de-brown-desert", "갈색 사막"], ["de-desert-blue-sky", "푸른 사막"], ["de-dune-group", "모래 언덕"]];
-  var WATER = [["wt-blue-water", "푸른 물속"], ["wt-school-of-fish", "물고기 떼"], ["wt-deep-blue-bubbles", "깊은 물"], ["wt-sun-ripples-sand", "물결 빛"], ["wt-shark", "상어"]];
-  var NIGHT = [["sky-milky-way", "은하수"], ["ct-neon-alley-bike", "네온 골목"], ["sky-star-cluster", "별무리"], ["ct-empty-lamp-street", "가로등 거리"], ["sky-stars-over-peak", "봉우리 위 별"],
-    ["ct-city-timelapse", "도시의 빛"], ["sky-starry-night", "별밤"], ["ct-crossing-in-rain", "비 오는 건널목"], ["sky-dark-starry-sky", "어두운 별하늘"]];
-  var KOREA = [["kr-wooden-street", "한옥 골목"], ["kr-roof-blue-sky", "처마"], ["kr-big-roof", "기와 지붕"], ["kr-bench-building", "한옥 마당"], ["kr-wood-floor-curtain-room", "마루"], ["kr-wooden-glass-door", "나무 문"]];
-  var FLORA = [["fl-pink-flower", "분홍 꽃"], ["pl-leaf-on-white", "몬스테라"], ["fl-yellow-flower", "노란 꽃"], ["pl-plant-cover", "온실"], ["fl-yellow-purple-flower", "달리아"],
-    ["pl-green-leaf", "새잎"], ["fl-pink-white-flower", "분홍 꽃잎"], ["pl-plant-wooden-vase", "화분"], ["fl-pink-yellow-flower", "노을빛 꽃"], ["pl-green-leaves", "잎 벽"]];
-  var ANIMAL = [["an-cat-on-chair", "의자 위 고양이"], ["an-small-green-bird", "초록 새"], ["an-orange-cat", "주황 고양이"], ["an-owl", "올빼미"], ["an-long-fur-cat", "긴털 고양이"],
-    ["an-orange-bird", "주황 새"], ["an-kitten", "아기 고양이"], ["an-two-eagles", "독수리"]];
-  var FOOD = [["fd-strawberry-pastries", "딸기 과자"], ["fd-fruit-and-jug", "과일과 주전자"], ["fd-pink-flower-cake", "꽃 케이크"], ["fd-oranges-on-wood", "귤"], ["fd-strawberry-cake", "딸기 케이크"],
-    ["fd-vase-and-grapes", "포도"], ["fd-orange-blackberry", "오렌지와 블랙베리"]];
-  var ABSTRACT = [["ab-pastel-spheres", "파스텔 구"], ["ab-flowing-curves", "푸른 곡선"], ["ab-floating-cubes-spheres", "떠 있는 큐브"], ["ab-orange-orb-blue", "주황 구"], ["ab-blue-white-round", "흰 원반"],
-    ["ab-purple-swirl", "보라 소용돌이"], ["ab-purple-blue-blur", "보랏빛 번짐"], ["ab-blue-gradient", "푸른 그라데이션"], ["ab-purple-pink-light", "분홍 빛"]];
-  var ART = [["art-green-abstract-painting", "초록 추상"], ["art-red-brown-abstract", "붉은 추상"], ["art-thick-white-impasto", "두꺼운 물감"], ["art-white-paint-wall", "흰 붓질"],
-    ["paint-ochre", "황토"], ["paint-violet", "보라"], ["paint-green", "초록"], ["paint-grey", "회색"], ["paint-knife", "나이프 자국"], ["paint-white", "흰 캔버스"]];
-  var MUSIC = [["mu-bw-vinyl", "흑백 레코드"], ["mu-amber-vinyl", "호박색 레코드"], ["mu-black-vinyl-white", "검은 레코드"], ["mu-concert", "공연"], ["mu-stage-greyscale", "무대 조명"], ["mu-blue-spotlight-stage", "푸른 무대"]];
-  var FASHION = [["fa-red-dress-blue-sky", "빨간 옷"], ["fa-red-blazer-stairs", "빨간 재킷"], ["fa-blazer-hands-pockets", "흑백 재킷"]];
-  var RETRO = [["rt-film-strips-cat", "필름 스트립"], ["rt-polka-dot-fabric", "필름 조각"], ["rt-red-dot-frame", "빨간 테두리"], ["tx-white-paper", "흰 종이"], ["tx-plaster-surface", "석고 면"], ["tx-blue-stain", "푸른 얼룩"]];
-  var SEASONS = [["봄", SPRING], ["여름", SUMMER], ["가을", AUTUMN], ["겨울", WINTER]];
-  [DREAM, CLOUD, MOUNT, SPRING, SUMMER, AUTUMN, WINTER, FOREST, DESERT, WATER, NIGHT, KOREA, FLORA, ANIMAL, FOOD, ABSTRACT, ART, MUSIC, FASHION, RETRO].forEach(function (a) { a.forEach(function (x) { NAMES[x[0]] = x[1]; }); });
-  [["cer-vases-beige", "세 개의 병"], ["ld-sea-deep", "깊은 바다"], ["ld-dark-hill", "어두운 언덕"], ["fa-yellow-sky", "노란 드레스"], ["fa-coat", "코트"], ["fa-profile", "옆모습"], ["fa-black-coat", "검은 코트"],
-    ["fa-white-suit", "흰 수트"], ["pt-bw-studio", "초상, 작업실"], ["pt-bw-man", "초상 II"], ["pt-shadow-face", "그림자 얼굴"], ["pt-turtleneck", "터틀넥"], ["arch-concrete-blocks", "콘크리트 블록"],
-    ["arch-white-wall", "흰 벽"], ["int-skylight-tree", "천창과 나무"], ["int-stairs", "계단"], ["arch-steps-teal", "청록 계단"], ["arch-reflection", "반사"]].forEach(function (x) { NAMES[x[0]] = x[1]; });
-  /* the generic pool now mixes every subject, a few at a time */
-  POOL = (function () {
-    var cats = [PHOTO, DREAM, MOUNT, SKY, FLORA, NIGHT, OBJ, WATER, KOREA, CLOUD, FOOD, AUTUMN, WINTER, SPRING, SUMMER, ABSTRACT, ANIMAL, ART, FOREST, DESERT, SPACE, MUSIC], out = [], seen = {};
-    for (var i = 0; i < 12; i++) cats.forEach(function (c) { var x = c[i]; if (x && !seen[x[0]]) { seen[x[0]] = 1; out.push(x[0]); } });
-    return out;
-  })();
-  function files(a) { return a.map(function (x) { return x[0]; }); }
-
-  /* ---------- per-template motion: every design has its own behaviour in the live preview ----------
-     Timers live in FXT and stop whenever the preview changes or closes. */
-  var FXT = [];
-  function fxClear() { FXT.forEach(function (o) { clearInterval(o.i); clearTimeout(o.t); cancelAnimationFrame(o.r); }); FXT = []; }
-  function every(ms, fn) { FXT.push({ i: setInterval(fn, ms) }); }
-  function after(ms, fn) { FXT.push({ t: setTimeout(fn, ms) }); }
-  function frame(fn) {
-    var o = {}, last = performance.now(); FXT.push(o);
-    (function f(now) { var dt = Math.min(now - last, 100); last = now; if (fn(dt, now) !== false) o.r = requestAnimationFrame(f); })(last);
-  }
+  /* ---------- site features in the live preview ----------
+     Only what a real portfolio site does: slideshows, lists that change the picture, filters, pages,
+     sorting, accordions, an audio player, forms, a cart, opening hours, days left, two languages.
+     Pages mark what they carry with data- attributes; the same code serves hand-made and generated
+     templates. Timers stop whenever the preview changes or closes. */
+  var TIMERS = [];
+  function clearTimers() { TIMERS.forEach(function (t) { clearInterval(t); }); TIMERS = []; }
+  function every(ms, fn) { TIMERS.push(setInterval(fn, ms)); }
   function $$(root, s) { return [].slice.call(root.querySelectorAll(s)); }
-  function sty(tp, s) { return $$(tp, "[style]").filter(function (e) { return !e.closest(".lv-layer") && e.getAttribute("style").indexOf(s) >= 0; })[0]; }
-  function txt(tp, s) { var best = null; $$(tp, "*").forEach(function (e) { if (!e.closest(".lv-layer") && e.textContent.indexOf(s) >= 0 && (!best || best.contains(e))) best = e; }); return best; }
-  function pt(tp, e) { var r = tp.getBoundingClientRect(), k = r.width / 1440 || 1; return { x: (e.clientX - r.left) / k, y: (e.clientY - r.top) / k }; }
-  function boxOf(tp, el) { var r = el.getBoundingClientRect(), R = tp.getBoundingClientRect(), k = R.width / 1440 || 1; return { x: (r.left - R.left) / k, y: (r.top - R.top) / k, w: r.width / k, h: r.height / k }; }
-  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
-  function add(tp, style, html) { var d = document.createElement("div"); d.style.cssText = "position:absolute;" + style; d.innerHTML = html || ""; d.dataset.fx = 1; tp.appendChild(d); return d; }
-  /* put a photograph into a placeholder or frame, above what is there */
-  function putImg(el, f, style) {
-    var im = el.querySelector("img.fx-img");
-    if (!im) { im = document.createElement("img"); im.className = "fx-img"; im.alt = ""; im.dataset.fx = 1; im.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;" + (style || ""); el.appendChild(im); }
-    swap(im, src(f));
-    return im;
+  function outside(el) { return !el.closest(".lv-layer"); }
+
+  /* words that change with the clock: opening hours and days left; cards show them too */
+  function liveText(root) {
+    var now = new Date();
+    $$(root, "[data-hours]").forEach(function (el) {
+      var h = el.dataset.hours.split(","), o = +h[0], c = +h[1], days = el.dataset.days || "0123456", ko = !!el.dataset.ko;
+      var open = days.indexOf(String(now.getDay())) >= 0 && now.getHours() >= o && now.getHours() < c;
+      el.textContent = ko ? (open ? "지금 영업 중 · " : "영업 종료 · ") + o + "–" + c + "시" : (open ? "Open now · " : "Closed · ") + o + "–" + c;
+    });
+    $$(root, "[data-until]").forEach(function (el) {
+      var d = Math.ceil((new Date(el.dataset.until + "T00:00:00") - now) / 864e5), ko = !!el.dataset.ko;
+      el.textContent = d > 0 ? (ko ? "개막까지 D-" + d : "Opens in " + d + (d === 1 ? " day" : " days")) : (ko ? "지금 열리는 중" : "Now on");
+    });
   }
-  function largest(tp) {
-    var area = function (im) { var r = im.getBoundingClientRect(); return r.width * r.height; };
-    return $$(tp, "img").filter(function (im) { return !im.closest(".lv-layer"); }).sort(function (a, b) { return area(b) - area(a); })[0];
-  }
-  function own(el, cursor) { el.dataset.fx = 1; el.style.cursor = cursor || "pointer"; return el; }
-  /* turn off the generic slideshow and list switching where a template brings its own */
-  function plain(tp, st) {
-    st.slide = null; st.lists = [];
-    $$(tp, "[data-step],[data-li]").forEach(function (e) { delete e.dataset.step; delete e.dataset.li; e.classList.remove("lv-hot"); });
-  }
-  function counterFn(tp) {
-    var m = $$(tp, ".m").filter(function (e) { return /^\s*\d{1,2} \/ \d{1,2}\s*$/.test(e.textContent); })[0];
-    if (!m) return function () {};
-    var cap = m.nextSibling;
-    return function (i, n, name) { m.textContent = pad2(i + 1) + " / " + pad2(n); if (cap && cap.nodeType === 3 && name != null) cap.nodeValue = "  " + name; };
-  }
-  function wrapChars(el) {
-    el.innerHTML = el.innerHTML.split(/<br\s*\/?>/i).map(function (line) {
-      var d = document.createElement("div"); d.innerHTML = line;
-      return d.textContent.split("").map(function (c) { return '<span class="fx-ch">' + (c === " " ? "&nbsp;" : esc(c)) + '</span>'; }).join("");
-    }).join("<br>");
-    return $$(el, ".fx-ch");
-  }
-  function lineGroups(tp) { var g = []; $$(tp, ".wl").forEach(function (l) { if (g.indexOf(l.parentNode) < 0) g.push(l.parentNode); }); return g; }
-  function skip(e) { return !!e.target.closest(".lv-layer, .lv-a, button, .tp-row"); }
-  function draggable(tp, els) {
-    var z = 30;
-    els.forEach(function (el) {
-      el.dataset.fx = 1; el.style.cursor = "grab"; el.style.touchAction = "none";
-      el.addEventListener("pointerdown", function (e) {
-        if (e.target.closest(".lv-a, button")) return;
-        e.preventDefault();
-        var p0 = pt(tp, e), b = boxOf(tp, el), l0 = parseFloat(el.style.left), t0 = parseFloat(el.style.top);
-        if (isNaN(l0)) l0 = b.x; if (isNaN(t0)) t0 = b.y;
-        el._moved = false; el.style.zIndex = ++z; el.style.cursor = "grabbing"; el.style.right = "auto"; el.style.bottom = "auto";
-        el.setPointerCapture(e.pointerId);
-        function mv(ev) { var p = pt(tp, ev); if (Math.abs(p.x - p0.x) + Math.abs(p.y - p0.y) > 4) el._moved = true; el.style.left = (l0 + p.x - p0.x) + "px"; el.style.top = (t0 + p.y - p0.y) + "px"; }
-        function up() { el.style.cursor = "grab"; el.removeEventListener("pointermove", mv); el.removeEventListener("pointerup", up); }
-        el.addEventListener("pointermove", mv); el.addEventListener("pointerup", up);
+
+  /* floor plan: a room opens the work shown in it */
+  function floorPlan(root, live) {
+    var rooms = $$(root, "g.room"); if (!rooms.length || !live || root.dataset.plan) return;
+    root.dataset.plan = 1;
+    var tp = root.querySelector(".tp");
+    rooms.forEach(function (g) {
+      g.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var k = g.querySelector("text").textContent, imgs = (g.dataset.imgs || "").split(",").filter(Boolean), ts = g.querySelectorAll("text");
+        rooms.forEach(function (o) { o.querySelector("rect").style.fill = o === g ? "color-mix(in srgb, currentColor 16%, var(--t-bg, #fff))" : ""; });
+        layer(tp, "lv-side", '<div class="lv-top"><span>Room ' + k + '</span><button type="button" class="lv-x">Close ✕</button></div><b class="lv-h">' + (ts[1] ? ts[1].textContent : "") + '</b>' +
+          (ts[2] ? '<p>' + ts[2].textContent + '</p>' : "") +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' + imgs.map(function (f) { return '<img src="' + src(f) + '" alt="" style="width:100%;aspect-ratio:3/4;object-fit:cover">'; }).join("") + '</div>' +
+          '<p class="ko" style="opacity:.6">' + k + '실' + (g.dataset.ko ? " — " + g.dataset.ko : "") + '</p>');
       });
     });
   }
-  /* a small copy of a picture flies from where it was clicked to the cart */
-  function fly(tp, from, to, s) {
-    if (!to) return;
-    var a = boxOf(tp, from), b = boxOf(tp, to);
-    var d = add(tp, "left:" + a.x + "px;top:" + a.y + "px;width:" + a.w + "px;height:" + a.h + "px;z-index:25;pointer-events:none;overflow:hidden", '<img src="' + s + '" alt="" style="width:100%;height:100%;object-fit:cover">');
-    d.animate([{ transform: "none", opacity: 1 }, { transform: "translate(" + (b.x - a.x) + "px," + (b.y - a.y) + "px) scale(.08)", opacity: .4 }], { duration: 700, easing: "cubic-bezier(.6,0,.3,1)" }).onfinish = function () {
-      d.remove(); to.animate([{ transform: "scale(1)" }, { transform: "scale(1.3)" }, { transform: "scale(1)" }], { duration: 300 });
+  /* list of graduates: a name brings up that person's work */
+  function roster(root, live) {
+    var names = $$(root, "[data-rf]"); if (!names.length || !live || root.dataset.roster) return;
+    root.dataset.roster = 1;
+    var im = root.querySelector("[data-rimg] img"), lab = root.querySelector("[data-rlab]");
+    names.forEach(function (n) {
+      n.addEventListener("mouseenter", function () {
+        names.forEach(function (o) { o.style.opacity = o === n ? "" : ".35"; });
+        if (im && n.dataset.rf) swap(im, src(n.dataset.rf));
+        var who = n.firstChild.nodeValue.trim(), role = n.dataset.role || "";
+        if (lab) { lab.innerHTML = label(who, role + " · " + (NAMES[n.dataset.rf] || "") + ", 2026", who + " — " + role); lab.classList.remove("lv-fade"); void lab.offsetWidth; lab.classList.add("lv-fade"); }
+      });
+    });
+  }
+  var INITS = [rakingLight, beforeAfter, loupe, dayLight, docent, guestbook, scaleToggle, floorPlan, roster];
+
+  /* slideshow of a generated page: [data-sm] holds the picture, the rest are its controls */
+  function genSlides(tp, st, b) {
+    var main = tp.querySelector("[data-sm]"); if (!main) return;
+    var n = +main.dataset.sm, items = st.items.slice(0, n), img = main.querySelector("img");
+    for (var e = items.length; e < n; e++) items.push({ src: "", cap: "" }); /* wireframes: empty frames */
+    var cnt = tp.querySelector("[data-sn]"), cap = tp.querySelector("[data-sc]"), pv = tp.querySelector("[data-sprev] img"), nx = tp.querySelector("[data-snext] img");
+    var thumbs = $$(tp, "[data-st]"), slot = [0].concat(thumbs.map(function (t) { return +t.dataset.st; }));
+    var S = st.gs = { n: n, i: 0, items: items, main: main, auto: !!tp.querySelector("[data-sp]"), click: !tp.querySelector("[data-sg],[data-sd],[data-sp],[data-st],[data-sl]") };
+    function mark(i) {
+      if (cnt) cnt.textContent = pad2(i + 1) + " / " + pad2(n);
+      if (cap) cap.textContent = items[i].cap;
+      $$(tp, "[data-sd]").forEach(function (d) { d.style.background = +d.dataset.sd === i ? "currentColor" : "none"; });
+      $$(tp, "[data-sl]").forEach(function (r) { r.style.opacity = +r.dataset.sl === i ? "" : ".35"; });
+    }
+    S.show = function (k) {
+      S.i = (k + n) % n; S.t = 0;
+      if (img) swap(img, items[S.i].src);
+      if (pv) pv.src = items[(S.i - 1 + n) % n].src;
+      if (nx) nx.src = items[(S.i + 1) % n].src;
+      mark(S.i);
     };
+    /* thumbnails trade places with the large picture, so no picture is ever shown twice */
+    S.thumb = function (t) {
+      var k = thumbs.indexOf(t) + 1, a = slot[0];
+      slot[0] = slot[k]; slot[k] = a; S.i = slot[0];
+      if (img) swap(img, items[slot[0]].src);
+      var ti = t.querySelector("img"); if (ti) swap(ti, items[slot[k]].src);
+      mark(S.i);
+    };
+    [].concat(thumbs, $$(tp, "[data-sl]"), $$(tp, "[data-sg]"), $$(tp, "[data-sd]")).forEach(function (el) { el.classList.add("lv-hot"); });
+    if (S.auto) {
+      var bar = tp.querySelector("[data-sbar]"), play = tp.querySelector("[data-sp]"), hold = false, dur = 3200;
+      S.t = 0; S.playing = true;
+      main.addEventListener("mouseenter", function () { hold = true; });
+      main.addEventListener("mouseleave", function () { hold = false; });
+      play.addEventListener("click", function (e) { e.stopPropagation(); S.playing = !S.playing; play.textContent = S.playing ? (st.ko ? "멈춤" : "Pause") : (st.ko ? "재생" : "Play"); });
+      every(50, function () {
+        if (!S.playing || hold) return;
+        S.t += 50; if (bar) bar.style.width = Math.min(100, S.t / dur * 100) + "%";
+        if (S.t >= dur) S.show(S.i + 1);
+      });
+    }
+  }
+  /* a hand-made slideshow that plays by itself; pointing at the picture holds it */
+  function autoSlides(tp, st, ms) {
+    if (!st.slide || !st.main) return;
+    var hold = false;
+    st.main.addEventListener("mouseenter", function () { hold = true; });
+    st.main.addEventListener("mouseleave", function () { hold = false; });
+    every(ms, function () { if (!hold) slideStep(st, 1); });
   }
 
-  var FX = {
-    /* ----- basic feed ----- */
-    "기본 피드 01": { hint: "휠을 굴리면 다음 작업으로 넘어갑니다", run: function (tp, st) {
-      plain(tp, st);
-      var im = largest(tp), box = im.parentNode, set = counterFn(tp), list = ["cer-vases-beige"].concat(files(FOOD).slice(0, 4), files(OBJ).slice(0, 3), files(FLORA).slice(0, 4)), i = 0, busy = false, lastW = 0;
-      set(0, list.length, NAMES[list[0]]);
-      function go(d) {
-        if (busy) return; busy = true; i = (i + d + list.length) % list.length;
-        box.animate([{ transform: "none", opacity: 1 }, { transform: "translateY(" + (-50 * d) + "px)", opacity: 0 }], { duration: 200, easing: "ease-in" }).onfinish = function () {
-          im.src = src(list[i]); set(i, list.length, NAMES[list[i]]);
-          box.animate([{ transform: "translateY(" + (50 * d) + "px)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 360, easing: "cubic-bezier(.2,.7,.2,1)" }).onfinish = function () { busy = false; };
-        };
-      }
-      tp.addEventListener("wheel", function (e) {
-        if (e.target.closest(".lv-layer")) return;
-        e.preventDefault(); var now = performance.now();
-        if (Math.abs(e.deltaY) < 4 || now - lastW < 650) return;
-        lastW = now; go(e.deltaY > 0 ? 1 : -1);
-      }, { passive: false });
-      own(im).addEventListener("click", function () { go(1); });
-    } },
-    "기본 피드 02": { hint: "사진 위에서 좌우로 움직이면 20분이 흐릅니다", run: function (tp) {
-      var im = largest(tp);
-      var lab = add(tp, "left:44px;top:678px;font-family:var(--mono);font-size:15px;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.45);pointer-events:none;z-index:2", "18:40");
-      add(tp, "left:28px;top:744px;width:860px;height:1px;background:currentColor;opacity:.2;pointer-events:none");
-      var dot = add(tp, "left:24px;top:740px;width:9px;height:9px;border-radius:50%;background:currentColor;pointer-events:none");
-      im.style.transition = "filter .15s";
-      tp.addEventListener("mousemove", function (e) {
-        var p = pt(tp, e); if (p.x < 28 || p.x > 888 || p.y < 84 || p.y > 724) return;
-        var k = (p.x - 28) / 860, m = 40 + Math.round(k * 20);
-        im.style.filter = "brightness(" + (1.1 - k * .65).toFixed(2) + ") saturate(" + (1 + k * .5).toFixed(2) + ") hue-rotate(" + Math.round(-k * 28) + "deg)";
-        lab.textContent = m >= 60 ? "19:00" : "18:" + pad2(m);
-        dot.style.left = (24 + k * 860) + "px";
+  function filterBy(tp, btn) {
+    var v = btn.dataset.filter;
+    $$(tp, "[data-filter]").forEach(function (x) { x.style.opacity = x === btn ? "" : ".5"; x.style.fontWeight = x === btn ? 600 : ""; });
+    $$(tp, "[data-cat]").filter(outside).forEach(function (el) { el.style.display = v === "*" || el.dataset.cat === v ? "" : "none"; });
+  }
+  function pageTo(tp, btn) {
+    var ps = $$(tp, "[data-page]").filter(function (x) { return x.dataset.page !== "+"; }), cur = +(tp.dataset.pg || 1);
+    var p = btn.dataset.page === "+" ? cur % ps.length + 1 : +btn.dataset.page;
+    tp.dataset.pg = p;
+    ps.forEach(function (x) { x.style.opacity = +x.dataset.page === p ? "" : ".5"; x.style.fontWeight = +x.dataset.page === p ? 600 : ""; });
+    $$(tp, "[data-pg]").forEach(function (el) { el.style.display = +el.dataset.pg === p ? "" : "none"; });
+  }
+  function sortBy(tp, th) {
+    var c = +th.dataset.sort, t = th.closest("table"), body = t ? t.tBodies[0] : tp.querySelector("[data-sortbody]"), heads = t ? $$(t, "[data-sort]") : $$(tp, "[data-sort]");
+    var dir = th.dataset.dir === "1" ? -1 : 1;
+    heads.forEach(function (h) { h.dataset.dir = ""; h.textContent = h.textContent.replace(/ [↑↓]$/, ""); });
+    th.dataset.dir = dir; th.textContent += dir > 0 ? " ↑" : " ↓";
+    [].slice.call(body.children).sort(function (a, b) {
+      var x = a.children[c].textContent.trim(), y = b.children[c].textContent.trim(), nx = parseFloat(x), ny = parseFloat(y);
+      if (!isNaN(nx) && !isNaN(ny)) return (nx - ny) * dir;
+      return x.localeCompare(y) * dir;
+    }).forEach(function (r) { body.appendChild(r); });
+  }
+  function accToggle(el) {
+    var on = !el.classList.contains("open");
+    $$(el.parentNode, ":scope > [data-acc]").forEach(function (o) { o.classList.remove("open"); var i = o.querySelector("[data-acc-i]"); if (i) i.textContent = "+"; });
+    el.classList.toggle("open", on);
+    var i = el.querySelector("[data-acc-i]"); if (i) i.textContent = on ? "−" : "+";
+  }
+  /* audio player: the sample has no sound, but plays, pauses, keeps time and moves on */
+  function audioSetup(tp, st) {
+    var rows = $$(tp, "[data-play]"); if (!rows.length) return;
+    var A = st.audio = { rows: rows, cur: -1, t: 0, len: 1, playing: false }, clock = tp.querySelector("[data-atime]");
+    function secs(s) { var p = s.split(":"); return +p[0] * 60 + +p[1]; }
+    function fmt(ms) { var s = Math.floor(ms / 1000); return pad2(Math.floor(s / 60)) + ":" + pad2(s % 60); }
+    function mark() {
+      rows.forEach(function (r, j) {
+        r.style.fontWeight = j === A.cur ? 600 : "";
+        var n = r.querySelector("[data-pi]"); if (n) n.textContent = j === A.cur ? (A.playing ? "▶" : "❚❚") : pad2(j + 1);
+        var p = r.querySelector("[data-prog]"); if (p && j !== A.cur) p.style.width = 0;
       });
-    } },
-    "기본 피드 03": { hint: "저절로 넘어갑니다 · 사진에 올리면 멈추고, 누르면 다음", run: function (tp, st) {
-      plain(tp, st);
-      var im = largest(tp), set = counterFn(tp), list = ["ld-sea-deep"].concat(files(WATER), files(NIGHT).slice(0, 4), files(CLOUD).slice(0, 2)), i = 0, acc = 0, hold = false, dur = 2800;
-      var bar = add(tp, "left:28px;top:764px;height:2px;width:0;background:currentColor;pointer-events:none");
-      set(0, list.length, NAMES[list[0]]);
-      im.parentNode.addEventListener("mouseenter", function () { hold = true; });
-      im.parentNode.addEventListener("mouseleave", function () { hold = false; });
-      own(im).addEventListener("click", function () { acc = dur; });
-      frame(function (dt) {
-        if (!tp.isConnected) return false;
-        if (!hold) acc += dt;
-        if (acc >= dur) { acc = 0; i = (i + 1) % list.length; swap(im, src(list[i])); set(i, list.length, NAMES[list[i]]); }
-        bar.style.width = (acc / dur * 1384) + "px";
-      });
-    } },
-    "기본 피드 04": { hint: "사진에 올리면 그 사진이 넓게 펼쳐집니다", run: function (tp) {
-      var a = $$(tp, ".ph"), ease = "cubic-bezier(.2,.7,.2,1)";
-      a.forEach(function (p) { p.style.transition = "left .6s " + ease + ", width .6s " + ease; });
-      function lay(k) { var w = k < 0 ? [680, 680] : k === 0 ? [920, 440] : [440, 920]; a[0].style.width = w[0] + "px"; a[1].style.left = (52 + w[0]) + "px"; a[1].style.width = w[1] + "px"; }
-      a.forEach(function (p, k) { p.addEventListener("mouseenter", function () { lay(k); }); p.addEventListener("mouseleave", function () { lay(-1); }); });
-    } },
-    "기본 피드 05": { hint: "마우스를 좌우로 움직이면 이름의 굵기가 바뀝니다", run: function (tp) {
-      var h = tp.querySelector("h3.big"), im = largest(tp);
-      h.style.transition = "font-weight .25s, letter-spacing .25s"; im.style.transition = "transform .4s ease-out";
-      tp.addEventListener("mousemove", function (e) {
-        var p = pt(tp, e), k = clamp(p.x / 1440, 0, 1);
-        h.style.fontWeight = Math.round(300 + k * 600); h.style.letterSpacing = (-0.02 - k * .05).toFixed(3) + "em";
-        im.style.transform = "translate(" + ((720 - p.x) / 60).toFixed(1) + "px," + ((450 - p.y) / 60).toFixed(1) + "px) scale(1.05)";
-      });
-    } },
-    "기본 피드 06": { hint: "손전등처럼 비춰 보세요 · 사진을 누르면 다음 밤", run: function (tp, st) {
-      plain(tp, st);
-      var im = largest(tp), set = counterFn(tp), list = ["ld-dark-hill"].concat(files(NIGHT)), i = 0;
-      var dark = add(tp, "left:0;right:0;top:64px;bottom:64px;pointer-events:none");
-      function light(x, y) { dark.style.background = "radial-gradient(circle 230px at " + x + "px " + y + "px, transparent 0, transparent 35%, rgba(0,0,0,.93) 100%)"; }
-      light(720, 336); set(0, list.length, NAMES[list[0]]);
-      tp.addEventListener("mousemove", function (e) { var p = pt(tp, e); light(p.x, p.y - 64); });
-      own(im).addEventListener("click", function () { i = (i + 1) % list.length; swap(im, src(list[i])); set(i, list.length, NAMES[list[i]]); });
-    } },
+    }
+    A.play = function (k) {
+      if (k === A.cur) A.playing = !A.playing;
+      else { A.cur = k; A.t = 0; A.len = secs(rows[k].dataset.len) * 1000; A.playing = true; }
+      mark();
+      toast(tp, A.playing ? (st.ko ? "재생 — 미리보기라 소리는 나지 않습니다" : "Playing — the sample is silent") : (st.ko ? "일시정지" : "Paused"));
+    };
+    rows.forEach(function (r) { r.classList.add("lv-hot"); });
+    every(250, function () {
+      if (!A.playing || A.cur < 0) return;
+      A.t += 250;
+      var p = rows[A.cur].querySelector("[data-prog]"); if (p) p.style.width = Math.min(100, A.t / A.len * 100) + "%";
+      if (clock) clock.textContent = fmt(A.t);
+      if (A.t >= A.len) { A.cur = (A.cur + 1) % rows.length; A.t = 0; A.len = secs(rows[A.cur].dataset.len) * 1000; mark(); }
+    });
+  }
+  function langSwap(tp, st) {
+    $$(tp, "[data-t]").forEach(function (el) { var o = el.dataset.t; el.dataset.t = el.textContent; el.textContent = o; });
+    st.ko = !st.ko;
+  }
+  function openMenu(tp, st) {
+    var seen = {}, items = $$(tp, ".tp-nav .lv-a").filter(function (a) { var k = a.dataset.lv + a.textContent; if (a.dataset.lv === "menu" || a.classList.contains("tp-name") || seen[k]) return false; return (seen[k] = 1); });
+    layer(tp, "lv-menu", '<div class="lv-top"><span>' + N + '</span><button type="button" class="lv-x">' + (st.ko ? "닫기" : "Close") + ' ✕</button></div>' +
+      '<div class="lv-menu-list">' + items.map(function (a) { return '<button type="button" class="lv-a" data-lv="' + a.dataset.lv + '">' + a.textContent + '</button>'; }).join("") + '</div>');
+  }
+  function openSearch(tp, st) {
+    var items = st.items && st.items.length ? st.items : gallery(tp), ko = st.ko;
+    var d = layer(tp, "lv-side lv-search", '<div class="lv-top"><span>' + (ko ? "검색" : "Search") + '</span><button type="button" class="lv-x">' + (ko ? "닫기" : "Close") + ' ✕</button></div>' +
+      '<input class="lv-in" placeholder="' + (ko ? "제목으로 찾기" : "Find by title") + '" aria-label="검색어"><div class="lv-res"></div>');
+    var inp = d.querySelector("input"), res = d.querySelector(".lv-res");
+    function run() {
+      var q = inp.value.trim().toLowerCase(), hit = items.map(function (it, i) { return [it, i]; }).filter(function (x) { return !q || (x[0].cap || "").toLowerCase().indexOf(q) >= 0; });
+      res.innerHTML = hit.length ? hit.slice(0, 8).map(function (x) { return '<button type="button" class="lv-row on" data-hit="' + x[1] + '"><img src="' + x[0].src + '" alt=""><span>' + (x[0].cap || (ko ? "무제" : "Untitled")) + '</span></button>'; }).join("") : '<p style="opacity:.6">' + (ko ? "맞는 작업이 없습니다." : "Nothing matches.") + '</p>';
+    }
+    d._items = items; inp.addEventListener("input", run); run();
+    setTimeout(function () { try { inp.focus({ preventScroll: true }); } catch (e) {} }, 60);
+  }
+  function openNews(tp, st) {
+    var ko = st.ko;
+    layer(tp, "lv-side", '<div class="lv-top"><span>' + (ko ? "뉴스레터" : "Newsletter") + '</span><button type="button" class="lv-x">' + (ko ? "닫기" : "Close") + ' ✕</button></div>' +
+      '<b class="lv-h">' + (ko ? "새 작업 소식을 받아 보세요" : "News of new work, a few times a year") + '</b>' +
+      '<form data-form="news" class="lv-form"><input class="lv-in" type="email" placeholder="' + (ko ? "이메일 주소" : "Email address") + '" aria-label="이메일"><button class="lv-btn lv-pay">' + (ko ? "구독하기" : "Subscribe") + ' →</button></form>');
+  }
+  function addToCart(tp, st, v, from) {
+    var it = /^t/.test(v) ? { src: "", cap: (st.ko ? "입장권 " : "Ticket ") + (+v.slice(1) + 1) } : (st.items && st.items[+v]) || { src: "", cap: from ? from.textContent.trim() : "" };
+    st.cart.push(it); updateCart(tp);
+    toast(tp, (it.cap ? it.cap + " — " : "") + (st.ko ? "장바구니에 담았습니다 (" : "added to cart (") + st.cart.length + ")");
+  }
+  /* what this page does, shown next to the preview title */
+  function featureList(tp, st) {
+    var f = [], has = function (s) { return !!tp.querySelector(s); }, kinds = {};
+    $$(tp, ".lv-a[data-lv]").forEach(function (a) { kinds[a.dataset.lv] = 1; });
+    if (kinds.menu) f.push("메뉴 열기");
+    if (kinds.info) f.push("정보 페이지");
+    if (kinds.index) f.push("작업 색인");
+    if (st.gs) f.push(has("[data-st]") ? "썸네일 슬라이드쇼" : has("[data-sl]") ? "목록으로 사진 바꾸기" : st.gs.auto ? "자동 슬라이드쇼" : has("[data-sd]") ? "점 이동 슬라이드쇼" : has("[data-sg]") ? "화살표 슬라이드쇼" : "눌러 넘기는 슬라이드쇼");
+    else if (st.slide) f.push(st.autoplay ? "자동 슬라이드쇼" : "슬라이드쇼");
+    if (st.lists && st.lists.length) f.push("목록으로 사진 바꾸기");
+    if (has("[data-filter]")) f.push("분류 필터");
+    if (has("[data-page]")) f.push("페이지 넘김");
+    if (has("[data-sort]")) f.push("표 정렬");
+    if (has("[data-acc]")) f.push("펼침 목록");
+    if (has("[data-play]")) f.push("오디오 플레이어");
+    if (has("form[data-form]")) f.push("문의 양식");
+    if (has("[data-hours]")) f.push("영업시간");
+    if (has("[data-until]")) f.push("남은 날");
+    if (has("[data-add]") || kinds.cart) f.push("장바구니");
+    if (kinds.search) f.push("검색");
+    if (kinds.news) f.push("뉴스레터");
+    if (kinds.lang) f.push("한/영 전환");
+    if (kinds.contact) f.push("연락처 복사");
+    if (has("[data-clock]")) f.push("시계");
+    [["canvas.rake", "빛 비추기"], ["model-viewer", "3D 뷰어"], [".ba", "전후 비교"], [".lp", "돋보기"], [".daylight", "낮밤 조명"], [".dc-play", "오디오 도슨트"], [".gb-form", "방명록"], [".sc-toggle", "실제 크기"], ["g.room", "전시장 평면도"], ["[data-rf]", "작가 명단"]]
+      .forEach(function (x) { if (has(x[0])) f.push(x[1]); });
+    if (has(".lv-edit")) f.push("서체 입력해 보기");
+    if (tp.querySelector("img")) f.push("사진 크게 보기");
+    return f;
+  }
 
-    /* ----- basic grid ----- */
-    "기본 그리드 01": { hint: "사진 위에서 마우스를 움직이면 입체로 기울어집니다", run: function (tp) {
-      $$(tp, ".gi .fr").forEach(function (fr) {
-        fr.style.transition = "transform .25s ease-out";
-        fr.addEventListener("mousemove", function (e) {
-          var r = fr.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
-          fr.style.transform = "perspective(700px) rotateY(" + (x * 18).toFixed(1) + "deg) rotateX(" + (-y * 18).toFixed(1) + "deg) scale(1.04)";
-        });
-        fr.addEventListener("mouseleave", function () { fr.style.transform = ""; });
-      });
-    } },
-    "기본 그리드 02": { hint: "흑백 사진에 올리면 색이 돌아옵니다", run: function (tp) {
-      var gis = $$(tp, ".gi"), grey = "grayscale(1) contrast(1.05)";
-      gis.forEach(function (g) {
-        var im = g.querySelector("img"); im.style.transition = "filter .5s, transform .6s"; im.style.filter = grey; g.style.transition = "opacity .4s";
-        g.addEventListener("mouseenter", function () { gis.forEach(function (o) { o.style.opacity = o === g ? 1 : .45; }); im.style.filter = "none"; im.style.transform = "scale(1.05)"; });
-        g.addEventListener("mouseleave", function () { gis.forEach(function (o) { o.style.opacity = 1; }); im.style.filter = grey; im.style.transform = ""; });
-      });
-    } },
-    "기본 그리드 03": { hint: "위쪽 − + 로 열 개수를 바꾸고, 휠로 내려 봅니다", run: function (tp) {
-      var gg = tp.querySelector(".gg"), n = 6, y = 0;
-      var c = add(tp, "right:170px;top:22px;font-size:16px;display:flex;gap:12px;align-items:baseline", '<button type="button" class="lv-btn" data-d="-1">−</button><span class="m">6 열</span><button type="button" class="lv-btn" data-d="1">+</button>');
-      gg.style.transition = "transform .35s ease-out";
-      c.addEventListener("click", function (e) {
-        var b = e.target.closest("[data-d]"); if (!b) return;
-        n = clamp(n + +b.dataset.d, 3, 8); y = 0; gg.style.transform = "";
-        gg.style.gridTemplateColumns = "repeat(" + n + ",1fr)"; c.querySelector(".m").textContent = n + " 열";
-      });
-      tp.addEventListener("wheel", function (e) {
-        if (e.target.closest(".lv-layer")) return;
-        var max = Math.max(0, boxOf(tp, gg).h + y - 790); if (!max) return;
-        e.preventDefault(); y = clamp(y + e.deltaY, 0, max); gg.style.transform = "translateY(" + -y + "px)";
-      }, { passive: false });
-    } },
-    "기본 그리드 04": { hint: "사진이 하나씩 천천히 다른 풍경으로 바뀝니다", run: function (tp) {
-      var gis = $$(tp, ".gi"), pool = files(DREAM).concat(files(CLOUD), files(NIGHT)), k = 0, over = null;
-      gis.forEach(function (g) { g.addEventListener("mouseenter", function () { over = g; }); g.addEventListener("mouseleave", function () { over = null; }); });
-      every(1600, function () {
-        var g = gis[Math.floor(Math.random() * gis.length)]; if (g === over) return;
-        var f = pool[k++ % pool.length]; swap(g.querySelector("img"), src(f)); g.querySelector("span").lastChild.nodeValue = NAMES[f];
-      });
-    } },
-    "기본 그리드 05": { hint: "사진에 올리면 나머지가 흐려집니다", run: function (tp) {
-      var gis = $$(tp, ".gi");
-      gis.forEach(function (g) {
-        g.style.transition = "filter .4s, opacity .4s, transform .5s cubic-bezier(.2,.7,.2,1)";
-        g.addEventListener("mouseenter", function () { gis.forEach(function (o) { var me = o === g; o.style.filter = me ? "" : "blur(4px)"; o.style.opacity = me ? 1 : .5; o.style.transform = me ? "scale(1.02)" : ""; }); });
-        g.addEventListener("mouseleave", function () { gis.forEach(function (o) { o.style.filter = ""; o.style.opacity = 1; o.style.transform = ""; }); });
-      });
-    } },
-    "기본 그리드 06": { hint: "사진에 올리면 영화처럼 천천히 다가갑니다", run: function (tp) {
-      $$(tp, ".gi").forEach(function (g, i) {
-        var im = g.querySelector("img"); im.style.transformOrigin = ["20% 30%", "80% 40%", "30% 80%", "70% 70%"][i % 4];
-        g.addEventListener("mouseenter", function () { im.style.transition = "transform 7s linear"; im.style.transform = "scale(1.3)"; });
-        g.addEventListener("mouseleave", function () { im.style.transition = "transform .6s ease"; im.style.transform = ""; });
-      });
-    } },
-
-    /* ----- basic slideshow ----- */
-    "기본 슬라이드쇼 01": { hint: "화면 왼쪽·오른쪽을 눌러 넘깁니다", run: function (tp, st) {
-      plain(tp, st);
-      var im = largest(tp), box = im.parentNode, set = counterFn(tp), list = ["fa-yellow-sky"].concat(files(FASHION), ["fa-coat", "fa-profile", "fa-white-suit", "fa-black-coat"]), i = 0, busy = false;
-      set(0, list.length, NAMES[list[0]]); im.dataset.fx = 1; im.style.cursor = "inherit";
-      function go(d) {
-        if (busy) return; busy = true; i = (i + d + list.length) % list.length;
-        box.animate([{ transform: "none", opacity: 1 }, { transform: "translateX(" + (-90 * d) + "px)", opacity: 0 }], { duration: 220, easing: "ease-in" }).onfinish = function () {
-          im.src = src(list[i]); set(i, list.length, NAMES[list[i]]);
-          box.animate([{ transform: "translateX(" + (90 * d) + "px)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 380, easing: "cubic-bezier(.2,.7,.2,1)" }).onfinish = function () { busy = false; };
-        };
-      }
-      tp.addEventListener("mousemove", function (e) { tp.style.cursor = skip(e) ? "" : pt(tp, e).x < 720 ? "w-resize" : "e-resize"; });
-      tp.addEventListener("click", function (e) { if (!skip(e)) go(pt(tp, e).x < 720 ? -1 : 1); });
-    } },
-    "기본 슬라이드쇼 02": { hint: "사계절이 저절로 흐릅니다 · 아래 계절 이름을 눌러 이동", run: function (tp, st) {
-      plain(tp, st);
-      var im = largest(tp), box = im.parentNode, set = counterFn(tp), list = [], i = -1;
-      SEASONS.forEach(function (s) { files(s[1]).slice(0, 2).forEach(function (f) { list.push([f, s[0]]); }); });
-      var top = document.createElement("img"); top.alt = ""; top.dataset.fx = 1; top.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0"; box.appendChild(top);
-      var nav = add(tp, "right:120px;top:750px;display:flex;gap:20px;font-size:17px", SEASONS.map(function (s, k) { return '<button type="button" class="lv-btn" data-s="' + k + '" style="opacity:.35;transition:opacity .3s">' + s[0] + '</button>'; }).join(""));
-      function show(k) {
-        i = (k + list.length) % list.length; var f = list[i][0];
-        top.style.transition = "none"; top.style.opacity = 0; top.src = src(f); void top.offsetWidth;
-        top.style.transition = "opacity 1.2s ease"; top.style.opacity = 1;
-        after(1250, function () { if (list[i][0] === f) im.src = src(f); });
-        set(i, list.length, list[i][1] + " — " + NAMES[f]);
-        $$(nav, "button").forEach(function (b, j) { b.style.opacity = j === Math.floor(i / 2) ? 1 : .35; });
-      }
-      show(0); every(3400, function () { show(i + 1); });
-      nav.addEventListener("click", function (e) { var b = e.target.closest("[data-s]"); if (b) show(+b.dataset.s * 2); });
-      own(im); box.addEventListener("click", function () { show(i + 1); });
-      $$(tp, "span").filter(function (s) { return /^[←→]$/.test(s.textContent.trim()); }).forEach(function (a) { own(a).addEventListener("click", function () { show(i + (a.textContent.trim() === "←" ? -1 : 1)); }); });
-    } },
-    "기본 슬라이드쇼 03": { hint: "천천히 다가가며 넘어갑니다 · 누르면 멈춤과 재생", run: function (tp, st) {
-      plain(tp, st);
-      var im = largest(tp), set = counterFn(tp), list = ["ld-dune-gold"].concat(files(DESERT), files(MOUNT).slice(0, 5)), i = 0, playing = true;
-      var state = add(tp, "right:28px;bottom:32px;font-size:15px;color:#fff;opacity:.85", "재생 중");
-      function kb() { im.style.transition = "none"; im.style.transform = "none"; void im.offsetWidth; im.style.transition = "transform 5.2s linear"; im.style.transform = "scale(1.14) translate(" + (i % 2 ? -2 : 2) + "%,-1%)"; }
-      set(0, list.length, NAMES[list[0]]); kb(); im.dataset.fx = 1; im.style.cursor = "pointer";
-      every(5000, function () { if (!playing) return; i = (i + 1) % list.length; swap(im, src(list[i])); set(i, list.length, NAMES[list[i]]); kb(); });
-      tp.addEventListener("click", function (e) {
-        if (skip(e)) return;
-        playing = !playing; state.textContent = playing ? "재생 중" : "일시정지";
-        if (playing) kb(); else { var m = getComputedStyle(im).transform; im.style.transition = "none"; im.style.transform = m; }
-      });
-    } },
-    "기본 슬라이드쇼 04": { hint: "왼쪽 목록에 올리면 사진이 아래에서 밀려 올라옵니다", run: function (tp, st) {
-      plain(tp, st);
-      var im = largest(tp), box = im.parentNode, rows = $$(tp, "span").filter(function (s) { var m = s.querySelector(".m"); return m && /^0\d$/.test(m.textContent); });
-      var list = files(SPACE).concat(files(KOREA).slice(0, 3)), cur = 1;
-      KOREA.slice(0, 3).forEach(function (x, k) { var s = document.createElement("span"); s.style.opacity = ".4"; s.innerHTML = '<span class="m">0' + (5 + k) + '</span>&nbsp;&nbsp;' + x[1]; rows[0].parentNode.appendChild(s); rows.push(s); });
-      function wipe(f) {
-        var t = document.createElement("img"); t.src = src(f); t.alt = ""; t.dataset.fx = 1;
-        t.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;clip-path:inset(100% 0 0 0);transition:clip-path .7s cubic-bezier(.7,0,.2,1)";
-        box.appendChild(t); void t.offsetWidth; t.style.clipPath = "inset(0 0 0 0)";
-        after(720, function () { im.src = src(f); t.remove(); });
-      }
-      rows.forEach(function (r, k) {
-        r.style.cursor = "pointer"; r.style.transition = "opacity .2s";
-        r.addEventListener("mouseenter", function () { if (k === cur) return; cur = k; rows.forEach(function (o, j) { o.style.opacity = j === k ? "" : ".4"; }); wipe(list[k]); });
-      });
-    } },
-    "기본 슬라이드쇼 05": { hint: "썸네일이 차례로 재생됩니다 · 썸네일에 올리면 멈추고 선택", run: function (tp, st) {
-      plain(tp, st);
-      var im = largest(tp), strip = sty(tp, "grid-template-columns:repeat(8,1fr)"), th = [].slice.call(strip.children), i = 0, acc = 0, hold = false, dur = 2200;
-      th.forEach(function (t, k) {
-        t.style.position = "relative"; own(t); t.querySelector("img").dataset.fx = 1;
-        var b = document.createElement("i"); b.style.cssText = "position:absolute;left:0;bottom:0;height:3px;width:0;background:currentColor"; t.appendChild(b);
-        t.addEventListener("mouseenter", function () { hold = true; pick(k); });
-        t.addEventListener("mouseleave", function () { hold = false; });
-      });
-      function pick(k) { i = k; acc = 0; th.forEach(function (t, j) { t.style.opacity = j === k ? 1 : .45; t.style.outline = j === k ? "2px solid currentColor" : "none"; t.lastChild.style.width = 0; }); swap(im, th[k].querySelector("img").src); }
-      pick(0);
-      frame(function (dt) { if (!tp.isConnected) return false; if (!hold) acc += dt; th[i].lastChild.style.width = Math.min(100, acc / dur * 100) + "%"; if (acc >= dur) pick((i + 1) % th.length); });
-    } },
-    "기본 슬라이드쇼 06": { hint: "화면 위에서 좌우로 움직이면 사진이 넘어갑니다", run: function (tp, st) {
-      plain(tp, st);
-      var im = largest(tp), c = $$(tp, ".m").filter(function (m) { return /\d{2} \/ \d{2}/.test(m.textContent); })[0], cur = -1;
-      var list = ["pt-bw-studio", "pt-bw-woman", "pt-bw-man", "pt-shadow-face", "pt-turtleneck", "fa-profile", "fa-blazer-hands-pockets", "fa-red-blazer-stairs", "fa-black-coat"];
-      tp.style.cursor = "ew-resize"; im.style.cursor = "inherit"; im.dataset.fx = 1;
-      tp.addEventListener("mousemove", function (e) {
-        if (e.target.closest(".lv-layer")) return;
-        var k = clamp(Math.floor(pt(tp, e).x / 1440 * list.length), 0, list.length - 1); if (k === cur) return;
-        cur = k; im.src = src(list[k]); if (c) c.textContent = pad2(k + 1) + " / " + pad2(list.length);
-      });
-    } },
-
-    /* ----- graphic ----- */
-    "책 표지 · 큰 그로테스크": { hint: "제목에 올리면 글자가 흩어지고, 누르면 그 배치로 멈춥니다", run: function (tp) {
-      var t = sty(tp, "font-size:146px"), ch = wrapChars(t), fixed = false;
-      function scatter(on) { ch.forEach(function (c) { c.style.transform = on ? "translate(" + Math.round((Math.random() - .5) * 240) + "px," + Math.round((Math.random() - .5) * 170) + "px) rotate(" + Math.round((Math.random() - .5) * 60) + "deg)" : ""; }); }
-      own(t);
-      t.addEventListener("mouseenter", function () { if (!fixed) scatter(true); });
-      t.addEventListener("mouseleave", function () { if (!fixed) scatter(false); });
-      t.addEventListener("click", function () { fixed = !fixed; scatter(fixed); });
-    } },
-    "콘덴스드 대문자 · 번호": { hint: "마우스를 움직이면 밤 사진이 뒤따라옵니다", run: function (tp) {
-      var list = files(NIGHT).concat(files(DREAM).slice(4, 8)).slice(0, 12), k = 0, last = null, num = sty(tp, "font-size:220px");
-      tp.addEventListener("mousemove", function (e) {
-        if (e.target.closest(".lv-layer")) return;
-        var p = pt(tp, e); if (last && Math.hypot(p.x - last.x, p.y - last.y) < 90) return; last = p;
-        var f = list[k % list.length]; k++; num.textContent = pad2((k - 1) % 12 + 1);
-        var d = add(tp, "left:" + (p.x - 90) + "px;top:" + (p.y - 120) + "px;width:180px;height:240px;pointer-events:none;overflow:hidden;box-shadow:0 10px 30px -12px rgba(0,0,0,.5)", '<img src="' + src(f) + '" alt="" style="width:100%;height:100%;object-fit:cover">');
-        d.animate([{ transform: "scale(.6)", opacity: 0 }, { transform: "scale(1)", opacity: 1, offset: .15 }, { transform: "scale(1)", opacity: 1, offset: .7 }, { transform: "scale(.9)", opacity: 0 }], { duration: 1100, easing: "ease-out" }).onfinish = function () { d.remove(); };
-      });
-    } },
-    "3개 언어 제목 · 저널": { hint: "아래 세 단락에 올리면 그 언어의 제목과 사진이 드러납니다", run: function (tp) {
-      var t = sty(tp, "font-size:74px");
-      t.innerHTML = t.innerHTML.split(/<br\s*\/?>/i).map(function (h) { return '<div style="transition:opacity .35s">' + h + '</div>'; }).join("");
-      var lines = [].slice.call(t.children), cols = [].slice.call(sty(tp, "grid-template-columns:repeat(3,1fr);gap:22px").children), im = largest(tp), pics = ["int-m2", "ct-empty-lamp-street", "kr-wooden-street"], cur = -1, hover = false;
-      function show(k) {
-        if (k === cur) return; cur = k;
-        lines.forEach(function (l, j) { l.style.opacity = j === k ? 1 : .12; });
-        cols.forEach(function (c, j) { c.style.transition = "opacity .35s"; c.style.opacity = j === k ? 1 : .3; });
-        swap(im, src(pics[k]));
-      }
-      cols.forEach(function (c, k) { c.addEventListener("mouseenter", function () { hover = true; show(k); }); c.addEventListener("mouseleave", function () { hover = false; }); });
-      show(0); every(2400, function () { if (!hover) show((cur + 1) % 3); });
-    } },
-    "공연 포스터 · 라인업": { hint: "지금 무대에 선 순서가 움직입니다 · 이름을 누르면 ★ 저장", run: function (tp) {
-      var rows = [].slice.call(sty(tp, "width:420px;display:grid;gap:4px").children), cur = 0;
-      rows.forEach(function (r) {
-        r.style.transition = "background-color .3s, color .3s, padding .3s"; own(r);
-        r.addEventListener("click", function () { var s = r.lastChild; s.textContent = /^★ /.test(s.textContent) ? s.textContent.slice(2) : "★ " + s.textContent; });
-      });
-      function now(k) { cur = k; rows.forEach(function (r, j) { var on = j === k; r.style.background = on ? "var(--t-ink)" : ""; r.style.color = on ? "var(--t-bg)" : ""; r.style.paddingLeft = r.style.paddingRight = on ? "10px" : ""; }); }
-      now(0); every(1800, function () { now((cur + 1) % rows.length); });
-    } },
-    "체크리스트 포스터": { hint: "항목을 눌러 챙긴 것을 체크하세요", run: function (tp) {
-      var box = sty(tp, "font-size:84px"), big = sty(tp, "font-size:300px"), done = 0;
-      box.innerHTML = box.innerHTML.split(/<br\s*\/?>/i).map(function (h) { return '<div style="cursor:pointer;transition:opacity .25s">' + h + '</div>'; }).join("");
-      var rows = [].slice.call(box.children);
-      rows.forEach(function (r) {
-        var svg = r.querySelector("svg"); svg.style.transition = "opacity .2s, transform .3s"; svg.style.opacity = .15; r.dataset.fx = 1;
-        r.addEventListener("click", function () {
-          var on = !r._on; r._on = on; svg.style.opacity = on ? 1 : .15; svg.style.transform = on ? "scale(1.25)" : ""; r.style.opacity = on ? .55 : 1; done += on ? 1 : -1;
-          if (done === rows.length) { big.animate([{ transform: "none" }, { transform: "rotate(-6deg) scale(1.06)" }, { transform: "none" }], { duration: 600 }); toast(tp, "다 챙겼어요 — 공원에서 만나요"); }
-        });
-      });
-    } },
-    "이름 반복 · 외곽선": { hint: "줄마다 반대로 흐릅니다 · 줄에 올리면 채움과 외곽선이 뒤바뀝니다", run: function (tp) {
-      [].slice.call(sty(tp, "font-size:118px").children).forEach(function (r, i) {
-        var one = r.innerHTML, st0 = r.getAttribute("style") || "";
-        r.innerHTML = '<span style="display:inline-block">' + Array(7).join(one + " ") + '</span>';
-        if (!reduce) r.firstChild.animate([{ transform: "translateX(" + (i % 2 ? "-50%" : "0") + ")" }, { transform: "translateX(" + (i % 2 ? "0" : "-50%") + ")" }], { duration: 16000 + i * 1700, iterations: Infinity });
-        r.addEventListener("mouseenter", function () { r.setAttribute("style", st0 ? "" : "color:transparent;-webkit-text-stroke:2px currentColor"); });
-        r.addEventListener("mouseleave", function () { r.setAttribute("style", st0); });
-      });
-    } },
-    "초대형 시각 · 사진": { hint: "지금 시각이 흐릅니다 · 큰 숫자 위에서 좌우로 움직이면 하루 1,440분을 훑습니다", run: function (tp) {
-      var clk = sty(tp, "font-size:420px"), im = largest(tp), hover = false, last = "", blink = true;
-      function pic(h) { return h < 5 ? "sky-milky-way" : h < 7 ? "cl-pink-clouds" : h < 11 ? "cl-cloudy-sky" : h < 16 ? "sum-clear-beach" : h < 19 ? "mt-orange-ridges" : h < 21 ? "cl-pink-purple-clouds" : "ct-empty-lamp-street"; }
-      function show(mins, on) {
-        var h = Math.floor(mins / 60) % 24;
-        clk.innerHTML = pad2(h) + '<span style="opacity:' + (on ? 1 : .15) + '">:</span>' + pad2(mins % 60);
-        var f = pic(h); if (f !== last) { last = f; swap(im, src(f)); }
-      }
-      function now() { var d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
-      show(now(), true);
-      every(500, function () { if (!hover) { blink = !blink; show(now(), blink); } });
-      own(clk, "ew-resize");
-      clk.addEventListener("mousemove", function (e) { hover = true; show(Math.floor(clamp(pt(tp, e).x, 0, 1439)), true); });
-      clk.addEventListener("mouseleave", function () { hover = false; });
-    } },
-    "세리프 전시 안내 · 액자": { hint: "마우스를 따라 액자가 기울고, 누르면 다른 그림을 겁니다", run: function (tp) {
-      var fr = sty(tp, "width:200px;height:250px"), im = fr.querySelector("img"), list = ["paint-ochre"].concat(files(ART).filter(function (f) { return f !== "paint-ochre"; })), i = 0;
-      fr.style.transition = "transform .3s ease-out, box-shadow .3s"; own(fr); im.dataset.fx = 1; im.style.cursor = "inherit";
-      tp.addEventListener("mousemove", function (e) {
-        var p = pt(tp, e), x = (p.x - 720) / 720, y = (p.y - 205) / 450;
-        fr.style.transform = "perspective(800px) rotateY(" + (x * 20).toFixed(1) + "deg) rotateX(" + (-y * 14).toFixed(1) + "deg)";
-        fr.style.boxShadow = (-x * 24).toFixed(0) + "px " + (14 - y * 10).toFixed(0) + "px 34px -14px rgba(0,0,0,.45)";
-      });
-      fr.addEventListener("click", function () { i = (i + 1) % list.length; swap(im, src(list[i])); });
-    } },
-    "콘덴스드 소문자 · 검정": { hint: "글자가 천천히 쳐집니다 · 누를 때마다 더 느리게", run: function (tp) {
-      var t = sty(tp, "font-size:150px"), speed = 70, run = 0;
-      var all = t.innerHTML.split(/<br\s*\/?>/i).map(function (h) { var d = document.createElement("div"); d.innerHTML = h; return d.textContent; }).join("\n");
-      own(t);
-      function type() {
-        var id = ++run, i = 0;
-        (function step() {
-          if (id !== run || !tp.isConnected) return; i++;
-          t.innerHTML = esc(all.slice(0, i)).replace(/\n/g, "<br>") + '<span class="fx-caret">▍</span>';
-          if (i < all.length) after(speed * (.5 + Math.random()), step);
-        })();
-      }
-      after(300, type);
-      t.addEventListener("click", function () { speed = Math.min(speed * 1.8, 600); type(); });
-    } },
-    "프로젝트 색인 표": { hint: "줄에 올리면 작업 사진이 따라오고, Year·Client 같은 머리글을 누르면 정렬됩니다", run: function (tp) {
-      var body = sty(tp, "top:214px"), head = sty(tp, "top:190px"), pics = files(ART).concat(files(ABSTRACT), files(KOREA)), dir = {};
-      var prev = add(tp, "left:0;top:0;width:260px;height:190px;pointer-events:none;opacity:0;overflow:hidden;transition:opacity .15s;z-index:5;box-shadow:0 14px 30px -14px rgba(0,0,0,.5)", '<img alt="" style="width:100%;height:100%;object-fit:cover">'), pim = prev.firstChild;
-      function rows() { return [].slice.call(body.children); }
-      rows().forEach(function (r, k) { r.dataset.pic = pics[k * 3 % pics.length]; r.style.transition = "background-color .15s"; });
-      body.addEventListener("mousemove", function (e) {
-        var r = e.target.closest("div[data-pic]"); if (!r) return;
-        var p = pt(tp, e); prev.style.opacity = 1; prev.style.left = Math.min(p.x + 24, 1150) + "px"; prev.style.top = (p.y - 95) + "px";
-        if (pim.dataset.f !== r.dataset.pic) { pim.dataset.f = r.dataset.pic; pim.src = src(r.dataset.pic); }
-        rows().forEach(function (o) { o.style.background = o === r ? "color-mix(in srgb, currentColor 8%, transparent)" : ""; });
-      });
-      body.addEventListener("mouseleave", function () { prev.style.opacity = 0; rows().forEach(function (o) { o.style.background = ""; }); });
-      [].slice.call(head.children).forEach(function (h, c) {
-        own(h);
-        h.addEventListener("click", function () {
-          dir[c] = -(dir[c] || -1);
-          rows().sort(function (a, b) { var x = a.children[c].textContent, y = b.children[c].textContent; return x < y ? -dir[c] : x > y ? dir[c] : 0; }).forEach(function (r) { body.appendChild(r); });
-          [].slice.call(head.children).forEach(function (o, j) { o.textContent = o.textContent.replace(/ [↑↓]$/, "") + (j === c ? (dir[c] > 0 ? " ↑" : " ↓") : ""); });
-        });
-      });
-    } },
-    "블랙레터 · 신문": { hint: "큰 제목을 누르면 아침판으로 바뀝니다", run: function (tp) {
-      var h = sty(tp, "font-family:var(--f-black)"), sub = txt(tp, "A Newspaper for"), kor = txt(tp, "밤의 신문"), cols = sty(tp, "grid-template-columns:repeat(3,1fr);gap:30px");
-      var cs = getComputedStyle(tp), bg = cs.getPropertyValue("--t-bg"), ink = cs.getPropertyValue("--t-ink"), night = true, n0 = cols.innerHTML;
-      var m0 = "<p>Weather: bright by eight, a light wind from the sea.</p><p>This morning: the first ferry, warm bread, a list of open doors.</p><p>Letters to the editor are answered by noon.</p>";
-      tp.style.transition = "background-color .6s, color .6s"; own(h);
-      h.addEventListener("click", function () {
-        night = !night;
-        tp.style.setProperty("--t-bg", night ? bg : ink); tp.style.setProperty("--t-ink", night ? ink : bg);
-        h.innerHTML = night ? "The Night<br>Edition" : "The Morning<br>Edition";
-        sub.textContent = night ? "A Newspaper for Insomniacs" : "A Newspaper for Early Risers";
-        if (kor) kor.textContent = night ? "밤의 신문 — 잠 못 드는 사람들을 위하여" : "아침 신문 — 일찍 일어나는 사람들을 위하여";
-        cols.innerHTML = night ? n0 : m0;
-      });
-    } },
-    "액자 엽서 · 사진": { hint: "사진을 누르면 엽서 뒷면이 보입니다 · 아래 ← → 로 다른 엽서", run: function (tp) {
-      var cell = tp.querySelector("img").parentNode, i = 0, flipped = false;
-      var list = ["arch-reflection"].concat(files(KOREA), files(SPRING).slice(0, 2), files(WINTER).slice(0, 2), files(NIGHT).slice(1, 2)).slice(0, 12);
-      cell.style.perspective = "1400px";
-      cell.innerHTML = '<div style="position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .8s cubic-bezier(.2,.7,.2,1);cursor:pointer" data-fx="1">' +
-        '<div style="position:absolute;inset:0;backface-visibility:hidden"><img alt="" data-fx="1" src="' + src(list[0]) + '" style="width:100%;height:100%;object-fit:cover;cursor:inherit"></div>' +
-        '<div style="position:absolute;inset:0;backface-visibility:hidden;transform:rotateY(180deg);background:#fbf8f2;color:#333;padding:24px;display:grid;grid-template-columns:1.2fr 1fr;gap:20px;font-size:15px;line-height:1.5">' +
-          '<div style="font-family:var(--f-serif);font-style:italic;font-size:21px;line-height:1.4">Greetings from a quiet city. The bakery opens at six; the river is still asleep.<br><br><span class="ko" style="font-size:15px;font-style:normal">조용한 도시에서 안부를 전합니다.</span></div>' +
-          '<div style="border-left:1px solid #ccc;padding-left:20px;display:grid;align-content:space-between"><div style="justify-self:end;width:78px;height:96px;border:2px dashed #b8231a;display:grid;place-items:center;text-align:center;font-size:12px;color:#b8231a">1440<br>STAMP</div>' +
-          '<div style="display:grid;gap:30px"><div style="border-bottom:1px solid #999"></div><div style="border-bottom:1px solid #999"></div><div style="border-bottom:1px solid #999"></div></div></div></div></div>';
-      var card = cell.firstChild, im = card.querySelector("img");
-      card.addEventListener("click", function () { flipped = !flipped; card.style.transform = flipped ? "rotateY(180deg)" : ""; });
-      var nav = add(tp, "left:0;right:0;bottom:22px;display:flex;justify-content:center;gap:18px;align-items:baseline;font-size:15px", '<button type="button" class="lv-btn" data-d="-1">←</button><span class="m">01 / ' + pad2(list.length) + '</span><button type="button" class="lv-btn" data-d="1">→</button>');
-      nav.addEventListener("click", function (e) {
-        var b = e.target.closest("[data-d]"); if (!b) return;
-        i = (i + +b.dataset.d + list.length) % list.length; flipped = false; card.style.transform = "";
-        swap(im, src(list[i])); nav.querySelector(".m").textContent = pad2(i + 1) + " / " + pad2(list.length);
-      });
-    } },
-    "색 띠 문장": { hint: "좌우로 움직이면 띠가 밀리고, 띠를 누르면 색이 바뀝니다", run: function (tp) {
-      var bands = [].slice.call(sty(tp, "left:0;right:0;top:0").children);
-      var cols = [["#ffcf33", "#2a1d00"], ["#2b59ff", "#e8eeff"], ["#ff7a59", "#2a0e06"], ["#1f1f1f", "#f2f2f2"], ["#9be3c1", "#0c2a1c"], ["#f2b8d9", "#3a0f24"], ["#e7e1d6", "#2a2620"]];
-      bands.forEach(function (b, i) {
-        b._base = parseFloat(b.style.paddingLeft) || 0; b._c = i; own(b);
-        b.style.transition = "padding-left .5s cubic-bezier(.2,.7,.2,1), background-color .3s, color .3s";
-        b.addEventListener("click", function () { b._c = (b._c + 1) % cols.length; b.style.background = cols[b._c][0]; b.style.color = cols[b._c][1]; });
-      });
-      tp.addEventListener("mousemove", function (e) { var x = pt(tp, e).x - 720; bands.forEach(function (b, i) { b.style.paddingLeft = Math.max(0, b._base + x * (i + 1) * .18) + "px"; }); });
-    } },
-    "세리프 이탤릭 · 밤 운영": { hint: "지금 열려 있는지 실제 시간으로 보여 줍니다 · 물건 이름을 눌러 예약", run: function (tp) {
-      var t = txt(tp, "Borrow a drill"), badge = add(tp, "left:50%;top:116px;transform:translateX(-50%);padding:5px 16px;border:1px solid;border-radius:99px;font-size:15px;white-space:nowrap", "");
-      function status() {
-        var d = new Date(), day = d.getDay(), h = d.getHours();
-        if (day === 4 && h >= 18 && h < 23) return "● Open now — until 11 pm";
-        var ahead = (4 - day + 7) % 7; if (day === 4 && h >= 18) ahead = 7;
-        var o = new Date(d); o.setDate(d.getDate() + ahead); o.setHours(18, 0, 0, 0);
-        var ms = o - d, dd = Math.floor(ms / 864e5), hh = Math.floor(ms % 864e5 / 36e5), mm = Math.floor(ms % 36e5 / 6e4);
-        return "Closed — opens in " + (dd ? dd + "d " : "") + hh + "h " + pad2(mm) + "m";
-      }
-      badge.textContent = status(); every(20000, function () { badge.textContent = status(); });
-      t.innerHTML = t.innerHTML.replace(/(a drill|a tent|a projector|a sewing machine)/g, '<span class="fx-item" style="cursor:pointer;border-bottom:1px dotted;transition:opacity .2s">$1</span>');
-      $$(t, ".fx-item").forEach(function (s) {
-        s.dataset.fx = 1;
-        s.addEventListener("click", function () { var on = !s._on; s._on = on; s.style.textDecoration = on ? "line-through" : ""; s.style.opacity = on ? .5 : 1; toast(tp, (on ? "예약했습니다 — " : "반납했습니다 — ") + s.textContent); });
-      });
-    } },
-    "시험 인쇄 · 파랑": { hint: "마우스를 움직이면 인쇄가 어긋나고, 누르면 잉크 색이 바뀝니다", run: function (tp) {
-      var ph = sty(tp, "mix-blend-mode:multiply"), title = sty(tp, "font-size:160px"), ghost = title.cloneNode(true);
-      var inks = [["#2437ff", "#d7dcff"], ["#ff2d8a", "#ffe0ef"], ["#ffe600", "#2a2600"], ["#111111", "#e9e9e9"]], k = 0;
-      ghost.style.color = "#ff2d8a"; ghost.style.mixBlendMode = "multiply"; ghost.style.pointerEvents = "none"; ghost.dataset.fx = 1;
-      title.parentNode.insertBefore(ghost, title.nextSibling);
-      $$(tp, "img").forEach(function (i) { i.dataset.fx = 1; i.style.cursor = "inherit"; });
-      tp.addEventListener("mousemove", function (e) {
-        var p = pt(tp, e), dx = (p.x - 720) / 36, dy = (p.y - 450) / 36;
-        ghost.style.transform = "translate(" + dx.toFixed(1) + "px," + dy.toFixed(1) + "px)";
-        ph.style.transform = "translate(" + (-dx / 2).toFixed(1) + "px," + (-dy / 2).toFixed(1) + "px)";
-      });
-      tp.addEventListener("click", function (e) {
-        if (skip(e)) return; k = (k + 1) % inks.length;
-        tp.style.setProperty("--t-bg", inks[k][0]); tp.style.setProperty("--t-ink", inks[k][1]); ghost.style.color = inks[(k + 1) % inks.length][0];
-      });
-    } },
-    "도형 여섯 개": { hint: "도형에 올리면 돌아가고, 누르면 채워집니다", run: function (tp) {
-      $$(tp, 'svg[viewBox="0 0 100 100"]').forEach(function (s) {
-        var r = 0, full = false, parts = $$(s, "circle,rect,path");
-        parts.forEach(function (p) { p._f = p.getAttribute("fill") || "none"; });
-        own(s); s.style.transition = "transform .6s cubic-bezier(.2,.7,.2,1)";
-        s.addEventListener("mouseenter", function () { r += 90; s.style.transform = "rotate(" + r + "deg) scale(1.08)"; });
-        s.addEventListener("mouseleave", function () { s.style.transform = "rotate(" + r + "deg)"; });
-        s.addEventListener("click", function () { full = !full; parts.forEach(function (p) { p.setAttribute("fill", full ? (p._f === "none" ? "currentColor" : "none") : p._f); }); });
-      });
-    } },
-    "서체 견본": { hint: "마우스 가로는 폭, 세로는 굵기 · 큰 글자를 눌러 직접 입력", run: function (tp) {
-      var t = sty(tp, "font-size:230px"), out = add(tp, "right:28px;top:432px;font-family:var(--mono);font-size:13px;opacity:.7", "wdth 100 · wght 500");
-      tp.addEventListener("mousemove", function (e) {
-        var p = pt(tp, e), w = Math.round(62 + clamp(p.x / 1440, 0, 1) * 63), g = Math.round(300 + clamp(p.y / 900, 0, 1) * 600);
-        t.style.fontStretch = w + "%"; t.style.fontWeight = g; out.textContent = "wdth " + w + " · wght " + g;
-      });
-    } },
-    "굵은 이탤릭 이름": { hint: "마우스를 빠르게 좌우로 흔들면 이름이 기울어집니다", run: function (tp) {
-      var n = sty(tp, "font-size:210px"), lastX = null, v = 0;
-      n.style.transformOrigin = "left bottom";
-      tp.addEventListener("mousemove", function (e) { var x = pt(tp, e).x; if (lastX !== null) v += (x - lastX) * .6; lastX = x; });
-      frame(function () {
-        if (!tp.isConnected) return false; v *= .9;
-        n.style.transform = "skewX(" + clamp(-v, -35, 35).toFixed(1) + "deg) scaleX(" + (1 + Math.min(Math.abs(v) / 200, .25)).toFixed(3) + ")";
-      });
-    } },
-    "소문자 콘덴스드 · 표지": { hint: "마우스를 따라 잔광이 번집니다 · 아래 Read an excerpt 를 눌러 보세요", run: function (tp) {
-      var t = sty(tp, "font-size:260px");
-      tp.addEventListener("mousemove", function (e) {
-        var p = pt(tp, e), dx = (p.x - 720) / 18, dy = (p.y - 320) / 18, hue = Math.round(p.x / 1440 * 120 + 280);
-        t.style.textShadow = dx.toFixed(1) + "px " + dy.toFixed(1) + "px 30px hsla(" + hue + ",90%,60%,.55), " + (dx * 2).toFixed(1) + "px " + (dy * 2).toFixed(1) + "px 90px hsla(" + (hue + 40) + ",90%,60%,.35)";
-      });
-      tp.addEventListener("mouseleave", function () { t.style.textShadow = ""; });
-      var chip = $$(tp, "span").filter(function (s) { return s.textContent === "Read an excerpt"; })[0];
-      if (chip) own(chip).addEventListener("click", function () {
-        layer(tp, "lv-side", '<div class="lv-top"><span>Excerpt</span><button type="button" class="lv-x">Close ✕</button></div><b class="lv-h" style="font-family:var(--f-cond);font-stretch:62%">afterglow</b>' +
-          '<p style="font-family:var(--f-serif);font-size:21px;line-height:1.5">The sun had gone, but the wall across the street kept its colour for eleven more minutes. She counted them from the window, the way you count the seconds after lightning.</p>' +
-          '<p class="ko" style="opacity:.6">해는 졌지만 길 건너 벽은 11분 동안 그 색을 붙들고 있었다.</p>');
-      });
-    } },
-    "원형 번호 · 캡션": { hint: "원에 올리면 사진이 보이고, 누르면 다음 물건 · [More] 를 눌러 보세요", run: function (tp) {
-      var c = sty(tp, "border-radius:50%"), cap = txt(tp, "Object one of twelve"), kor = txt(tp, "사물 1"), i = 0;
-      var list = ["cer-dark-jug", "fd-oranges-on-wood", "ch-orange", "gl-green", "fl-yellow-flower", "an-orange-bird", "mu-amber-vinyl", "cer-cup-speckle", "fd-vase-and-grapes", "ab-orange-orb-blue", "aut-orange-leaf", "st-yellow-jars"];
-      var colors = ["#ff6a1f", "#ffb627", "#e8453c", "#2f9e6b", "#f2d600", "#ff8a3d", "#c86b1a", "#7a8b99", "#6b4fa0", "#2b59ff", "#d9541e", "#e0b400"];
-      var words = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
-      own(c); c.style.transition = "background-color .4s"; c.style.backgroundSize = "cover"; c.style.backgroundPosition = "center";
-      function paint(on) { c.style.backgroundImage = on ? "url(" + src(list[i]) + ")" : ""; c.style.color = on ? "#fff" : ""; c.style.textShadow = on ? "0 2px 24px rgba(0,0,0,.45)" : ""; }
-      c.addEventListener("mouseenter", function () { paint(true); });
-      c.addEventListener("mouseleave", function () { paint(false); });
-      c.addEventListener("click", function () {
-        i = (i + 1) % 12; c.style.backgroundColor = colors[i]; c.textContent = "Nº" + (i + 1); paint(true);
-        c.animate([{ transform: "rotate(0)" }, { transform: "rotate(360deg)" }], { duration: 700, easing: "cubic-bezier(.2,.7,.2,1)" });
-        if (cap && cap.firstChild) cap.firstChild.nodeValue = "Object " + words[i] + " of twelve. A single thing, photographed on the first day of each month. ";
-        if (kor) kor.textContent = "사물 " + (i + 1) + " — 매달 첫날 찍은 하나의 물건";
-      });
-      var more = cap && cap.querySelector("b");
-      if (more) own(more).addEventListener("click", function () { more.textContent = more.textContent === "[More]" ? "[Less] Twelve months, twelve objects, one window sill and the same north light." : "[More]"; });
-    } },
-    "종이 네 장 · 숫자": { hint: "종이에 올리면 펼쳐지고, 누르면 숫자가 바뀝니다", run: function (tp) {
-      $$(tp, "div").filter(function (d) { return /top:300px;width:230px;height:310px/.test(d.getAttribute("style") || ""); }).forEach(function (s) {
-        var sh = [].slice.call(s.children).slice(0, 3), num = s.children[3], ease = "transform .5s cubic-bezier(.2,.7,.2,1)";
-        own(s); sh.concat(num).forEach(function (p) { p.style.transition = ease; p.style.transformOrigin = "50% 100%"; });
-        s.addEventListener("mouseenter", function () { sh[0].style.transform = "rotate(10deg) translate(26px,-6px)"; sh[1].style.transform = "rotate(5deg) translate(12px,-2px)"; sh[2].style.transform = num.style.transform = "rotate(-3deg)"; });
-        s.addEventListener("mouseleave", function () { sh.concat(num).forEach(function (p) { p.style.transform = ""; }); });
-        s.addEventListener("click", function () {
-          var n = (parseInt(num.textContent, 10) + 1) % 10;
-          num.animate([{ opacity: 1 }, { opacity: 0, translate: "0 -30px" }], { duration: 150 }).onfinish = function () { num.textContent = n; num.animate([{ opacity: 0, translate: "0 30px" }, { opacity: 1, translate: "0 0" }], { duration: 220 }); };
-        });
-      });
-    } },
-    "카드 · 하이라이트": { hint: "카드를 끌어서 책상처럼 옮겨 보세요", run: function (tp) {
-      draggable(tp, $$(tp, "div").filter(function (d) { var s = d.getAttribute("style") || ""; return s.indexOf("box-shadow:6px 6px 0") >= 0 || (d.classList.contains("wf") && s.indexOf("outline:2px") >= 0); }));
-    } },
-    "반복 라벨 타일": { hint: "간판이 차례로 켜집니다 · 간판에 올리면 켜진 채로", run: function (tp) {
-      var tiles = [].slice.call(sty(tp, "grid-template-columns:repeat(3,1fr);gap:10px").children), k = 0, over = null;
-      function light(t, on) { t.style.background = on ? "var(--t-ink)" : ""; t.style.color = on ? "var(--t-bg)" : ""; t.style.boxShadow = on ? "0 0 34px var(--t-ink)" : ""; }
-      tiles.forEach(function (t) {
-        t.style.transition = "background-color .12s, color .12s, box-shadow .12s, opacity .12s";
-        t.addEventListener("mouseenter", function () { over = t; light(t, true); });
-        t.addEventListener("mouseleave", function () { over = null; light(t, false); });
-      });
-      every(150, function () {
-        tiles.forEach(function (t) { if (t !== over) { light(t, false); t.style.opacity = Math.random() < .08 ? .35 : 1; } });
-        var t = tiles[k++ % tiles.length]; if (t !== over) light(t, true);
-      });
-    } },
-    "트랙 리스트 · A/B면": { hint: "곡을 누르면 재생되고 레코드가 돕니다 · 같은 곡을 다시 누르면 멈춤", run: function (tp) {
-      var rows = $$(tp, "div").filter(function (d) { return d.parentNode && /background:#fff;padding:18px 20px/.test(d.parentNode.getAttribute("style") || ""); });
-      var disc = add(tp, "right:28px;top:40px;width:220px;height:220px;border-radius:50%;overflow:hidden;box-shadow:0 12px 30px -14px rgba(0,0,0,.5)", '<img src="' + src("mu-bw-vinyl") + '" alt="" style="width:100%;height:100%;object-fit:cover">');
-      var spin = disc.animate([{ transform: "rotate(0)" }, { transform: "rotate(360deg)" }], { duration: 1800, iterations: Infinity }); spin.pause();
-      var cur = -1, t = 0, len = 1, bar = null, playing = false;
-      function mark() { rows.forEach(function (r, j) { r.style.fontWeight = j === cur ? 600 : ""; var n = r.querySelector(".m"); if (n) n.textContent = j === cur ? (playing ? "▶" : "Ⅱ") : pad2(j % 5 + 1); }); }
-      function play(k) {
-        if (bar) bar.remove(); cur = k; t = 0;
-        var d = rows[k].lastElementChild.textContent.split(":"); len = (+d[0] * 60 + +d[1]) * 1000 / 12;
-        bar = document.createElement("i"); bar.style.cssText = "position:absolute;left:0;bottom:-2px;height:2px;width:0;background:currentColor"; rows[k].appendChild(bar);
-        playing = true; spin.play(); mark();
-      }
-      rows.forEach(function (r, k) {
-        own(r); r.style.position = "relative";
-        r.addEventListener("click", function () { if (k === cur) { playing = !playing; if (playing) spin.play(); else spin.pause(); mark(); } else play(k); });
-      });
-      frame(function (dt) { if (!tp.isConnected) return false; if (!playing || cur < 0) return; t += dt; bar.style.width = Math.min(100, t / len * 100) + "%"; if (t >= len) play((cur + 1) % rows.length); });
-    } },
-    "책 표지 · 사진 반반": { hint: "사진에 올리면 드로잉처럼 바뀌고, 누르면 다른 건물", run: function (tp) {
-      var im = largest(tp), list = ["arch-concrete-blocks", "arch-brutal-long", "kr-big-roof", "arch-grid-facade", "kr-roof-blue-sky", "arch-curve"], i = 0, n = txt(tp, "120"), c = 0;
-      im.style.transition = "filter .5s"; own(im);
-      im.parentNode.addEventListener("mouseenter", function () { im.style.filter = "grayscale(1) contrast(2.4) brightness(1.3)"; });
-      im.parentNode.addEventListener("mouseleave", function () { im.style.filter = ""; });
-      im.addEventListener("click", function () { i = (i + 1) % list.length; swap(im, src(list[i])); });
-      (function up() { c += 3; if (n) n.textContent = Math.min(c, 120); if (c < 120) after(16, up); })();
-    } },
-    "세리프 이탤릭 목록": { hint: "마우스를 위아래로 움직여 서른 가지 판을 넘겨 보세요", run: function (tp) {
-      var t = sty(tp, "font-size:74px"), lines = t.innerHTML.split(/<br\s*\/?>/i), cur = -1;
-      var tints = ["transparent", "#f6d9c8", "#d3e2f1", "#e2e8c6", "#f1d3e4", "#cfe8dc", "#f3e4bd", "#dcd6f0"];
-      var wash = add(tp, "inset:0;pointer-events:none;mix-blend-mode:multiply;transition:background-color .4s");
-      tp.addEventListener("mousemove", function (e) {
-        var k = clamp(Math.floor(pt(tp, e).y / 900 * 30), 0, 29); if (k === cur) return; cur = k;
-        lines[3] = "Version " + (k + 1) + " of 30"; t.innerHTML = lines.join("<br>"); wash.style.background = tints[k % tints.length];
-      });
-    } },
-    "쌓인 대문자 목록 · 띠": { hint: "상품 이름에 올리면 띠가 따라오고, 누르면 담깁니다 · 가운데 띠는 실제 영업 여부", run: function (tp) {
-      var items = [].slice.call(sty(tp, "left:0;right:0;top:10px").children), band = items.filter(function (d) { return /Open 11/.test(d.textContent); })[0];
-      var d = new Date(), open = d.getDay() !== 1 && d.getHours() >= 11 && d.getHours() < 19;
-      if (band) band.textContent = (open ? "Open · " : "Closed · ") + "11—19";
-      items.forEach(function (it) {
-        if (it === band) return; own(it); it.style.transition = "background-color .2s, color .2s";
-        it.addEventListener("mouseenter", function () { it.style.background = "#ff7a1f"; it.style.color = "#101a3a"; });
-        it.addEventListener("mouseleave", function () { it.style.background = ""; it.style.color = ""; });
-        it.addEventListener("click", function () { toast(tp, it.textContent + " — 장바구니에 담았습니다"); });
-      });
-    } },
-
-    /* ----- graduation show: most carry their own init; these fill in what the page promises ----- */
-    "빛 비추기 · 회화 질감": { hint: "마우스를 움직이면 조명이 그림 표면을 비춥니다", run: function () {} },
-    "3D 뷰어 · 도자": { hint: "끌어서 돌리고, 휠로 가까이 봅니다", run: function () {} },
-    "3D 뷰어 · 조각 세 점": { hint: "세 작품을 각각 끌어서 돌려 보세요", run: function () {} },
-    "실제 크기 비교": { hint: "Person on / off 를 눌러 사람과 크기를 비교합니다", run: function () {} },
-    "작업 과정 전후": { hint: "그림 위를 좌우로 끌면 밑그림과 완성작이 비교됩니다", run: function () {} },
-    "루페 · 붓질 확대": { hint: "그림 위에서 움직이면 네 배 확대경이 따라갑니다", run: function () {} },
-    "하루의 빛 · 1440": { hint: "전시실의 빛이 지금 시각을 따라 바뀝니다", run: function () {} },
-    "오디오 도슨트": { hint: "재생을 누르면 작품 설명이 흐릅니다", run: function () {} },
-    "방명록 벽": { hint: "한 줄 남기면 벽에 붙습니다", run: function () {} },
-    "전시장 평면도": { hint: "방을 누르면 그 방의 작가와 작업이 열립니다", run: function (tp) {
-      var info = { A: ["Painting", "Kim · Lee · Oh", ["paint-ochre", "art-green-abstract-painting"]], B: ["Ceramics", "Park · Seo", ["cer-vases-beige", "cer-blue-set"]],
-        C: ["Sculpture", "Jung · Han", ["sc-kintsugi", "sc-hand"]], D: ["Video", "Choi · Yoon", ["dn-blur", "mu-blue-spotlight-stage"]], E: ["Design", "Kang · Lim · Shin", ["bk-red-fan", "ab-pastel-spheres"]] };
-      var rooms = $$(tp, "g.room");
-      rooms.forEach(function (g) {
-        own(g);
-        g.addEventListener("click", function () {
-          var k = g.querySelector("text").textContent, r = info[k]; if (!r) return;
-          rooms.forEach(function (o) { o.querySelector("rect").setAttribute("fill", o === g ? "#ffe66b" : "#fff"); });
-          layer(tp, "lv-side", '<div class="lv-top"><span>Room ' + k + '</span><button type="button" class="lv-x">Close ✕</button></div><b class="lv-h">' + r[0] + '</b><p>' + r[1] + '</p>' +
-            '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' + r[2].map(function (f) { return '<img src="' + src(f) + '" alt="" style="width:100%;aspect-ratio:3/4;object-fit:cover">'; }).join("") + '</div>' +
-            '<p class="ko" style="opacity:.6">' + k + '실 — ' + r[1] + '</p>');
-        });
-      });
-    } },
-    "졸업생 명단 벽": { hint: "이름에 올리면 그 작가의 작업과 설명으로 바뀝니다", run: function (tp, st) {
-      plain(tp, st);
-      var names = [].slice.call(sty(tp, "columns:2").children), im = largest(tp), lab = sty(tp, "left:940px;right:28px;top:630px");
-      var work = { Painting: ["paint-ochre", "Oil on canvas"], Ceramics: ["cer-vases-beige", "Stoneware"], Sculpture: ["sc-kintsugi", "Plaster and gold"], Video: ["dn-blur", "Single-channel video"], Design: ["bk-red-fan", "Books and posters"], Printmaking: ["paint-grey", "Etching"] };
-      var extra = { Painting: "art-red-brown-abstract", Ceramics: "cer-blue-set", Sculpture: "sc-hand", Video: "mu-stage-greyscale", Design: "ab-pastel-spheres", Printmaking: "tx-blue-stain" };
-      names.forEach(function (n, i) {
-        n.style.cursor = "default"; n.style.transition = "opacity .2s";
-        n.addEventListener("mouseenter", function () {
-          names.forEach(function (o) { o.style.opacity = o === n ? "" : ".35"; });
-          var major = n.lastElementChild.textContent, who = n.firstChild.nodeValue.trim(), w = work[major] || work.Painting;
-          swap(im, src(i % 2 ? extra[major] || w[0] : w[0]));
-          if (lab) { lab.innerHTML = label(who, major + " · " + w[1] + ", 2026", who + " — " + major); lab.classList.remove("lv-fade"); void lab.offsetWidth; lab.classList.add("lv-fade"); }
-        });
-      });
-    } },
-
-    /* ----- wireframes: each shows a different way a page fills up ----- */
-    "빈 템플릿": { hint: "점선 상자를 누를 때마다 블록이 하나씩 쌓입니다", run: function (tp) {
-      var box = sty(tp, "border:2px dashed"), html0 = box.innerHTML, css0 = box.style.cssText, step = 0, pics = files(DREAM).slice(0, 3);
-      own(box, "copy");
-      box.addEventListener("click", function () {
-        step = (step + 1) % 6;
-        if (!step) { box.innerHTML = html0; box.style.cssText = css0; return; }
-        if (step === 1) { box.innerHTML = ""; box.style.placeContent = "start"; box.style.textAlign = "left"; box.style.padding = "40px"; box.style.gap = "18px"; }
-        var b = document.createElement("div"); b.className = "lv-fade";
-        if (step >= 3) {
-          var row = box.querySelector(".fx-row");
-          if (!row) { row = document.createElement("div"); row.className = "fx-row"; row.style.cssText = "display:flex;gap:12px"; box.appendChild(row); }
-          b.innerHTML = '<img src="' + src(pics[step - 3]) + '" alt="" data-fx="1" style="height:230px;display:block">'; row.appendChild(b); return;
-        }
-        b.innerHTML = step === 1 ? '<b style="font-size:48px;font-weight:600;letter-spacing:-.04em">' + N + '</b>'
-          : '<p style="font-size:18px;max-width:560px;margin:0;opacity:.75">사진과 글을 올리는 곳입니다. 블록을 더하고, 옮기고, 지우면서 페이지를 만듭니다.</p>';
-        box.appendChild(b);
-      });
-    } },
-    "와이어프레임 W102": { hint: "빈 칸을 누르면 사진이 들어가고 회색 줄이 글로 바뀝니다", run: function (tp) {
-      var w = tp.querySelector(".wf"), g = lineGroups(tp), pics = files(DREAM), i = -1;
-      own(w, "copy");
-      w.addEventListener("click", function () {
-        i = (i + 1) % pics.length; var f = pics[i], im = putImg(w, f);
-        im.animate([{ transform: "scale(1.15)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 500, easing: "cubic-bezier(.2,.7,.2,1)" });
-        if (g[0]) g[0].innerHTML = '<b style="font-size:20px;font-weight:500">' + NAMES[f] + '</b><span class="m" style="opacity:.5">2026 · ' + pad2(i + 1) + ' / ' + pad2(pics.length) + '</span>';
-        if (g[1] && i === 0) g[1].innerHTML = '<p class="lv-fade" style="margin:0;font-size:16px;line-height:1.6;opacity:.8">비어 있는 공간을 찍은 연작입니다. 사람이 떠난 뒤의 빛과 벽, 오래된 복도의 초록을 기록했습니다.</p>';
-      });
-    } },
-    "와이어프레임 W203": { hint: "칸에 올리면 +, 누르면 사진이 채워집니다", run: function (tp) {
-      var k = Math.floor(Math.random() * 40);
-      $$(tp, ".wf.in").forEach(function (c) {
-        own(c, "copy");
-        var plus = document.createElement("span"); plus.textContent = "+"; plus.style.cssText = "position:absolute;inset:0;display:grid;place-items:center;font-size:48px;opacity:0;transition:opacity .2s;z-index:2"; c.appendChild(plus);
-        c.addEventListener("mouseenter", function () { plus.style.opacity = .6; });
-        c.addEventListener("mouseleave", function () { plus.style.opacity = 0; });
-        c.addEventListener("click", function () {
-          var f = POOL[k++ % POOL.length]; putImg(c, f);
-          if (!c._cap) { var l = c.nextElementSibling, s = document.createElement("span"); s.style.fontSize = "14px"; if (l) l.replaceWith(s); else c.parentNode.appendChild(s); c._cap = s; }
-          c._cap.textContent = NAMES[f] || "";
-        });
-      });
-    } },
-    "와이어프레임 W304": { hint: "← → 나 빈 칸을 누르면 슬라이드에 사진이 채워집니다", run: function (tp, st) {
-      plain(tp, st);
-      var w = tp.querySelector(".wf"), list = files(CLOUD).concat(files(DREAM).slice(13)), i = -1;
-      var cnt = document.createElement("span"); cnt.style.cssText = "position:absolute;left:28px;bottom:24px;z-index:2;font-size:15px;color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.5)"; w.appendChild(cnt);
-      function go(d) { i = (i + d + list.length) % list.length; putImg(w, list[i]); cnt.textContent = pad2(i + 1) + " / " + pad2(list.length) + "  " + NAMES[list[i]]; }
-      $$(tp, "span").filter(function (s) { return /^[←→]$/.test(s.textContent.trim()); }).forEach(function (a) { own(a).addEventListener("click", function () { go(a.textContent.trim() === "←" ? -1 : 1); }); });
-      own(w).addEventListener("click", function () { go(1); });
-    } },
-    "와이어프레임 W405": { hint: "목록 줄에 올리면 오른쪽 칸에 사진이 나타납니다", run: function (tp) {
-      var box = sty(tp, "width:840px;top:90px"), rows = [].slice.call(box.children), w = $$(tp, ".wf").pop(), list = files(MOUNT).concat(files(FOREST)), im = null;
-      rows.forEach(function (r, k) {
-        r.style.transition = "background-color .15s";
-        r.addEventListener("mouseenter", function () { rows.forEach(function (o) { o.style.background = o === r ? "#f3f3f3" : ""; }); im = putImg(w, list[k % list.length], "transition:opacity .3s"); im.style.opacity = 1; });
-      });
-      box.addEventListener("mouseleave", function () { rows.forEach(function (o) { o.style.background = ""; }); if (im) im.style.opacity = 0; });
-    } },
-    "와이어프레임 W506": { hint: "불러오는 중인 화면입니다 · 누르면 내용이 채워지고, 다시 누르면 비워집니다", run: function (tp) {
-      var g = lineGroups(tp), w = tp.querySelector(".wf"), on = false;
-      $$(tp, ".wl").forEach(function (l) { l.classList.add("fx-shim"); });
-      var saved = g.map(function (x) { return x.innerHTML; });
-      w.dataset.fx = 1;
-      tp.addEventListener("click", function (e) {
-        if (skip(e)) return; on = !on;
-        if (on) {
-          g[0].innerHTML = '<b class="lv-fade" style="font-size:30px;font-weight:600;letter-spacing:-.03em;line-height:1.1">기다림의 방들</b><span class="m lv-fade" style="opacity:.5">사진 연작 · 2026</span>';
-          if (g[1]) g[1].innerHTML = '<p class="lv-fade" style="margin:0;font-size:16px;line-height:1.6;opacity:.8">대기실, 복도, 빈 수영장처럼 누군가를 기다리는 공간을 찍었습니다. 사람이 없는 시간에만 촬영했습니다.</p>';
-          putImg(w, "dc-waiting-room-window");
-        } else {
-          g.forEach(function (x, k) { x.innerHTML = saved[k]; });
-          var im = w.querySelector(".fx-img"); if (im) im.remove();
-        }
-      });
-    } },
-    "와이어프레임 W607": { hint: "누를 때마다 여섯 칸이 차례로 다른 주제로 채워집니다", run: function (tp) {
-      var cells = $$(tp, ".wf"), sets = [DREAM, MOUNT, FLORA, FOOD, ANIMAL, KOREA, ABSTRACT], p = 0;
-      cells.forEach(function (c) { own(c); });
-      tp.addEventListener("click", function (e) {
-        if (skip(e)) return; var set = files(sets[p++ % sets.length]);
-        cells.forEach(function (c, k) { after(k * 110, function () { var im = putImg(c, set[k % set.length]); im.animate([{ clipPath: "inset(0 0 100% 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: 520, easing: "cubic-bezier(.7,0,.2,1)" }); }); });
-      });
-    } },
-    "와이어프레임 W708": { hint: "누르면 제목이 타이핑되고 사진이 들어옵니다", run: function (tp) {
-      var g = lineGroups(tp), w = tp.querySelector(".wf"), saved = g.map(function (x) { return x.innerHTML; }), on = false, run = 0;
-      w.dataset.fx = 1;
-      tp.addEventListener("click", function (e) {
-        if (skip(e)) return; on = !on; var id = ++run;
-        if (!on) { g.forEach(function (x, k) { x.innerHTML = saved[k]; }); var old = w.querySelector(".fx-img"); if (old) old.remove(); return; }
-        var head = "여기에 제목이\n들어갑니다", i = 0;
-        g[0].innerHTML = '<div style="font-size:64px;font-weight:600;letter-spacing:-.04em;line-height:1.1"></div>';
-        var h = g[0].firstChild;
-        (function step() {
-          if (id !== run) return; i++;
-          h.innerHTML = esc(head.slice(0, i)).replace(/\n/g, "<br>") + '<span class="fx-caret">▍</span>';
-          if (i < head.length) after(60, step);
-          else {
-            if (g[1]) g[1].innerHTML = '<p class="lv-fade" style="margin:0;font-size:17px;line-height:1.6;opacity:.8">글과 사진을 넣으면 이 자리에 그대로 들어갑니다. 제목 크기, 줄 간격, 사진 비율은 모두 바꿀 수 있습니다.</p>';
-            putImg(w, "sum-beach-clouds");
-          }
-        })();
-      });
-    } },
-    "와이어프레임 W809": { hint: "칸을 누르면 사진이 붙고, 끌어서 옮길 수 있습니다 · 오른쪽 위 1 / 4 를 누르면 섞기", run: function (tp) {
-      var cells = $$(tp, ".wf"), pool = files(FLORA).concat(files(FOOD), files(ANIMAL)), k = 0, page = 1, pg = txt(tp, "1 / 4");
-      draggable(tp, cells);
-      cells.forEach(function (c) { c.addEventListener("click", function () { if (!c._moved) putImg(c, pool[k++ % pool.length]); }); });
-      if (pg) own(pg).addEventListener("click", function () {
-        page = page % 4 + 1; pg.textContent = page + " / 4";
-        cells.forEach(function (c) { c.style.transition = "left .6s cubic-bezier(.2,.7,.2,1), top .6s cubic-bezier(.2,.7,.2,1)"; c.style.left = Math.round(30 + Math.random() * 1140) + "px"; c.style.top = Math.round(80 + Math.random() * 480) + "px"; });
-        after(650, function () { cells.forEach(function (c) { c.style.transition = ""; }); });
-      });
-    } },
-    "와이어프레임 W910": { hint: "줄을 누르면 펼쳐져 내용이 보입니다", run: function (tp) {
-      var box = sty(tp, "top:100px;width:560px"), rows = [].slice.call(box.children), w = $$(tp, ".wf").pop(), list = files(WINTER).concat(files(AUTUMN)), open = null;
-      rows.forEach(function (r, k) {
-        var f = list[k % list.length], more = document.createElement("div");
-        own(r); r.style.flexWrap = "wrap";
-        more.style.cssText = "flex-basis:100%;height:0;overflow:hidden;transition:height .45s cubic-bezier(.2,.7,.2,1);display:flex;gap:14px";
-        more.innerHTML = '<img src="' + src(f) + '" alt="" data-fx="1" style="width:120px;height:90px;object-fit:cover;margin-top:12px"><div style="display:grid;gap:8px;margin-top:14px;flex:1;align-content:start"><b style="font-weight:500">' + NAMES[f] + '</b><div class="wl" style="width:90%"></div><div class="wl" style="width:60%"></div></div>';
-        r.appendChild(more);
-        r.addEventListener("click", function () { var was = open === r; if (open) open.lastChild.style.height = 0; open = was ? null : r; if (open) { more.style.height = "106px"; putImg(w, f); } });
-      });
-    } },
-    "와이어프레임 W011": { hint: "왼쪽 빈 칸 위에서 움직이면 사진이 드러납니다 · 누르면 다음 산", run: function (tp) {
-      var w = tp.querySelector(".wf"), list = files(MOUNT), i = 0, im = putImg(w, list[0]);
-      function mask(v) { im.style.webkitMaskImage = v; im.style.maskImage = v; }
-      mask("radial-gradient(circle 0px at 50% 50%, #000 0, transparent 100%)"); own(w);
-      w.addEventListener("mousemove", function (e) { var r = w.getBoundingClientRect(); mask("radial-gradient(circle 230px at " + ((e.clientX - r.left) / r.width * 100).toFixed(1) + "% " + ((e.clientY - r.top) / r.height * 100).toFixed(1) + "%, #000 55%, transparent 100%)"); });
-      w.addEventListener("mouseleave", function () { mask("radial-gradient(circle 0px at 50% 50%, #000 0, transparent 100%)"); });
-      w.addEventListener("click", function () { i = (i + 1) % list.length; im.src = src(list[i]); });
-    } },
-    "와이어프레임 W112": { hint: "아래 칸을 누르면 상품이 채워지고 장바구니로 날아갑니다", run: function (tp, st) {
-      var cells = $$(tp, ".wf.in"), big = $$(tp, ".wf").filter(function (c) { return !c.classList.contains("in"); })[0], cart = tp.querySelector('.lv-a[data-lv="cart"]');
-      var list = [["cer-cup-speckle", "₩ 34,000"], ["fd-oranges-on-wood", "₩ 12,000"], ["pl-plant-wooden-vase", "₩ 58,000"], ["cer-blue-set", "₩ 210,000"], ["fd-vase-and-grapes", "₩ 46,000"]];
-      cells.forEach(function (c, k) {
-        own(c, "copy");
-        c.addEventListener("click", function () {
-          var f = list[k % list.length][0], im = putImg(c, f); if (big) putImg(big, f);
-          var l = c.nextElementSibling;
-          if (l && l.classList.contains("wl")) { var s = document.createElement("span"); s.style.fontSize = "14px"; s.textContent = NAMES[f] + " · " + list[k % list.length][1]; l.replaceWith(s); }
-          st.cart.push({ src: src(f), cap: NAMES[f] }); updateCart(tp); fly(tp, im, cart, src(f));
-        });
-      });
-    } },
-
-    /* ----- populated ----- */
-    "채워진 템플릿 P101": { hint: "아래 사진을 누르면 큰 사진이 바뀌고, 가만히 두면 저절로 넘어갑니다", run: function (tp) {
-      var hero = largest(tp), title = txt(tp, "문래 공공 도서관"), gis = $$(tp, ".gi"), i = 0, idle = 0;
-      var list = [hero.getAttribute("src")].concat(gis.map(function (g) { return g.querySelector("img").getAttribute("src"); }));
-      var names = ["문래 공공 도서관"].concat(gis.map(function (g) { return g.querySelector("span").lastChild.nodeValue; }));
-      function show(k) { i = k; swap(hero, list[k]); if (title) title.textContent = names[k]; gis.forEach(function (g, j) { g.style.opacity = j === k - 1 ? .4 : 1; }); }
-      gis.forEach(function (g, j) { own(g); g.style.transition = "opacity .3s"; g.querySelector("img").dataset.fx = 1; g.addEventListener("click", function () { idle = 0; show(j + 1); }); });
-      every(3200, function () { if (++idle > 1) show((i + 1) % list.length); });
-    } },
-    "채워진 템플릿 P202": { hint: "사진 위에 마우스를 올려 암실에서 현상해 보세요", run: function (tp) {
-      var ims = $$(tp, ".gi img"), done = 0, lab = add(tp, "right:28px;top:48px;font-family:var(--mono);font-size:14px;opacity:.6", "현상 0 / " + ims.length);
-      ims.forEach(function (im) {
-        im.style.transition = "filter 1.6s ease, opacity 1.6s"; im.style.filter = "brightness(2.4) contrast(.35) sepia(.4)"; im.style.opacity = .3;
-        im.closest(".gi").addEventListener("mouseenter", function () { if (im._dev) return; im._dev = 1; im.style.filter = "none"; im.style.opacity = 1; lab.textContent = "현상 " + (++done) + " / " + ims.length; });
-      });
-    } },
-    "채워진 템플릿 P303": { hint: "전시까지 남은 날을 오늘 날짜로 셉니다 · 마우스를 위아래로 움직여 보세요", run: function (tp) {
-      var dt = txt(tp, "2026. 10. 02"), start = new Date(2026, 9, 2), end = new Date(2026, 10, 15, 23, 59), now = new Date(), days = Math.ceil((start - now) / 864e5);
-      if (dt) {
-        var tag = document.createElement("span"); tag.style.cssText = "justify-self:start;padding:2px 12px;border-radius:99px;background:var(--t-ink);color:var(--t-bg);font-size:14px";
-        tag.textContent = now < start ? "D-" + days + " · 곧 열립니다" : now <= end ? "지금 전시 중" : "전시가 끝났습니다";
-        dt.parentNode.insertBefore(tag, dt.nextSibling);
-      }
-      var ims = $$(tp, ".ph img");
-      tp.addEventListener("mousemove", function (e) { var y = (pt(tp, e).y - 450) / 450; ims.forEach(function (im, k) { im.style.transform = "scale(1.14) translateY(" + (y * [20, -28, 32][k % 3]).toFixed(1) + "px)"; }); });
-    } },
-    "채워진 템플릿 P404": { hint: "위쪽 분류(도자·가구·유리)를 누르면 상품이 걸러집니다", run: function (tp) {
-      var mid = tp.querySelector(".tp-row").children[1], cats = { "도자": /cer-|st-yellow/, "가구": /ch-/, "유리": /gl-/ }, cards = [].slice.call(sty(tp, "grid-template-columns:repeat(4,1fr);gap:30px 16px").children);
-      mid.innerHTML = ["전체", "도자", "가구", "유리"].map(function (c, k) { return '<button type="button" class="lv-btn fx-cat" data-c="' + c + '" style="opacity:' + (k ? .45 : 1) + '">' + c + '</button>'; }).join(" · ");
-      mid.addEventListener("click", function (e) {
-        var b = e.target.closest(".fx-cat"); if (!b) return; var re = cats[b.dataset.c];
-        $$(mid, ".fx-cat").forEach(function (x) { x.style.opacity = x === b ? 1 : .45; });
-        cards.forEach(function (c) { var on = !re || re.test(c.querySelector("img").getAttribute("src")); c.style.transition = "opacity .35s, transform .35s, filter .35s"; c.style.opacity = on ? 1 : .12; c.style.filter = on ? "" : "grayscale(1)"; c.style.transform = on ? "" : "scale(.94)"; });
-      });
-    } },
-    "채워진 템플릿 P505": { hint: "마우스를 움직이면 제목에 움직임의 잔상이 남습니다", run: function (tp) {
-      var h = tp.querySelector("h3.big"), bg = largest(tp), last = 0;
-      bg.style.transition = "transform .5s ease-out";
-      tp.addEventListener("mousemove", function (e) {
-        var p = pt(tp, e), now = performance.now();
-        bg.style.transform = "scale(1.08) translate(" + ((720 - p.x) / 50).toFixed(1) + "px," + ((450 - p.y) / 50).toFixed(1) + "px)";
-        if (now - last < 60) return; last = now;
-        var g = h.cloneNode(true); g.dataset.fx = 1; g.style.pointerEvents = "none"; h.parentNode.insertBefore(g, h);
-        g.animate([{ transform: "none", opacity: .45 }, { transform: "translate(" + ((p.x - 720) / 10).toFixed(0) + "px," + ((p.y - 450) / 16).toFixed(0) + "px)", opacity: 0 }], { duration: 800, easing: "ease-out" }).onfinish = function () { g.remove(); };
-      });
-    } },
-    "채워진 템플릿 P606": { hint: "이력 줄에 올리면 그해의 사진으로 바뀝니다", run: function (tp) {
-      var im = largest(tp), base = im.getAttribute("src"), rows = $$(tp, "div").filter(function (d) { return /grid-template-columns:70px 1fr;padding:6px 0/.test(d.getAttribute("style") || ""); });
-      var list = ["fa-red-dress-blue-sky", "fa-red-blazer-stairs", "fa-blazer-hands-pockets", "fa-white-suit"];
-      rows.forEach(function (r, k) {
-        r.style.transition = "padding-left .25s";
-        r.addEventListener("mouseenter", function () { r.style.paddingLeft = "10px"; swap(im, src(list[k % list.length])); });
-        r.addEventListener("mouseleave", function () { r.style.paddingLeft = ""; });
-      });
-      if (rows[0]) rows[0].parentNode.addEventListener("mouseleave", function () { swap(im, base); });
-    } },
-    "채워진 템플릿 P707": { hint: "왼쪽 사진 위에서 위아래로 움직이면 다른 얼굴이 드러납니다", run: function (tp) {
-      var ph = tp.querySelector(".ph"), top = document.createElement("img"), line = document.createElement("i");
-      top.src = src("pt-shadow-face"); top.alt = ""; top.dataset.fx = 1; top.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;clip-path:inset(0 0 100% 0)";
-      line.style.cssText = "position:absolute;left:0;right:0;top:0;height:1px;background:#fff;opacity:0";
-      ph.appendChild(top); ph.appendChild(line);
-      ph.addEventListener("mousemove", function (e) { var r = ph.getBoundingClientRect(), k = clamp((e.clientY - r.top) / r.height, 0, 1); top.style.transition = ""; top.style.clipPath = "inset(0 0 " + (100 - k * 100).toFixed(1) + "% 0)"; line.style.top = (k * 100) + "%"; line.style.opacity = .8; });
-      ph.addEventListener("mouseleave", function () { top.style.transition = "clip-path .6s"; top.style.clipPath = "inset(0 0 100% 0)"; line.style.opacity = 0; });
-    } },
-    "채워진 템플릿 P808": { hint: "아래 상품을 누르면 장바구니로 날아갑니다", run: function (tp, st) {
-      var cart = tp.querySelector('.lv-a[data-lv="cart"]'), row = sty(tp, "top:668px");
-      if (row) [].slice.call(row.children).forEach(function (it) {
-        var im = it.querySelector("img"); if (!im) return;
-        im.dataset.fx = 1; own(it); it.style.transition = "transform .25s";
-        it.addEventListener("mouseenter", function () { it.style.transform = "translateY(-6px)"; });
-        it.addEventListener("mouseleave", function () { it.style.transform = ""; });
-        it.addEventListener("click", function () { st.cart.push({ src: im.getAttribute("src"), cap: NAMES[fileOf(im)] || "" }); updateCart(tp); fly(tp, im, cart, im.getAttribute("src")); });
-      });
-    } },
-    "채워진 템플릿 P909": { hint: "이름에 올리면 사진이 바뀌고, 가만히 두면 스스로 넘어갑니다", run: function (tp, st) {
-      var L = st.lists && st.lists[0]; if (!L) return;
-      var n = L.el.children.length, i = 1, idle = 0;
-      L.el.addEventListener("mouseover", function (e) { idle = 0; var c = e.target.closest("[data-li]"); if (c) i = +c.dataset.li.split(":")[1]; });
-      every(2000, function () { if (++idle < 2) return; i = (i + 1) % n; listPick(tp, st, 0, i); });
-    } },
-    "채워진 템플릿 P110": { hint: "큰 번호를 누르면 다음 프로젝트로 넘어갑니다", run: function (tp) {
-      var num = sty(tp, "font-size:220px"), info = sty(tp, "top:300px;width:420px"), ims = $$(tp, ".ph img"), i = 0;
-      var P = [["07", "House on a Slope", "Gapyeong, 2026", "A concrete house that follows the hill in four steps. Each floor is one room wide and opens to the valley.", "비탈의 집 — 언덕을 따라 네 단으로 놓인 콘크리트 주택.", ["arch-concrete-blocks", "int-stairs", "arch-steps-teal"]],
-        ["08", "Courtyard Rooms", "Jeonju, 2025", "Six rooms around a timber courtyard. The roof lines follow the old houses next door.", "마당의 방 — 나무 마당을 둘러싼 여섯 개의 방.", ["kr-bench-building", "kr-wood-floor-curtain-room", "kr-roof-blue-sky"]],
-        ["09", "Pool Pavilion", "Busan, 2025", "A public pool with a thin roof and a wall of glass facing the sea.", "수영장 파빌리온 — 바다를 향한 유리벽의 공공 수영장.", ["dc-pool-building-aerial", "dc-pool-ladder-wall", "arch-curve"]],
-        ["10", "Forest Library", "Hongcheon, 2024", "A reading room raised above the forest floor on twelve columns.", "숲의 도서관 — 열두 개의 기둥 위에 놓인 열람실.", ["fo-misty-forest", "int-skylight-tree", "arch-white-wall"]]];
-      own(num);
-      num.addEventListener("click", function () {
-        i = (i + 1) % P.length; var p = P[i];
-        num.animate([{ transform: "none", opacity: 1 }, { transform: "translateY(-40px)", opacity: 0 }], { duration: 180 }).onfinish = function () { num.textContent = p[0]; num.animate([{ transform: "translateY(40px)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 260, easing: "cubic-bezier(.2,.7,.2,1)" }); };
-        if (info) { info.innerHTML = "<b style='font-weight:500'>" + p[1] + "</b><br>" + p[2] + "<br><br>" + p[3] + "<br><br>" + ko(p[4], "opacity:.6;font-size:15px"); info.classList.remove("lv-fade"); void info.offsetWidth; info.classList.add("lv-fade"); }
-        ims.forEach(function (im, k) { after(k * 120, function () { swap(im, src(p[5][k % 3])); }); });
-      });
-    } },
-    "채워진 템플릿 P111": { hint: "사진을 끌어서 옮기고, 오른쪽 위 1 / 4 를 누르면 다음 보드", run: function (tp, st) {
-      plain(tp, st);
-      var pins = $$(tp, "div").filter(function (d) { return /transform:rotate/.test(d.getAttribute("style") || "") && d.querySelector("img"); });
-      var boards = [null, files(FLORA), files(DREAM).slice(9, 19), files(FOOD).concat(files(ANIMAL))], orig = pins.map(function (p) { return p.querySelector("img").getAttribute("src"); }), pg = txt(tp, "1 / 4"), page = 0;
-      draggable(tp, pins);
-      if (pg) own(pg).addEventListener("click", function () {
-        page = (page + 1) % 4; pg.textContent = (page + 1) + " / 4";
-        pins.forEach(function (p, k) { after(k * 60, function () { swap(p.querySelector("img"), page ? src(boards[page][k % boards[page].length]) : orig[k]); }); });
-      });
-    } },
-    "채워진 템플릿 P112": { hint: "제목 글자가 떠다니고, 마우스를 가까이 대면 밀려 올라갑니다", run: function (tp) {
-      var t = sty(tp, "font-size:128px"), ch = wrapChars(t), m = { x: -999, y: -999 };
-      var base = ch.map(function (c) { var b = boxOf(tp, c); return { x: b.x + b.w / 2, y: b.y + b.h / 2 }; });
-      tp.addEventListener("mousemove", function (e) { m = pt(tp, e); });
-      tp.addEventListener("mouseleave", function () { m = { x: -999, y: -999 }; });
-      frame(function (dt, now) {
-        if (!tp.isConnected) return false;
-        ch.forEach(function (c, i) { var d = Math.hypot(m.x - base[i].x, m.y - base[i].y), push = d < 180 ? (180 - d) / 180 * 55 : 0; c.style.transform = "translateY(" + (Math.sin(now / 650 + i * .7) * 7 - push).toFixed(1) + "px) rotate(" + (Math.sin(now / 900 + i) * 3).toFixed(1) + "deg)"; });
-      });
-      var dates = sty(tp, "bottom:28px;display:grid;gap:6px");
-      if (dates) [].slice.call(dates.children).forEach(function (r) {
-        r.style.transition = "padding-left .25s";
-        r.addEventListener("mouseenter", function () { r.style.paddingLeft = "12px"; });
-        r.addEventListener("mouseleave", function () { r.style.paddingLeft = ""; });
-        own(r).addEventListener("click", function () { toast(tp, r.textContent.replace(/\s+/g, " ").trim() + " — 표를 담았습니다"); });
-      });
-    } }
-  };
-
-  /* ---------- preview window: the page at full size, working, with its 18 variants ---------- */
+  /* ---------- preview window: the page at full size, working like the real site ---------- */
   var modal = document.getElementById("preview"), mStage = document.getElementById("pvStage");
-  var mNo = document.getElementById("pvNo"), mDesc = document.getElementById("pvDesc"), mPal = document.getElementById("pvPal"), mType = document.getElementById("pvType");
+  var mNo = document.getElementById("pvNo"), mDesc = document.getElementById("pvDesc");
   var pvN = 1, lastFocus = null;
   var mHint = document.getElementById("pvHint");
   function renderPreview() {
-    fxClear();
-    var f = find(pvN);
-    mStage.innerHTML = windowFor(f.b, f.v);
+    clearTimers();
+    var b = find(pvN);
+    mStage.innerHTML = windowFor(b);
     var view = mStage.querySelector(".mac-view");
     view.classList.add("live");
     scale(view); if (ro) ro.observe(view);
-    if (f.b.init) f.b.init(view, true);
+    INITS.forEach(function (f) { f(view, true); });
+    liveText(view);
     tick();
     mNo.textContent = tag(pvN);
-    mDesc.textContent = f.b.cat + " · " + f.b.label;
-    var fx = FX[f.b.name || f.b.desc || f.b.label];
-    mHint.textContent = fx ? fx.hint : "";
-    var pi = Math.floor(f.v / 3), ti = f.v % 3;
-    mPal.innerHTML = f.b.palettes.map(function (p, i) { return '<button type="button" data-p="' + i + '" aria-pressed="' + (i === pi) + '" aria-label="색 ' + (i + 1) + '" style="background:' + p[0] + ';color:' + p[1] + '">Aa</button>'; }).join("");
-    mType.innerHTML = TYPES.map(function (t, i) { return '<button type="button" data-t="' + i + '" aria-pressed="' + (i === ti) + '">' + t.name + '</button>'; }).join("");
+    mDesc.textContent = b.cat + " · " + b.label;
+    mHint.textContent = "";
     fitPreview();
-    liven(view, f.b);
+    var feats = liven(view, b);
+    mHint.textContent = feats.length ? "기능: " + feats.join(" · ") : "";
+    fitPreview();
   }
   /* the whole window must fit the screen without scrolling: size it by the height left over */
   var pvBox = modal.querySelector(".pv-box");
@@ -2137,15 +1464,11 @@
     modal.querySelector(".pv-close").focus();
   }
   function closePreview() {
-    modal.hidden = true; document.body.style.overflow = ""; mStage.innerHTML = ""; fxClear();
+    modal.hidden = true; document.body.style.overflow = ""; mStage.innerHTML = ""; clearTimers();
     if (lastFocus) lastFocus.focus();
   }
   modal.addEventListener("click", function (e) {
     if (e.target === modal || e.target.closest(".pv-close")) return closePreview();
-    var f = find(pvN), pi = Math.floor(f.v / 3), ti = f.v % 3;
-    var p = e.target.closest("[data-p]"), t = e.target.closest("[data-t]");
-    if (p) { pvN = f.b.first + (+p.dataset.p) * 3 + ti; renderPreview(); }
-    if (t) { pvN = f.b.first + pi * 3 + (+t.dataset.t); renderPreview(); }
     if (e.target.closest(".pv-prev")) { pvN = pvN > 1 ? pvN - 1 : TOTAL; renderPreview(); }
     if (e.target.closest(".pv-next")) { pvN = pvN < TOTAL ? pvN + 1 : 1; renderPreview(); }
     if (e.target.closest(".pv-use")) { choose(pvN); closePreview(); }
@@ -2174,8 +1497,7 @@
   function markPicked() { document.querySelectorAll(".tpl").forEach(function (c) { c.classList.toggle("is-picked", +c.dataset.n === picked); }); }
   function choose(n) {
     picked = n; markPicked();
-    var f = find(n);
-    barT.innerHTML = esc(host) + ' · <b>' + tag(n) + '</b> ' + f.b.label;
+    barT.innerHTML = esc(host) + ' · <b>' + tag(n) + '</b> ' + find(n).label;
     bar.hidden = false;
     status.textContent = host + ", " + tag(n) + " 템플릿을 골랐습니다.";
   }
