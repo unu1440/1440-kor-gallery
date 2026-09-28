@@ -817,7 +817,7 @@
     return out;
   }
   /* how many hand-made templates templates.js has per section (the tools use this; the page counts its own) */
-  var HAND = { feed: 6, grid: 6, slide: 6, grad: 12, graphic: 26, blank: 12, populated: 12 };
+  var HAND = { feed: 6, grid: 6, slide: 6, grad: 12, graphic: 27, blank: 12, populated: 12 };
   function catalogue(photos, hand) {
     hand = hand || HAND;
     var pl = plan(hand);
