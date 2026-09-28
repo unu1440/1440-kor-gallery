@@ -981,7 +981,11 @@
     /* photographs. Basic templates take the shared set. Every other template takes pictures no other
        template has used yet; while the pool is too small for that, the least used ones, never twice in one template. */
     var shared = SHARED.filter(function (f) { return photos.some(function (p) { return p[0] === f; }); });
-    var P0 = photos.filter(function (p) { return shared.indexOf(p[0]) < 0; }).map(function (p, i) { return { f: p[0], ko: p[1], g: p[2], i: i }; });
+    var OK = function (p) { return !p[3] || Math.min(p[3], p[4]) >= 600; }; /* a strip-like picture (a short side under 600) is too thin for any frame */
+    var P0 = photos.filter(function (p) { return shared.indexOf(p[0]) < 0 && OK(p); }).map(function (p, i) { return { f: p[0], ko: p[1], g: p[2], i: i, w: p[3] || 0, h: p[4] || 0 }; });
+    /* a page filled edge to edge by pictures (bleed) takes only landscape ones big enough for 1440 × 900,
+       or they are blown up and look soft (templates.html?check=features lists any left: lowres) */
+    var WIDE = function (p) { return !p.w || (p.w >= 1150 && p.h >= 720 && p.w / p.h >= 1.3); };
     HAND_USED.forEach(function (f) { used[f] = 1; });
     var demand = HAND_USED.length;
     specs.forEach(function (s) { if (s.cat !== "basic" && s.cat !== "blank") demand += Math.min(L[s.layout].need(s, boxOf(s)) || 0, P0.length); });
@@ -992,22 +996,28 @@
       if (s.feats.indexOf("model") >= 0 || s.cat === "blank") need = 0; /* wireframes show no photographs */
       if (s.cat === "grad") s.groups = /rake|compare|loupe|daylight|scale/.test(s.feats.join()) ? ART_G : ["art", "obj", "space"];
       var want = PREFS[s.layout], like = want ? function (p) { return want.indexOf(p.f.split("-")[0]) >= 0; } : function (p) { return s.groups.indexOf(p.g) >= 0; };
-      var pref = P0.filter(like), rest = P0.filter(function (p) { return !like(p); });
+      var POOL = L[s.layout].bleed ? P0.filter(WIDE) : P0; need = Math.min(need, POOL.length);
+      var pref = POOL.filter(like), rest = POOL.filter(function (p) { return !like(p); });
       var off = (s.no * 37) % P0.length;
       function order(a) { return a.slice().sort(function (x, y) { return (used[x.f] || 0) - (used[y.f] || 0) || ((x.i - off + P0.length) % P0.length) - ((y.i - off + P0.length) % P0.length); }); }
       var got;
-      if (strict) got = order(P0).sort(function (x, y) { return (used[x.f] || 0) - (used[y.f] || 0) || (like(x) ? 0 : 1) - (like(y) ? 0 : 1); }).slice(0, need);
+      if (strict) got = order(POOL).sort(function (x, y) { return (used[x.f] || 0) - (used[y.f] || 0) || (like(x) ? 0 : 1) - (like(y) ? 0 : 1); }).slice(0, need);
       else { got = order(pref).slice(0, need); if (got.length < need) got = got.concat(order(rest).slice(0, need - got.length)); }
+      /* a first picture shown as a wide band (hero layouts) is a large landscape one */
+      if (L[s.layout].hero && got.length && !WIDE(got[0])) {
+        var gw = got.filter(WIDE)[0] || order(POOL.filter(function (p) { return WIDE(p) && got.indexOf(p) < 0; }))[0];
+        if (gw) { var gi = got.indexOf(gw); if (gi > 0) got[gi] = got[0]; got[0] = gw; }
+      }
       s.photos = got.map(function (p) { used[p.f] = (used[p.f] || 0) + 1; return p.f; });
     });
     /* basic templates draw from the whole pool, least used first (pictures no other template shows
        come first), so each looks different; never the same picture twice within one */
-    var BP = photos.map(function (p, i) { return { f: p[0], i: i }; }), bused = {};
+    var BP = photos.filter(OK).map(function (p, i) { return { f: p[0], i: i, w: p[3] || 0, h: p[4] || 0 }; }), bused = {};
     BP.forEach(function (p) { bused[p.f] = used[p.f] ? 1 : 0; });
     specs.forEach(function (s) {
       if (s.cat !== "basic") return;
       var nb = Math.min(L[s.layout].need(s, boxOf(s)) || 0, 60, BP.length), off = (s.no * 37) % BP.length;
-      s.photos = BP.slice().sort(function (x, y) { return (bused[x.f] || 0) - (bused[y.f] || 0) || ((x.i - off + BP.length) % BP.length) - ((y.i - off + BP.length) % BP.length); })
+      s.photos = (L[s.layout].bleed ? BP.filter(WIDE) : BP).slice().sort(function (x, y) { return (bused[x.f] || 0) - (bused[y.f] || 0) || ((x.i - off + BP.length) % BP.length) - ((y.i - off + BP.length) % BP.length); })
         .slice(0, nb).map(function (p) { bused[p.f] = (bused[p.f] || 0) + 1; return p.f; });
     });
     specs.basicPool = BP.length;

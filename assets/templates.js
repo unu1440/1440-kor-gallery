@@ -1133,14 +1133,24 @@
     var hide = !!(b.gen && b.gen.feats.indexOf("autohide") >= 0); /* the menu steps aside while you read down, and comes back when you scroll up */
     /* a pinned page keeps its menu and marquee on screen; one that only hides its menu moves just the menu */
     var pins = b.gen && b.gen.pin ? [].slice.call(tp.querySelectorAll(".tp-nav, .mq")) : hide ? [].slice.call(tp.querySelectorAll(".tp-nav")) : [];
-    var bd = tp.querySelector(".bd"), last = 0, hidden = false;
+    var bd = tp.querySelector(".bd"), last = 0, hidden = false, H0 = tp._h || 900;
+    var bleed = !!(b.gen && GEN.layouts[b.gen.layout] && GEN.layouts[b.gen.layout].bleed && !(tp._w === 390)); /* the first screen is one picture */
     view.addEventListener("scroll", function () {
       var t = geom(tp).top;
       if (hide) { if (t > last + 3 && t > 120) hidden = true; else if (t < last - 3 || t <= 120) hidden = false; last = t; }
       /* the menu follows the page without lag; hiding fades it, so a menu at the bottom or down the side goes away too */
       pins.forEach(function (p) {
         p.style.transform = "translateY(" + t + "px)";
-        if (p.classList.contains("tp-nav")) { p.style.background = t > 0 ? "var(--t-bg)" : ""; p.style.boxShadow = t > 0 ? "0 0 0 14px var(--t-bg)" : ""; } /* over the page it needs the page's own background, or the words run into each other */
+        if (p.classList.contains("tp-nav")) {
+          /* over the page it needs the page's own background, or the words run into each other. A menu drawn over a
+             full-screen picture (its own colour, often white) stays as it is while it is still over the picture, then
+             takes the page's colours once it passes onto the page */
+          if (p._c === undefined) { p._c = p.style.color; p._end = p.offsetTop + p.offsetHeight; }
+          var own = bleed || (p._c && !/--t-ink/.test(p._c)), onPic = own && t + p._end < H0;
+          var bgOn = t > 0 && !onPic;
+          p.style.background = bgOn ? "var(--t-bg)" : ""; p.style.boxShadow = bgOn ? "0 0 0 14px var(--t-bg)" : "";
+          p.style.color = own && bgOn ? "var(--t-ink)" : p._c;
+        }
         if (hide && p.classList.contains("tp-nav")) { p.style.transition = "opacity .25s ease"; p.style.opacity = hidden ? "0" : ""; p.style.pointerEvents = hidden ? "none" : ""; }
       });
       if (bd) bd.style.transform = "translateY(" + t + "px)";
@@ -1849,7 +1859,7 @@
     tick();
     if (fit) fit();
     var feats = liven(view, b);
-    if (fit) fit();
+    if (fit) { fit(); scale(view); } /* the window got its size only now: scale the page to it before measuring */
     fitHeight(view); pinOnScroll(view, b);
     /* pictures arriving late can make the page taller */
     setTimeout(function () { if (view.isConnected) fitHeight(view); }, 700);
@@ -1984,6 +1994,11 @@
     var sBad = [], sDone = 0;
     var sNote = function (b, mob, why) { sBad.push(tag(b.first) + (mob ? " phone" : "") + ": " + why); };
     var go = function (view, y) { view.scrollTop = y; view.dispatchEvent(new Event("scroll")); };
+    /* contrast ratio of two css colours (1 = the same, 21 = black on white) */
+    var lumGap = function (a, z) {
+      var L = function (c) { var m = (c.match(/[\d.]+/g) || [0, 0, 0]).slice(0, 3).map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]; };
+      var x = L(a), y = L(z); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+    };
     var scrollOne = function (b, mob) {
       pvN = b.first; pvMode = mob ? "mob" : "desk"; modal.hidden = false; renderPreview();
       var view = mStage.querySelector(".mac-view"), cv = view.querySelector(".canvas"), tp = view.querySelector(".tp");
@@ -2000,6 +2015,7 @@
         if (pin && (r.bottom < V.top + 2 || r.top > V.bottom - 2)) sNote(b, mob, "pinned menu off screen");
         if (hide && !pin && max * 0.6 / k > 130 && n.style.opacity !== "0") sNote(b, mob, "menu did not hide");
         if (!pin && !hide && n.style.transform) sNote(b, mob, "menu follows without being pinned");
+        var cs = getComputedStyle(n); if (n.style.background && lumGap(cs.color, cs.backgroundColor) < 3) sNote(b, mob, "menu unreadable over the page (" + cs.color + " on " + cs.backgroundColor + ")");
       });
       if (mq && !pin && mq.style.transform) sNote(b, mob, "marquee follows without being pinned");
       go(view, max * 0.4);
@@ -2025,7 +2041,7 @@
     HAND_EXTRA = {}; /* propose the whole table again */
     box.style.cssText = "position:fixed;left:-99999px;top:0;width:1440px";
     document.body.appendChild(box);
-    var crops = [], cropWhy = [], over = [], overWhy = [], gaps = [], phoneH = [], long = [], unstable = [], seenH = {};
+    var crops = [], cropWhy = [], over = [], overWhy = [], gaps = [], phoneH = [], long = [], unstable = [], seenH = {}, lowres = [];
     var note = function (list, x) { if (list.indexOf(x) < 0) list.push(x); };
     /* the tallest empty band down a page (page pixels, as drawn) */
     var band = function (root, pageH, H) { /* only the part below the first screen counts: space inside it is the design */
@@ -2051,6 +2067,13 @@
         var r = ph.getBoundingClientRect(), full = Math.abs(r.width - 1440) < 3 && Math.abs(r.height - 900) < 3;
         var bad = r.height > 903 || r.width > 1443 || (!ph.classList.contains("contain") && !full && r.width * r.height >= 160000);
         if (bad && crops.indexOf(b.first) < 0) { crops.push(b.first); cropWhy.push(tag(b.first) + " " + Math.round(r.width) + "×" + Math.round(r.height) + " " + ph.getAttribute("style")); }
+      });
+      /* a large picture blown up past its own pixels looks soft: shown more than 1.25 × its size (page pixels at 1440 wide) */
+      $$(tp, "img").forEach(function (im) {
+        var f = (im.getAttribute("src") || "").replace(/^.*\/|\.jpg$/g, ""), p = PH[f], r = im.getBoundingClientRect();
+        if (!p || !p[3] || !r.width || r.width * r.height < 200000) return;
+        var fit = getComputedStyle(im).objectFit, sx = r.width / p[3], sy = r.height / p[4], up = fit === "contain" ? Math.min(sx, sy) : Math.max(sx, sy);
+        if (up > 1.25) note(lowres, tag(b.first) + " " + f + " ×" + up.toFixed(2));
       });
       /* the same on a phone (390 wide): a picture more than 300 × 300 that is not the full screen */
       /* every template on a phone too (hand-made ones reflow into one column) */
@@ -2091,7 +2114,7 @@
     });
     box.remove();
     var same = JSON.stringify(propose) === JSON.stringify(keep);
-    document.body.dataset.features = JSON.stringify({ distinct: Object.keys(seen).length, repeats: dup, handExtraUpToDate: same, propose: propose, phoneOverflow: overWhy, phoneGaps: gaps, phoneLong: long, unstable: unstable, phoneScreens: phoneH.sort(function (a, z) { return a - z; }).filter(function (x, i, A) { return i === A.length >> 1 || i === Math.floor(A.length * .9) || i === A.length - 1; }).map(function (x) { return +(x / 697).toFixed(1); }), cropWhy: cropWhy, cropped: crops.map(function (n) { return String(n).charAt(0) === "m" ? "phone " + tag(+String(n).slice(1)) : tag(n); }) });
+    document.body.dataset.features = JSON.stringify({ distinct: Object.keys(seen).length, repeats: dup, handExtraUpToDate: same, propose: propose, phoneOverflow: overWhy, phoneGaps: gaps, phoneLong: long, unstable: unstable, lowres: lowres, phoneScreens: phoneH.sort(function (a, z) { return a - z; }).filter(function (x, i, A) { return i === A.length >> 1 || i === Math.floor(A.length * .9) || i === A.length - 1; }).map(function (x) { return +(x / 697).toFixed(1); }), cropWhy: cropWhy, cropped: crops.map(function (n) { return String(n).charAt(0) === "m" ? "phone " + tag(+String(n).slice(1)) : tag(n); }) });
   }
 
 })();
