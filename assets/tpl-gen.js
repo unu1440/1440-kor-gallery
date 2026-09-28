@@ -292,45 +292,45 @@
     var B2 = {
       table: function () {
         var rows = "";
-        for (var k = 0; k < 8; k++) {
+        for (var k = 0; k < (flow ? 5 : 8); k++) {
           var ti = (s.seed + k * 3) % TITLES.length, mt = MATS[(s.seed + k) % MATS.length];
           rows += '<div data-proj="' + k + '" style="display:grid;grid-template-columns:' + (flow ? "34px minmax(0,1fr) 46px" : "64px minmax(0,1fr) minmax(0,.7fr) 70px") + ';gap:14px;padding:11px 0;' + line + ';align-items:baseline">' +
             '<span class="m" style="font-size:14px;opacity:.55">' + pad2(k + 1) + '</span>' + T(TITLES[ti], TITLES_KO[ti]) +
             (flow ? "" : T(mt[0], mt[1], "font-size:15px;opacity:.6;overflow:hidden;white-space:nowrap")) + '<span class="m" style="font-size:14px;opacity:.55;text-align:right">' + (2026 - k % 6) + '</span></div>';
         }
-        return '<div>' + head("table", 8) + '<div style="font-size:' + fs + 'px">' + rows + '</div></div>';
+        return '<div>' + head("table", flow ? 5 : 8) + '<div style="font-size:' + fs + 'px">' + rows + '</div></div>';
       },
       list: function () {
         var big = flow ? Math.min(30, Math.round(fs * 1.3)) : Math.round(fs * 1.9), rows = "";
-        for (var k = 0; k < 6; k++) { var ti = (s.seed + k * 5 + 1) % TITLES.length; rows += '<div data-proj="' + k + '" style="cursor:pointer;overflow-wrap:anywhere">' + T(TITLES[ti], TITLES_KO[ti]) + (w ? "" : '<sup class="m" style="font-size:.4em;opacity:.5;margin-left:.3em">' + (2026 - k) + '</sup>') + '</div>'; }
+        for (var k = 0; k < (flow ? 4 : 6); k++) { var ti = (s.seed + k * 5 + 1) % TITLES.length; rows += '<div data-proj="' + k + '" style="cursor:pointer;overflow-wrap:anywhere">' + T(TITLES[ti], TITLES_KO[ti]) + (w ? "" : '<sup class="m" style="font-size:.4em;opacity:.5;margin-left:.3em">' + (2026 - k) + '</sup>') + '</div>'; }
         return '<div style="' + al + '">' + head("list") + '<div style="font-size:' + big + 'px;line-height:1.12;letter-spacing:-.03em;font-weight:500">' + rows + '</div></div>';
       },
       cv: function () {
-        var rows = EXH.map(function (e, k) { return '<div style="display:grid;grid-template-columns:' + (flow ? "56px 1fr" : "110px 1fr") + ';gap:14px;padding:8px 0;' + (k ? line : "") + '"><span class="m" style="opacity:.55">' + e[0] + '</span>' + T(e[1], "") + '</div>'; }).join("");
+        var rows = EXH.slice(0, flow ? 4 : 6).map(function (e, k) { return '<div style="display:grid;grid-template-columns:' + (flow ? "56px 1fr" : "110px 1fr") + ';gap:14px;padding:8px 0;' + (k ? line : "") + '"><span class="m" style="opacity:.55">' + e[0] + '</span>' + T(e[1], "") + '</div>'; }).join("");
         return '<div style="display:grid;grid-template-columns:' + (flow ? "1fr" : "1fr 2fr") + ';gap:' + (flow ? 8 : 40) + 'px">' + head("cv") + '<div style="font-size:' + Math.round(fs * .85) + 'px">' + rows + '</div></div>';
       },
       news: function () {
-        var items = NEWS.slice(s.seed % 3, s.seed % 3 + 3);
+        var items = NEWS.slice(s.seed % 3, s.seed % 3 + (flow ? 2 : 3));
         return '<div>' + head("news") + '<div style="display:grid;grid-template-columns:' + (flow ? "1fr" : "repeat(3,1fr)") + ';gap:' + (flow ? 18 : 28) + 'px">' + items.map(function (x) {
           return '<div style="' + line + ';padding-top:12px;display:grid;gap:8px"><span class="m" style="font-size:14px;opacity:.55">' + x[0] + '</span>' + T(x[1], x[2], "font-size:" + Math.round(fs * .95) + "px;line-height:1.3") + '</div>';
         }).join("") + '</div></div>';
       },
       clients: function () {
-        var names = shuffled(rng(s.seed * 3 + 1), CLIENTS).slice(0, flow ? 8 : 12);
+        var names = shuffled(rng(s.seed * 3 + 1), CLIENTS).slice(0, flow ? 6 : 12);
         return '<div>' + head("clients") + '<div style="columns:' + (flow ? 2 : 4) + ';column-gap:24px;font-size:' + Math.round(fs * .8) + 'px;line-height:1.6">' + names.map(function (x) { return '<div>' + T(x, "") + '</div>'; }).join("") + '</div></div>';
       },
       statement: function () {
         var ab = ABOUT[(s.seed + 2) % ABOUT.length];
         return '<div style="' + al + ';max-width:' + (flow ? "none" : "1100px") + ';' + (c.al === "center" && !flow ? "margin:0 auto" : "") + '">' +
-          (w ? c.lines(["100%", "96%", "70%"], "", Math.round(fs * 1.2)) : '<p style="font-size:' + Math.round(fs * (flow ? 1.25 : 1.9)) + 'px;line-height:1.15;letter-spacing:-.03em;margin:0">' + c.t(ab[0], ab[1]) + '</p>') + '</div>';
+          (w ? c.lines(["100%", "96%", "70%"], "", Math.round(fs * 1.2)) : '<p style="font-size:' + (flow ? Math.min(30, Math.round(fs * 1.25)) : Math.round(fs * 1.9)) + 'px;line-height:1.15;letter-spacing:-.03em;margin:0">' + c.t(ab[0], ab[1]) + '</p>') + '</div>';
       },
       about: function () {
         var ab = ABOUT[(s.seed + 4) % ABOUT.length];
-        return '<div style="display:grid;grid-template-columns:' + (flow ? "1fr" : "1.4fr 1fr") + ';gap:' + (flow ? 24 : 48) + 'px;align-items:start">' + c.para(ab[0], ab[1], "font-size:" + Math.round(fs * 1.1) + "px;line-height:1.35;letter-spacing:-.02em;margin:0") +
+        return '<div style="display:grid;grid-template-columns:' + (flow ? "1fr" : "1.4fr 1fr") + ';gap:' + (flow ? 24 : 48) + 'px;align-items:start">' + c.para(ab[0], ab[1], "font-size:" + (flow ? Math.min(24, Math.round(fs * 1.1)) : Math.round(fs * 1.1)) + "px;line-height:1.35;letter-spacing:-.02em;margin:0") +
           (w ? "" : '<p class="ko" style="font-size:15px;opacity:.55;margin:0">' + ab[1] + '</p>') + '</div>';
       },
       timeline: function () {
-        var ys = EXH.slice(0, flow ? 4 : 6).slice().reverse();
+        var ys = EXH.slice(0, flow ? 3 : 6).slice().reverse();
         return '<div>' + head("timeline") + '<div style="display:grid;grid-template-columns:' + (flow ? "1fr" : "repeat(" + ys.length + ",1fr)") + ';gap:' + (flow ? 10 : 0) + 'px;' + (flow ? "" : "border-top:2px solid currentColor") + '">' + ys.map(function (e) {
           return '<div style="padding:' + (flow ? "0" : "14px 14px 0 0") + ';display:grid;gap:6px;' + (flow ? line + ";padding-top:10px" : "") + '"><span class="m" style="font-size:' + Math.round(fs * 1.1) + 'px">' + e[0] + '</span>' + T(e[1], "", "font-size:15px;opacity:.75;line-height:1.35") + '</div>';
         }).join("") + '</div></div>';
@@ -347,7 +347,7 @@
           '<div style="display:flex;gap:18px;align-items:baseline;font-size:14px;' + (c.al === "center" && !flow ? "justify-content:center" : "") + '"><span data-qa style="opacity:.6">' + (w ? "" : q[1]) + '</span><button type="button" class="lv-a" data-quote="-1" aria-label="이전 후기">←</button><button type="button" class="lv-a" data-quote="1" aria-label="다음 후기">→</button></div></div>';
       },
       team: function () {
-        var ppl = shuffled(rng(s.seed + 5), PEOPLE).slice(0, flow ? 4 : 6);
+        var ppl = shuffled(rng(s.seed + 5), PEOPLE).slice(0, flow ? 3 : 6);
         return '<div>' + head("team") + '<div style="display:grid;grid-template-columns:' + (flow ? "1fr" : "repeat(3,1fr)") + ';gap:0 24px;font-size:' + fs + 'px">' + ppl.map(function (nm, k) {
           var ro = ROLES[(k + s.seed) % ROLES.length];
           return '<button type="button" class="lv-a" data-member="' + k + '" data-role="' + ro[0] + '" style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;' + line + ';text-align:left;width:100%"><span>' + (w ? c.lines(["60%"], "", 12) : nm) + '</span><span style="font-size:14px;opacity:.55">' + ro[0] + '</span></button>';
@@ -1081,11 +1081,11 @@
         else if (spec.feats.indexOf("slides-list") >= 0) { var ls = ""; for (var k2 = 0; k2 < Math.min(sl, 6); k2++) ls += '<div data-sl="' + k2 + '" style="padding:6px 0;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent);' + (k2 ? "opacity:.35" : "") + '">' + pad2(k2 + 1) + '&nbsp;&nbsp;' + c.title(k2) + '</div>'; out.push('<div style="font-size:17px">' + ls + '</div>'); }
         else out.push('<div style="position:relative;height:36px">' + slideCtl(c, sl, "left:0;top:0") + '</div>');
       } else {
-        for (var m = 0; m < Math.min(n || (c.wire ? 3 : 0), 4); m++) out.push('<div style="position:relative;aspect-ratio:' + (m % 2 ? "4 / 3" : "4 / 5") + '">' + c.img(m, "inset:0;--fit:contain") + '</div>' + cap(m, 1));
+        for (var m = 0; m < Math.min(n || (c.wire ? 3 : 0), 3); m++) out.push('<div style="position:relative;aspect-ratio:' + (m % 2 ? "4 / 3" : "4 / 5") + '">' + c.img(m, "inset:0;--fit:contain") + '</div>' + cap(m, 1));
       }
       if (spec.layout === "split" || spec.layout === "slide-side" || L0.panel) out.push(c.para(ABOUT[spec.seed % 8][0], ABOUT[spec.seed % 8][1], "font-size:17px"));
     } else if (kind === "grid") {
-      var cols = spec.layout === "grid-6" || spec.layout === "p-publisher" ? 3 : 2, gp = "", count = Math.min(c.wire ? 8 : n, 12);
+      var cols = spec.layout === "grid-6" || spec.layout === "p-publisher" ? 3 : 2, gp = "", count = Math.min(c.wire ? 6 : n, 8);
       var pages = c.f.pages ? 3 : 1, per = Math.ceil(count / pages);
       if (/^p-|gr-/.test(spec.layout)) out.push(big(spec.layout === "p-shop" ? c.t("New objects", "새로 들어온 물건") : spec.layout === "p-publisher" ? c.t("Books", "책") : spec.layout === "gr-students" ? "Graduates" : spec.layout === "p-class" ? c.t("Classes", "수업") : c.t("Journal", "읽을거리"), 34));
       for (var g = 0; g < count; g++) gp += c.fig(g, spec.layout === "p-publisher" ? "2 / 3" : "4 / 5", g % per, pages > 1 ? ' data-pg="' + (Math.floor(g / per) + 1) + '"' + (g >= per ? ' style="display:none"' : "") : "");
@@ -1119,8 +1119,8 @@
   }
 
   /* numbering: each section starts with its hand-made templates, then generated ones fill it up
-     basic 480 (feed 160 · grid 160 · slideshow 160) · graduation 120 · graphic 360 · blank 240 · populated 240 */
-  var SECTIONS = [["feed", "basic", 160], ["grid", "basic", 160], ["slide", "basic", 160], ["grad", "grad", 120], ["graphic", "graphic", 360], ["blank", "blank", 240], ["populated", "populated", 240]];
+     quick setup 480 (feed 160 · grid 160 · slideshow 160) · graduation 120 · graphic 360 · mixed (populated) 240 · custom (blank) 240 */
+  var SECTIONS = [["feed", "basic", 160], ["grid", "basic", 160], ["slide", "basic", 160], ["grad", "grad", 120], ["graphic", "graphic", 360], ["populated", "populated", 240], ["blank", "blank", 240]];
   function plan(hand) {
     var out = [], no = 1;
     SECTIONS.forEach(function (s) {

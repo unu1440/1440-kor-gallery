@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&family=Archivo:wdth,wght@62..125,300..900&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,400&family=Nanum+Myeongjo:wght@400;700&family=UnifrakturMaguntia&family=Instrument+Serif:ital@0;1&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Big+Shoulders+Display:wght@500..900&family=Fraunces:opsz,wght@9..144,400..800&family=Unbounded:wght@400..800&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="assets/site.css?v=12">
-  <link rel="stylesheet" href="assets/templates.css?v=28">
+  <link rel="stylesheet" href="assets/site.css?v=13">
+  <link rel="stylesheet" href="assets/templates.css?v=38">
 </head>
 <body class="page-templates">
 
@@ -19,11 +19,11 @@
 <header class="bar bar-pick">
   <a class="home" href="./">1440</a>
   <nav class="cats-links" aria-label="템플릿 분류">
-    <a href="#basic">기본</a>
+    <a href="#basic">빠른 설정</a>
     <a href="#grad">졸업전시</a>
-    <a href="#graphic">그래픽</a>
-    <a href="#blank">빈 템플릿</a>
-    <a href="#populated">채워진 템플릿</a>
+    <a href="#graphic">포스터</a>
+    <a href="#populated">복합</a>
+    <a href="#blank">커스텀</a>
   </nav>
   <div class="bar-right">
     <div class="cats-addr" id="catsAddr"></div>
@@ -36,34 +36,34 @@
 <main class="pick" id="pick">
   <section class="sec" id="shuffle" aria-labelledby="shuffleT">
     <div class="shuffle-head">
-      <h2 class="sec-t" id="shuffleT">셔플 (<span class="m" id="shuffleNo">0000/1440</span>)</h2>
+      <h2 class="sec-t" id="shuffleT">랜덤 (<span class="m" id="shuffleNo">0000/1440</span>)</h2>
     </div>
     <div class="shuffle" id="shuffleStage"></div>
   </section>
 
   <section class="sec" id="basic" aria-labelledby="basicT">
-    <div class="sec-head"><h2 class="sec-t" id="basicT">기본 템플릿</h2><span class="sec-n" id="basicN"></span></div>
+    <div class="sec-head"><h2 class="sec-t" id="basicT">빠른 설정</h2><span class="sec-n" id="basicN"></span></div>
     <div class="basic" id="basicCols"></div>
   </section>
 
   <section class="sec" id="grad" aria-labelledby="gradT">
-    <div class="sec-head"><h2 class="sec-t" id="gradT">졸업전시 템플릿 <span class="sec-note">1440 전용</span></h2><span class="sec-n" data-count="grad"></span></div>
+    <div class="sec-head"><h2 class="sec-t" id="gradT">졸업전시</h2><span class="sec-n" data-count="grad"></span></div>
     <div class="row" data-family="grad"></div>
   </section>
 
   <section class="sec" id="graphic" aria-labelledby="graphicT">
-    <div class="sec-head"><h2 class="sec-t" id="graphicT">그래픽 템플릿</h2><span class="sec-n" data-count="graphic"></span></div>
+    <div class="sec-head"><h2 class="sec-t" id="graphicT">포스터</h2><span class="sec-n" data-count="graphic"></span></div>
     <div class="row" data-family="graphic"></div>
   </section>
 
-  <section class="sec" id="blank" aria-labelledby="blankT">
-    <div class="sec-head"><h2 class="sec-t" id="blankT">빈 템플릿</h2><span class="sec-n" data-count="blank"></span></div>
-    <div class="row row-4" data-family="blank"></div>
+  <section class="sec" id="populated" aria-labelledby="populatedT">
+    <div class="sec-head"><h2 class="sec-t" id="populatedT">복합</h2><span class="sec-n" data-count="populated"></span></div>
+    <div class="row" data-family="populated"></div>
   </section>
 
-  <section class="sec" id="populated" aria-labelledby="populatedT">
-    <div class="sec-head"><h2 class="sec-t" id="populatedT">채워진 템플릿</h2><span class="sec-n" data-count="populated"></span></div>
-    <div class="row" data-family="populated"></div>
+  <section class="sec" id="blank" aria-labelledby="blankT">
+    <div class="sec-head"><h2 class="sec-t" id="blankT">커스텀</h2><span class="sec-n" data-count="blank"></span></div>
+    <div class="row row-4" data-family="blank"></div>
   </section>
 </main>
 
@@ -77,11 +77,14 @@
 <div class="preview" id="preview" hidden role="dialog" aria-modal="true" aria-labelledby="pvNo">
   <div class="pv-box">
     <div class="pv-top">
-      <div class="pv-title"><b class="m" id="pvNo">0001/1440</b><span id="pvDesc"></span><span class="pv-hint" id="pvHint"></span></div>
-      <div class="pv-tools">
-        <div class="pv-modes" role="group" aria-label="화면 크기"><button type="button" data-mode="desk" aria-pressed="true">데스크톱</button><button type="button" data-mode="mob" aria-pressed="false">모바일</button></div>
-        <button type="button" class="pv-fullbtn" aria-pressed="false">전체 화면</button>
-        <button type="button" class="pv-close" aria-label="닫기">✕</button>
+      <b class="m pv-no" id="pvNo">0001/1440</b>
+      <div class="pv-modes" role="group" aria-label="화면 크기">
+        <button type="button" data-mode="desk" aria-pressed="true" aria-label="데스크톱" title="데스크톱"><svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="12" rx="1.2"/><path d="M9 20h6M12 16.5V20"/></svg></button>
+        <button type="button" data-mode="mob" aria-pressed="false" aria-label="모바일" title="모바일"><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/></svg></button>
+      </div>
+      <div class="pv-ends">
+        <button type="button" class="pv-open" aria-label="새 창에서 열기" title="새 창에서 열기"><svg viewBox="0 0 24 24"><path d="M8 16 17 7M9.5 7H17v7.5"/></svg></button>
+        <button type="button" class="pv-close" aria-label="닫기" title="닫기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
       </div>
     </div>
     <div class="pv-stage-wrap">
@@ -90,8 +93,8 @@
       <button type="button" class="shuffle-btn pv-next" aria-label="다음 번호"><svg viewBox="0 0 24 24"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg></button>
     </div>
     <div class="pv-bottom">
-      <p class="pv-note">색과 서체는 템플릿을 고른 다음 편집기에서 정합니다.</p>
-      <button type="button" class="pv-use">이 템플릿으로 시작 <span aria-hidden="true">→</span></button>
+      <p class="pv-hint" id="pvHint"></p>
+      <button type="button" class="pv-use">시작 <span aria-hidden="true">→</span></button>
     </div>
   </div>
 </div>
@@ -127,7 +130,7 @@
 <script src="assets/common.js?v=1"></script>
 <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.3.1/dist/model-viewer.min.js"></script>
 <script src="assets/photos.js?v=2"></script>
-<script src="assets/tpl-gen.js?v=16"></script>
-<script src="assets/templates.js?v=53"></script>
+<script src="assets/tpl-gen.js?v=23"></script>
+<script src="assets/templates.js?v=74"></script>
 </body>
 </html>

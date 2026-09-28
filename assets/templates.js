@@ -8,12 +8,14 @@
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
 
   var site = clean(new URLSearchParams(location.search).get("site"));
-  var host = (site || "name") + ".kor.gallery";
-  var N = esc(site || "Name");
+  /* no address chosen (came straight to the templates): every page uses the same placeholder name */
+  var DEF = "loremipsum";
+  var host = (site || DEF) + ".kor.gallery";
+  var N = esc(site || DEF);
 
-  document.getElementById("catsAddr").innerHTML = site
-    ? '<span class="lbl">주소 </span><b>' + esc(host) + '</b><a href="./">바꾸기</a>'
-    : '<a href="./">주소 정하기</a>';
+  /* no address yet: it is chosen later, on the last page, so the header shows nothing here */
+  if (site) document.getElementById("catsAddr").innerHTML = '<span class="lbl">주소 </span><b>' + esc(host) + '</b><a href="./">바꾸기</a>';
+  else document.getElementById("catsAddr").hidden = true;
 
   /* ---------- building blocks for a 1440 × 900 page ---------- */
   function src(n) { return "assets/img/samples/" + n + ".jpg"; }
@@ -706,13 +708,13 @@
   /* ---------- the catalogue: 1440 templates, each its own, numbered n/1440 ----------
      Every section starts with its hand-made templates; the generator (tpl-gen.js) fills the rest.
      Colour and type are chosen later, in the editor, so here a template is one layout with one set of features. */
-  var CAT_KO = { basic: "기본", grad: "졸업전시", graphic: "그래픽", blank: "빈 템플릿", populated: "채워진 템플릿" };
-  var FAM_KO = { feed: "기본 피드", grid: "기본 그리드", slide: "기본 슬라이드쇼", grad: "졸업전시", graphic: "그래픽", blank: "와이어프레임", populated: "채워진 템플릿" };
+  var CAT_KO = { basic: "빠른 설정", grad: "졸업전시", graphic: "포스터", populated: "복합", blank: "커스텀" };
+  var FAM_KO = { feed: "피드", grid: "그리드", slide: "슬라이드쇼", grad: "졸업전시", graphic: "포스터", populated: "복합", blank: "커스텀" };
   var PH = {};
   (window.PHOTOS || []).forEach(function (p) { PH[p[0]] = p; });
   var GEN = window.TPLGEN;
   var genEnv = {
-    N: N, plain: site || "Name", esc: esc, src: src,
+    N: N, plain: site || DEF, esc: esc, src: src,
     photo: function (f) { var p = PH[f] || [f, f, "art"]; return { f: f, ko: p[1], g: p[2], en: GEN.enName(f) }; }
   };
   var HANDMADE = {};
@@ -802,7 +804,7 @@
       '<button type="button" class="tpl-open" aria-label="' + tag(n) + ' 미리보기">' +
         '<div class="tpl-slot" data-n="' + n + '">' + (framed ? '<div class="mac mac-empty"><div class="mac-bar"></div><div class="mac-view"></div></div>' : '<div class="shot shot-empty"><div class="mac-view"></div></div>') + '</div></button>' +
       '<div class="tpl-cap">' +
-        '<span class="nm"><span class="no m">' + tag(n) + '</span><span class="dsc">' + b.label + '</span></span>' +
+        '<span class="nm"><span class="no m">' + tag(n) + '</span>' + (framed ? "" : '<span class="dsc">' + b.label + '</span>') + '</span>' +
         '<button type="button" class="star" aria-pressed="' + (!!stars[n]) + '" aria-label="' + tag(n) + ' 즐겨찾기">' + (stars[n] ? "★" : "☆") + '</button></div></article>';
   }
 
@@ -840,7 +842,7 @@
   /* basic, as Cargo shows it: feed, grid and slideshow side by side, each a column of cards */
   var basic = document.getElementById("basicCols");
   basic.innerHTML = ["feed", "grid", "slide"].map(function (f) {
-    return '<div class="bcol"><h3 class="bcol-t">' + FAM_KO[f] + ' 템플릿 <span class="m">' + famOf(f).length + '</span></h3><div class="row row-1" data-family="' + f + '"></div></div>';
+    return '<div class="bcol"><h3 class="bcol-t">' + FAM_KO[f] + ' <span class="m">' + famOf(f).length + '</span></h3><div class="row row-1" data-family="' + f + '"></div></div>';
   }).join("");
   /* other sections: cards are added in batches as the page scrolls, so 1440 never sit in the page at once */
   var BATCH = 24;
@@ -900,7 +902,7 @@
   });
   function range(fams) {
     var bs = BASES.filter(function (b) { return fams.indexOf(b.fam) >= 0; });
-    return tag(bs[0].first).slice(0, 4) + "–" + tag(bs[bs.length - 1].first) + " · " + bs.length + "개";
+    return tag(bs[0].first).slice(0, 4) + "–" + tag(bs[bs.length - 1].first);
   }
   document.getElementById("basicN").textContent = range(["feed", "grid", "slide"]);
   document.querySelectorAll("[data-count]").forEach(function (el) { el.textContent = range([el.dataset.count]); });
@@ -982,7 +984,7 @@
     });
     /* like Cargo, the site name opens the information page when there is no link for it */
     if (tp.querySelector('.lv-a[data-lv="info"]')) return;
-    var name = (site || "Name").toLowerCase(), w2 = document.createTreeWalker(tp, NodeFilter.SHOW_TEXT);
+    var name = (site || DEF).toLowerCase(), w2 = document.createTreeWalker(tp, NodeFilter.SHOW_TEXT);
     while ((t = w2.nextNode())) {
       var el2 = t.parentElement, v = t.nodeValue.trim();
       if (!v || v.toLowerCase().indexOf(name) < 0 || el2.closest(".lv-a, .ko, button")) continue;
@@ -1104,24 +1106,43 @@
   /* how tall the page is: the lowest thing on it, and never less than one screen */
   function fitHeight(view) {
     var tp = view.querySelector(".tp"), cv = view.querySelector(".canvas"); if (!tp || !cv) return;
-    var g = geom(tp), R = tp.getBoundingClientRect(), more = tp.querySelector(".tp-more"), low = 0;
+    var g = geom(tp), more = tp.querySelector(".tp-more"), low = 0;
+    /* measure from one screen every time: things set against the bottom would otherwise follow the grown page down,
+       and each later call (pictures arriving late) would make the page longer again */
+    /* (a hand-made page reflowed for a phone is one column in the flow: squeezing it would change its layout) */
+    if (!tp.classList.contains("tp-reflow")) cv.style.height = g.H + "px";
+    if (more && more.style.position === "absolute") more.style.top = g.H + "px";
+    var R = tp.getBoundingClientRect();
+    /* things set against the bottom of the first screen (a bottom menu bar, corner links, the first screen's footer)
+       stay at the bottom of the first screen: pinned to its top edge before the page grows */
+    [].forEach.call(tp.children, function (el) {
+      if (el === more || el.style.top || getComputedStyle(el).position !== "absolute" || getComputedStyle(el).bottom === "auto") return;
+      el.style.top = Math.round((el.getBoundingClientRect().top - R.top) / g.k) + "px"; el.style.bottom = "auto";
+    });
     [].forEach.call(tp.querySelectorAll("*"), function (el) {
-      if (el.closest(".lv-layer, .tp-more, .tp-nav, .tp-foot, .mq, .bd")) return;
+      if (el.closest(".lv-layer, .tp-more, .tp-nav, .mq, .bd")) return; /* the footer counts: it is held in the first screen above, and on a phone it ends the page */
       var r = el.getBoundingClientRect(); if (r.height) low = Math.max(low, (r.bottom - R.top) / g.k);
     });
-    if (more) { more.style.top = Math.max(g.H, Math.ceil(low) + 40) + "px"; low = Math.max(low, (more.getBoundingClientRect().bottom - R.top) / g.k); }
+    /* on a phone the part below already follows the first screen in the flow: moving it down would leave an empty gap */
+    if (more) { if (more.style.position === "absolute") more.style.top = Math.max(g.H, Math.ceil(low) + 40) + "px"; low =Math.max(low, (more.getBoundingClientRect().bottom - R.top) / g.k); }
     cv.style.height = Math.max(g.H, Math.ceil(low + 8)) + "px";
   }
   /* pinned menu and marquee: they stay on screen while the page moves under them */
   function pinOnScroll(view, b) {
     var tp = view.querySelector(".tp"); if (!tp) return;
     var hide = !!(b.gen && b.gen.feats.indexOf("autohide") >= 0); /* the menu steps aside while you read down, and comes back when you scroll up */
-    var pins = b.gen && (b.gen.pin || hide) ? [].slice.call(tp.querySelectorAll(".tp-nav, .mq")) : [];
+    /* a pinned page keeps its menu and marquee on screen; one that only hides its menu moves just the menu */
+    var pins = b.gen && b.gen.pin ? [].slice.call(tp.querySelectorAll(".tp-nav, .mq")) : hide ? [].slice.call(tp.querySelectorAll(".tp-nav")) : [];
     var bd = tp.querySelector(".bd"), last = 0, hidden = false;
     view.addEventListener("scroll", function () {
       var t = geom(tp).top;
       if (hide) { if (t > last + 3 && t > 120) hidden = true; else if (t < last - 3 || t <= 120) hidden = false; last = t; }
-      pins.forEach(function (p) { p.style.transition = hide ? "transform .25s ease" : ""; p.style.transform = "translateY(" + (hidden ? t - 140 : t) + "px)"; });
+      /* the menu follows the page without lag; hiding fades it, so a menu at the bottom or down the side goes away too */
+      pins.forEach(function (p) {
+        p.style.transform = "translateY(" + t + "px)";
+        if (p.classList.contains("tp-nav")) { p.style.background = t > 0 ? "var(--t-bg)" : ""; p.style.boxShadow = t > 0 ? "0 0 0 14px var(--t-bg)" : ""; } /* over the page it needs the page's own background, or the words run into each other */
+        if (hide && p.classList.contains("tp-nav")) { p.style.transition = "opacity .25s ease"; p.style.opacity = hidden ? "0" : ""; p.style.pointerEvents = hidden ? "none" : ""; }
+      });
       if (bd) bd.style.transform = "translateY(" + t + "px)";
     }, { passive: true });
   }
@@ -1271,10 +1292,10 @@
   var HAND_EXTRA = {
     4: ["search"], 164: ["search"], 165: ["search"], 166: ["search"], 321: ["search"], 323: ["search"], 483: ["search"], 603: ["search"],
     605: ["search"], 607: ["news"], 608: ["clock"], 609: ["search"], 611: ["news"], 612: ["news"], 613: ["contact"], 615: ["search"],
-    616: ["search", "news"], 618: ["news"], 619: ["clock"], 620: ["search", "news"], 621: ["search", "clock"], 622: ["search"], 623: ["news", "clock"],
-    626: ["search", "clock"], 963: ["news"], 964: ["search", "news"], 965: ["news", "clock"], 966: ["search", "contact"], 967: ["search", "clock"],
-    968: ["news"], 969: ["clock", "contact"], 971: ["search", "news", "clock"], 1201: ["news"], 1205: ["search"], 1206: ["search", "news"],
-    1207: ["search", "news"], 1210: ["news"], 1211: ["search"], 1212: ["clock"]
+    616: ["search", "news"], 618: ["news"], 619: ["clock"], 620: ["search", "news"], 621: ["search", "clock"], 622: ["search"],
+    623: ["news", "clock"], 626: ["search", "clock"], 961: ["news"], 965: ["search"], 966: ["search", "news"], 967: ["search", "news"], 970: ["news"],
+    971: ["search"], 972: ["clock"], 1203: ["news"], 1204: ["search", "news"], 1205: ["news", "clock"], 1206: ["search", "contact"],
+    1207: ["search", "clock"], 1208: ["news"], 1209: ["clock", "contact"], 1211: ["search", "news", "clock"]
   };
 
 
@@ -1555,8 +1576,8 @@
   }
   /* save the contact straight to a phone's address book */
   function saveVcard(tp) {
-    var v = "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:" + (site || "Name") + "\r\nEMAIL:" + mail() + "\r\nURL:https://" + host + "\r\nEND:VCARD\r\n";
-    var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([v], { type: "text/vcard" })); a.download = (site || "contact") + ".vcf";
+    var v = "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:" + (site || DEF) + "\r\nEMAIL:" + mail() + "\r\nURL:https://" + host + "\r\nEND:VCARD\r\n";
+    var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([v], { type: "text/vcard" })); a.download = (site || DEF) + ".vcf";
     document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
     toast(tp, (tp._lv && tp._lv.ko ? "연락처 파일을 받았습니다" : "Contact card saved") + " (.vcf)");
   }
@@ -1801,7 +1822,7 @@
 
   /* ---------- preview window: the page at full size, working like the real site ---------- */
   var modal = document.getElementById("preview"), mStage = document.getElementById("pvStage");
-  var mNo = document.getElementById("pvNo"), mDesc = document.getElementById("pvDesc");
+  var mNo = document.getElementById("pvNo");
   var pvN = 1, lastFocus = null;
   var mHint = document.getElementById("pvHint");
   var pvMode = "desk";
@@ -1809,27 +1830,44 @@
     clearTimers();
     var b = find(pvN), mob = pvMode === "mob";
     mStage.innerHTML = mob ? phoneFor(b) : windowFor(b);
-    var view = mStage.querySelector(".mac-view");
+    [].forEach.call(modal.querySelectorAll("[data-mode]"), function (x) { x.setAttribute("aria-pressed", x.dataset.mode === pvMode); });
+    mNo.textContent = tag(pvN);
+    mHint.textContent = "";
+    var feats = bringToLife(mStage.querySelector(".mac-view"), b, mob, fitPreview);
+    mHint.textContent = feats.length ? "기능: " + feats.join(" · ") : "";
+    fitPreview();
+  }
+  /* a page that works like the real site: shared by the preview and the page opened in its own window */
+  function bringToLife(view, b, mob, fit) {
     view.classList.add("live");
     var tp0 = view.querySelector(".tp");
     tp0._w = mob ? 390 : 1440; tp0._h = mob ? 697 : 900; tp0._no = b.first;
     if (mob && !b.gen) reflowType(tp0);
-    [].forEach.call(modal.querySelectorAll("[data-mode]"), function (x) { x.setAttribute("aria-pressed", x.dataset.mode === pvMode); });
     scale(view); if (ro) ro.observe(view);
     INITS.forEach(function (f) { f(view, true); });
     liveText(view);
     tick();
-    mNo.textContent = tag(pvN);
-    mDesc.textContent = b.cat + " · " + b.label;
-    mHint.textContent = "";
-    fitPreview();
+    if (fit) fit();
     var feats = liven(view, b);
-    mHint.textContent = feats.length ? "기능: " + feats.join(" · ") : "";
-    fitPreview();
+    if (fit) fit();
     fitHeight(view); pinOnScroll(view, b);
     /* pictures arriving late can make the page taller */
     setTimeout(function () { if (view.isConnected) fitHeight(view); }, 700);
     setTimeout(function () { if (view.isConnected) fitHeight(view); }, 2000);
+    return feats;
+  }
+  /* templates.html?view=n (&m=mob): the template alone, filling its own window */
+  function openSolo(n, mob) {
+    var b = find(n);
+    document.body.classList.add("solo");
+    document.title = tag(n) + " · " + host;
+    var box = document.createElement("div");
+    box.className = "solo-page" + (mob ? " solo-mob" : "");
+    box.innerHTML = '<div class="mac-view"' + (mob ? ' data-w="390"' : "") + '><div class="canvas' + (mob ? " mob" : "") + '">' + pageFor(b, mob) + '</div></div>';
+    document.body.appendChild(box);
+    var view = box.firstChild;
+    bringToLife(view, b, mob);
+    window.addEventListener("resize", function () { scale(view); fitHeight(view); });
   }
   /* the whole window must fit the screen without scrolling: size it by the height left over */
   var pvBox = modal.querySelector(".pv-box");
@@ -1838,19 +1876,16 @@
     if (modal.hidden || !mac) return;
     pvBox.style.width = ""; mac.style.width = "";
     pvBox.style.maxHeight = "none"; /* measure the real height, not the clipped one */
-    pvBox.style.height = "auto";
+    pvBox.style.height = "auto"; pvBox.style.alignSelf = "start"; /* not stretched to the screen while measuring */
     var cs = getComputedStyle(modal);
     var availH = modal.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - 2;
-    var mob = mac.classList.contains("phone"), full = modal.classList.contains("pv-full");
+    var mob = mac.classList.contains("phone");
+    /* the bars span the whole screen; only the window is sized */
     for (var k = 0; k < 3; k++) {
       var extra = pvBox.offsetHeight - mac.offsetHeight, bar = mac.firstElementChild.offsetHeight;
-      var w = Math.floor(Math.min(mStage.clientWidth, Math.max(160, mob ? (availH - extra) * 390 / 844 : (availH - extra - bar) * 1.6)));
-      var side = pvBox.offsetWidth - mStage.clientWidth;
-      mac.style.width = w + "px";
-      /* a phone is narrow: keep the window wide enough for its title and buttons */
-      pvBox.style.width = full ? "" : Math.max(w + side, mob ? Math.min(modal.clientWidth, pvBox.scrollWidth, 720) : 0) + "px";
+      mac.style.width = Math.floor(Math.min(mStage.clientWidth, Math.max(160, mob ? (availH - extra) * 390 / 844 : (availH - extra - bar) * 1.6))) + "px";
     }
-    pvBox.style.maxHeight = ""; pvBox.style.height = "";
+    pvBox.style.maxHeight = ""; pvBox.style.height = ""; pvBox.style.alignSelf = "";
   }
   window.addEventListener("resize", fitPreview);
   function openPreview(n) {
@@ -1869,10 +1904,11 @@
     if (e.target.closest(".pv-next")) { pvN = pvN < TOTAL ? pvN + 1 : 1; renderPreview(); }
     if (e.target.closest(".pv-use")) { choose(pvN); closePreview(); }
     var md = e.target.closest("[data-mode]"); if (md && md.dataset.mode !== pvMode) { pvMode = md.dataset.mode; renderPreview(); }
-    if (e.target.closest(".pv-fullbtn")) {
-      var on = modal.classList.toggle("pv-full");
-      e.target.closest(".pv-fullbtn").setAttribute("aria-pressed", on);
-      fitPreview(); var v = mStage.querySelector(".mac-view"); if (v) { scale(v); fitHeight(v); }
+    if (e.target.closest(".pv-open")) {
+      var u = new URL(location.href); u.hash = "";
+      ["check", "r"].forEach(function (k) { u.searchParams.delete(k); });
+      u.searchParams.set("view", pvN); if (pvMode === "mob") u.searchParams.set("m", "mob"); else u.searchParams.delete("m");
+      window.open(u.href, "_blank", "noopener");
     }
   });
   document.addEventListener("keydown", function (e) {
@@ -1936,8 +1972,51 @@
     });
   });
 
-  showShuffle();
-  watch();
+  var soloN = +new URLSearchParams(location.search).get("view");
+  if (soloN && find(soloN)) openSolo(soloN, new URLSearchParams(location.search).get("m") === "mob");
+  else { showShuffle(); watch(); }
+
+  /* development check: templates.html?check=scroll opens every template in the preview, on a desktop and on a phone,
+     scrolls it and writes into <body data-scroll> the pages whose length changes when measured again, whose end
+     cannot be reached, whose pinned menu leaves the screen, whose hiding menu does not hide or come back, or whose
+     menu follows the page without being pinned */
+  if (/[?&]check=scroll/.test(location.search)) {
+    var sBad = [], sDone = 0;
+    var sNote = function (b, mob, why) { sBad.push(tag(b.first) + (mob ? " phone" : "") + ": " + why); };
+    var go = function (view, y) { view.scrollTop = y; view.dispatchEvent(new Event("scroll")); };
+    var scrollOne = function (b, mob) {
+      pvN = b.first; pvMode = mob ? "mob" : "desk"; modal.hidden = false; renderPreview();
+      var view = mStage.querySelector(".mac-view"), cv = view.querySelector(".canvas"), tp = view.querySelector(".tp");
+      var h = cv.style.height; fitHeight(view);
+      if (cv.style.height !== h) sNote(b, mob, "length " + h + " → " + cv.style.height);
+      var k = geom(tp).k, max = view.scrollHeight - view.clientHeight;
+      if (Math.abs(view.scrollHeight - Math.max(view.clientHeight, parseFloat(cv.style.height) * k)) > 4) sNote(b, mob, "scroll length " + view.scrollHeight + " vs page " + Math.round(parseFloat(cv.style.height) * k));
+      var navs = $$(tp, ".tp-nav"), mq = tp.querySelector(".mq"), vr = function () { return view.getBoundingClientRect(); };
+      var pin = !!(b.gen && b.gen.pin), hide = !!(b.gen && b.gen.feats.indexOf("autohide") >= 0);
+      if (max < 40) return;
+      go(view, 0); go(view, max * 0.6);
+      navs.forEach(function (n) {
+        var r = n.getBoundingClientRect(), V = vr();
+        if (pin && (r.bottom < V.top + 2 || r.top > V.bottom - 2)) sNote(b, mob, "pinned menu off screen");
+        if (hide && !pin && max * 0.6 / k > 130 && n.style.opacity !== "0") sNote(b, mob, "menu did not hide");
+        if (!pin && !hide && n.style.transform) sNote(b, mob, "menu follows without being pinned");
+      });
+      if (mq && !pin && mq.style.transform) sNote(b, mob, "marquee follows without being pinned");
+      go(view, max * 0.4);
+      if (hide) navs.forEach(function (n) { if (n.style.opacity === "0") sNote(b, mob, "menu did not come back on the way up"); });
+      go(view, max);
+      var last = 0; $$(tp, "*").forEach(function (el) { if (el.closest(".lv-layer, .bd, .tp-nav, .mq") || !el.getClientRects().length) return; var r = el.getBoundingClientRect(); if (r.height) last = Math.max(last, r.bottom); }); /* empty boxes of no height are invisible */
+      if (last > vr().bottom + 4) sNote(b, mob, "end of the page cannot be reached (" + Math.round(last - vr().bottom) + "px below)");
+      go(view, 0);
+      navs.forEach(function (n) { if (/translateY\((?!0px)/.test(n.style.transform)) sNote(b, mob, "menu not back in place at the top"); });
+    };
+    var sStep = function (i) {
+      if (i >= BASES.length) { closePreview(); document.body.dataset.scroll = JSON.stringify({ checked: sDone, bad: sBad }); return; }
+      [false, true].forEach(function (mob) { try { scrollOne(BASES[i], mob); } catch (err) { sNote(BASES[i], mob, "error " + err.message); } sDone++; });
+      setTimeout(function () { sStep(i + 1); }, 0);
+    };
+    sStep(0);
+  }
 
   /* development check: templates.html?check=features writes, into <body data-features>, the
      templates whose feature lists (as the preview shows them) repeat another's, and large pictures that get cropped */
@@ -1946,7 +2025,16 @@
     HAND_EXTRA = {}; /* propose the whole table again */
     box.style.cssText = "position:fixed;left:-99999px;top:0;width:1440px";
     document.body.appendChild(box);
-    var crops = [], cropWhy = [], over = [], overWhy = [];
+    var crops = [], cropWhy = [], over = [], overWhy = [], gaps = [], phoneH = [], long = [], unstable = [], seenH = {};
+    var note = function (list, x) { if (list.indexOf(x) < 0) list.push(x); };
+    /* the tallest empty band down a page (page pixels, as drawn) */
+    var band = function (root, pageH, H) { /* only the part below the first screen counts: space inside it is the design */
+      var top = root.getBoundingClientRect().top, spans = [], reach = 0, gap = 0;
+      $$(root, "*").forEach(function (el) { if (el.closest(".bd, .lv-layer") || !el.getClientRects().length) return; var r = el.getBoundingClientRect(); if (r.height) spans.push([r.top - top, r.bottom - top]); });
+      spans.sort(function (a, z) { return a[0] - z[0]; });
+      spans.forEach(function (s) { gap = Math.max(gap, s[0] - Math.max(reach, H)); reach = Math.max(reach, s[1]); });
+      return Math.max(gap, pageH - Math.max(reach, H));
+    };
     var keyOf = function (b) {
       box.innerHTML = '<div class="mac-view"><div class="canvas">' + pageFor(b) + '</div></div>';
       var tp = box.querySelector(".tp"), k = liven(box.firstChild, b).join(" · "); clearTimers();
@@ -1954,6 +2042,10 @@
          - a large picture that is cropped (anything but the full first screen should be shown whole)
          - any picture taller than the first screen or wider than the page (stretched with the page) */
       fitHeight(box.firstChild);
+      /* measuring again must not change the length (the preview measures three times as late pictures arrive) */
+      var h1 = box.querySelector(".canvas").style.height; fitHeight(box.firstChild);
+      if (box.querySelector(".canvas").style.height !== h1) note(unstable, tag(b.first) + " " + h1 + " → " + box.querySelector(".canvas").style.height);
+      var dg = band(tp, parseFloat(h1), 900); if (dg > 450) note(gaps, "desk " + tag(b.first) + " " + Math.round(dg) + "px");
       var cr = tp.getBoundingClientRect();
       $$(tp, ".ph").forEach(function (ph) {
         var r = ph.getBoundingClientRect(), full = Math.abs(r.width - 1440) < 3 && Math.abs(r.height - 900) < 3;
@@ -1961,9 +2053,19 @@
         if (bad && crops.indexOf(b.first) < 0) { crops.push(b.first); cropWhy.push(tag(b.first) + " " + Math.round(r.width) + "×" + Math.round(r.height) + " " + ph.getAttribute("style")); }
       });
       /* the same on a phone (390 wide): a picture more than 300 × 300 that is not the full screen */
+      /* every template on a phone too (hand-made ones reflow into one column) */
+      box.innerHTML = '<div class="mac-view" data-w="390" style="width:390px"><div class="canvas mob">' + pageFor(b, true) + '</div></div>';
+      var mt = box.querySelector(".tp"), mr = mt.getBoundingClientRect();
+      mt._w = 390; mt._h = 697; if (!b.gen) reflowType(mt);
+      /* measured after fitHeight, as the preview shows it: no empty band taller than half a screen down the page */
+      fitHeight(box.firstChild);
+      var pageH = parseFloat(box.querySelector(".canvas").style.height) || 697;
+      fitHeight(box.firstChild);
+      if (parseFloat(box.querySelector(".canvas").style.height) !== pageH) note(unstable, "phone " + tag(b.first) + " " + pageH + " → " + box.querySelector(".canvas").style.height);
+      var gap = band(mt, pageH, 697); if (gap > 350) note(gaps, tag(b.first) + " " + Math.round(gap) + "px");
+      if (!seenH[b.first]) { seenH[b.first] = 1; phoneH.push(pageH); }
+      if (pageH > 697 * 5) note(long, tag(b.first) + " " + (pageH / 697).toFixed(1)); /* a phone page longer than five screens is too much scrolling */
       if (b.gen) {
-        box.innerHTML = '<div class="mac-view" style="width:390px"><div class="canvas mob">' + pageFor(b, true) + '</div></div>';
-        var mt = box.querySelector(".tp"), mr = mt.getBoundingClientRect();
         /* nothing on a phone page may stick out sideways (strips and marquees are clipped on purpose) */
         $$(mt, "*").forEach(function (el) {
           if (el.closest(".mq, [data-drag], .lv-layer") || !el.getClientRects().length) return;
@@ -1989,7 +2091,7 @@
     });
     box.remove();
     var same = JSON.stringify(propose) === JSON.stringify(keep);
-    document.body.dataset.features = JSON.stringify({ distinct: Object.keys(seen).length, repeats: dup, handExtraUpToDate: same, propose: propose, phoneOverflow: overWhy, cropWhy: cropWhy, cropped: crops.map(function (n) { return String(n).charAt(0) === "m" ? "phone " + tag(+String(n).slice(1)) : tag(n); }) });
+    document.body.dataset.features = JSON.stringify({ distinct: Object.keys(seen).length, repeats: dup, handExtraUpToDate: same, propose: propose, phoneOverflow: overWhy, phoneGaps: gaps, phoneLong: long, unstable: unstable, phoneScreens: phoneH.sort(function (a, z) { return a - z; }).filter(function (x, i, A) { return i === A.length >> 1 || i === Math.floor(A.length * .9) || i === A.length - 1; }).map(function (x) { return +(x / 697).toFixed(1); }), cropWhy: cropWhy, cropped: crops.map(function (n) { return String(n).charAt(0) === "m" ? "phone " + tag(+String(n).slice(1)) : tag(n); }) });
   }
 
 })();
