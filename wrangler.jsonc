@@ -1,0 +1,26 @@
+{
+  // 1440.kor.gallery: static site served as Cloudflare Worker static assets (no server code yet).
+  // Deploys only from the GitHub Actions buttons ("미리보기 올리기", "사이트 개시"); see CLAUDE.md → 배포.
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "kor-gallery",
+  "account_id": "8f5d3c3d30c383c3a9ca84eac2a9e325",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    // only what the site needs is copied here before a deploy (see the GitHub workflows):
+    // index.html, templates.html, assets/. research/ (third-party sources) is never deployed.
+    "directory": "./dist"
+  },
+  // production: only the custom domain, no workers.dev address
+  "workers_dev": false,
+  "routes": [
+    { "pattern": "1440.kor.gallery", "custom_domain": true }
+  ],
+  "env": {
+    // preview: a separate Worker on a workers.dev address; the live site is untouched
+    "preview": {
+      "name": "kor-gallery-preview",
+      "workers_dev": true,
+      "routes": []
+    }
+  }
+}

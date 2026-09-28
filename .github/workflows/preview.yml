@@ -1,0 +1,34 @@
+name: 미리보기 올리기
+
+# Every push (and the button) puts the site on a temporary workers.dev address.
+# 1440.kor.gallery is not touched. Skips quietly until the Cloudflare token is added.
+on:
+  push:
+    branches: [main, "claude/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: preview
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 템플릿 검사
+        run: node tools/check-templates.js
+      - name: 올릴 파일만 모으기 (research/ 등은 빠짐)
+        run: mkdir dist && cp -r index.html templates.html assets dist/
+      - name: 토큰 확인
+        id: token
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then echo "CLOUDFLARE_API_TOKEN 비밀값이 없어 미리보기를 건너뜁니다."; echo "ok=false" >> "$GITHUB_OUTPUT"; else echo "ok=true" >> "$GITHUB_OUTPUT"; fi
+      - name: 미리보기 배포 (kor-gallery-preview.workers.dev)
+        if: steps.token.outputs.ok == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: deploy --env preview

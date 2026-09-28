@@ -14,3 +14,7 @@ desktop.ini
 *사업자등록증*
 *.pdf
 !research/**/*.pdf
+
+# 배포 직전에 모으는 폴더 (GitHub 작업이 만듦)
+dist/
+.wrangler/
