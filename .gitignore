@@ -9,3 +9,8 @@ desktop.ini
 # 로컬 Claude 설정 (launch.json만 공유)
 .claude/*
 !.claude/launch.json
+
+# 개인 서류(사업자등록증 등): 개인정보가 들어 있어 저장소에 올리지 않음
+*사업자등록증*
+*.pdf
+!research/**/*.pdf

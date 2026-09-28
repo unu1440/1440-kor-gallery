@@ -282,7 +282,10 @@ html.intro .minute { opacity: 0; visibility: hidden; }
 .biz dl { margin: 0; display: flex; flex-wrap: wrap; gap: 0.3em 2.2em; }
 .biz dl div { display: flex; gap: 0.6em; }
 .biz dt { color: var(--ink-3); }
-.biz dd { margin: 0; font-variant-numeric: tabular-nums; }
+.biz dd { margin: 0; min-width: 0; font-variant-numeric: tabular-nums; }
+.biz dt { flex: 0 0 auto; }
+.biz a { color: inherit; text-decoration: underline; text-decoration-color: var(--ink-4); text-underline-offset: 0.2em; }
+@media (hover: hover) { .biz a:hover { color: var(--ink); text-decoration-color: currentColor; } }
 
 @media (max-width: 700px) {
   .biz dl { flex-direction: column; }

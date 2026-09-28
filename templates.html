@@ -8,54 +8,63 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23111'/%3E%3Ctext x='16' y='21' font-family='Arial' font-size='11' font-weight='700' fill='%23fff' text-anchor='middle'%3E1440%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&family=Archivo:wdth,wght@62..125,300..900&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,400&family=Nanum+Myeongjo:wght@400;700&family=UnifrakturMaguntia&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="assets/site.css?v=11">
-  <link rel="stylesheet" href="assets/templates.css?v=4">
+  <link rel="stylesheet" href="assets/site.css?v=12">
+  <link rel="stylesheet" href="assets/templates.css?v=12">
 </head>
 <body class="page-templates">
 
-<header class="bar">
+<!-- on the template picker the header carries the categories and the chosen address -->
+<header class="bar bar-pick">
   <a class="home" href="./">1440</a>
-  <nav class="menu" aria-label="주 메뉴">
-    <a href="templates.html" aria-current="page">템플릿</a>
-    <a href="#" title="준비 중">정보</a>
-  </nav>
-</header>
-
-<nav class="cats" aria-label="템플릿 분류">
-  <div class="cats-links">
-    <a href="#shuffle">셔플</a>
+  <nav class="cats-links" aria-label="템플릿 분류">
     <a href="#basic">기본</a>
+    <a href="#grad">졸업전시</a>
     <a href="#graphic">그래픽</a>
     <a href="#blank">빈 템플릿</a>
+    <a href="#populated">채워진 템플릿</a>
+  </nav>
+  <div class="bar-right">
+    <div class="cats-addr" id="catsAddr"></div>
+    <nav class="menu" aria-label="주 메뉴">
+      <a href="#" title="준비 중">정보</a>
+    </nav>
   </div>
-  <div class="cats-addr" id="catsAddr"></div>
-</nav>
+</header>
 
 <main class="pick" id="pick">
   <section class="sec" id="shuffle" aria-labelledby="shuffleT">
-    <h2 class="sec-t" id="shuffleT">셔플 (전체 템플릿)</h2>
+    <div class="shuffle-head">
+      <h2 class="sec-t" id="shuffleT">셔플 (<span class="m" id="shuffleNo">0000/1440</span>)</h2>
+    </div>
     <div class="shuffle" id="shuffleStage"></div>
   </section>
 
-  <section class="sec" id="basic">
-    <h2 class="sec-t">기본 피드 템플릿</h2>
-    <div class="row" data-family="feed"></div>
-    <h2 class="sec-t">기본 그리드 템플릿</h2>
-    <div class="row" data-family="grid"></div>
-    <h2 class="sec-t">기본 슬라이드쇼 템플릿</h2>
-    <div class="row" data-family="slide"></div>
+  <section class="sec" id="basic" aria-labelledby="basicT">
+    <div class="sec-head"><h2 class="sec-t" id="basicT">기본 템플릿</h2><span class="sec-n" id="basicN"></span></div>
+    <div class="basic" id="basicCols"></div>
   </section>
 
-  <section class="sec" id="graphic">
-    <h2 class="sec-t">그래픽 템플릿</h2>
+  <section class="sec" id="grad" aria-labelledby="gradT">
+    <div class="sec-head"><h2 class="sec-t" id="gradT">졸업전시 템플릿 <span class="badge">1440 전용</span></h2><span class="sec-n" data-count="grad"></span></div>
+    <p class="sec-lead">빛을 비춰 그림의 질감을 보고, 도자와 조각을 3D로 돌려 보고, 실제 크기와 작업 과정까지 보여주는 온라인 졸업전시용 템플릿입니다.</p>
+    <div class="row" data-family="grad"></div>
+  </section>
+
+  <section class="sec" id="graphic" aria-labelledby="graphicT">
+    <div class="sec-head"><h2 class="sec-t" id="graphicT">그래픽 템플릿</h2><span class="sec-n" data-count="graphic"></span></div>
     <div class="row" data-family="graphic"></div>
   </section>
 
-  <section class="sec" id="blank">
-    <h2 class="sec-t">빈 템플릿</h2>
-    <div class="row" data-family="blank"></div>
+  <section class="sec" id="blank" aria-labelledby="blankT">
+    <div class="sec-head"><h2 class="sec-t" id="blankT">빈 템플릿</h2><span class="sec-n" data-count="blank"></span></div>
+    <div class="row row-4" data-family="blank"></div>
+  </section>
+
+  <section class="sec" id="populated" aria-labelledby="populatedT">
+    <div class="sec-head"><h2 class="sec-t" id="populatedT">채워진 템플릿</h2><span class="sec-n" data-count="populated"></span></div>
+    <div class="row" data-family="populated"></div>
   </section>
 </main>
 
@@ -65,17 +74,41 @@
 </div>
 <p class="sr-only" id="pickStatus" role="status"></p>
 
+<!-- large, working preview of one template with its 18 variants -->
+<div class="preview" id="preview" hidden role="dialog" aria-modal="true" aria-labelledby="pvNo">
+  <div class="pv-box">
+    <div class="pv-top">
+      <div class="pv-title"><b class="m" id="pvNo">0001/1440</b><span id="pvDesc"></span></div>
+      <button type="button" class="pv-close" aria-label="닫기">✕</button>
+    </div>
+    <div class="pv-stage-wrap">
+      <button type="button" class="shuffle-btn pv-prev" aria-label="이전 번호"><svg viewBox="0 0 24 24"><path d="M19 12H5M10.5 6.5 5 12l5.5 5.5"/></svg></button>
+      <div class="pv-stage" id="pvStage"></div>
+      <button type="button" class="shuffle-btn pv-next" aria-label="다음 번호"><svg viewBox="0 0 24 24"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg></button>
+    </div>
+    <div class="pv-bottom">
+      <div class="pv-opts"><span class="pv-l">색</span><div class="pv-pal" id="pvPal"></div><span class="pv-l">서체</span><div class="pv-type" id="pvType"></div></div>
+      <button type="button" class="pv-use">이 템플릿으로 시작 <span aria-hidden="true">→</span></button>
+    </div>
+  </div>
+</div>
+
 <div class="minute" title="하루 1,440분 중 지금"><span id="minute">0.0</span>/1440</div>
 
 <footer class="biz">
   <dl>
-    <div><dt>사업자등록번호</dt><dd>000-00-00000</dd></div>
-    <div><dt>통신판매업 신고번호</dt><dd>제0000-서울○○-0000호</dd></div>
-    <div><dt>연락처</dt><dd>00-0000-0000 · hello@1440.kor.gallery</dd></div>
+    <div><dt>상호</dt><dd>1440컴퍼니 · 1440company</dd></div>
+    <div><dt>대표</dt><dd>이현호</dd></div>
+    <div><dt>사업자등록번호</dt><dd>165-10-03434</dd></div>
+    <div><dt>통신판매업 신고번호</dt><dd>신고 준비 중</dd></div>
+    <div><dt>주소</dt><dd>경기도 용인시 수지구 용구대로2790번길 7, 302-가12호(죽전동)</dd></div>
+    <div><dt>연락처</dt><dd><a href="tel:010-7907-1740">010-7907-1740</a></dd></div>
+    <div><dt>이메일</dt><dd><a href="mailto:1440unu@kor.gallery">1440unu@kor.gallery</a></dd></div>
   </dl>
 </footer>
 
 <script src="assets/common.js?v=1"></script>
-<script src="assets/templates.js?v=3"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.3.1/dist/model-viewer.min.js"></script>
+<script src="assets/templates.js?v=12"></script>
 </body>
 </html>
