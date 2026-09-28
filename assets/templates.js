@@ -8,8 +8,8 @@
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
 
   var site = clean(new URLSearchParams(location.search).get("site"));
-  var host = (site || "이름") + ".kor.gallery";
-  var N = esc(site || "이름");
+  var host = (site || "name") + ".kor.gallery";
+  var N = esc(site || "Name");
 
   document.getElementById("catsAddr").innerHTML = site
     ? '<span class="lbl">주소 </span><b>' + esc(host) + '</b><a href="./">바꾸기</a>'
@@ -17,101 +17,114 @@
 
   /* ---------- building blocks for a 1440 × 900 page ---------- */
   function src(n) { return "assets/img/samples/" + n + ".jpg"; }
-  function ph(n, style, cls) { return '<div class="ph ' + (cls || "") + '" style="' + style + '"><img src="' + src(n) + '" alt="" loading="lazy" decoding="async"></div>'; }
+  function ph(n, style, cls) { return '<div class="ph ' + (cls || "") + (window.TPLGEN && TPLGEN.bigPic(style) ? " contain" : "") + '" style="' + style + '"><img src="' + src(n) + '" alt="" loading="lazy" decoding="async"></div>'; }
   function row(a, b, c) { return '<div class="tp-row"><span class="tp-name">' + a + '</span><span>' + (b || "") + '</span><span>' + (c || "") + '</span></div>'; }
   var CLOCK = '<span class="m" data-clock>00:00:00</span>';
   function foot(l, r) { return '<div class="tp-foot"><span>' + (l || "© 2026 " + N) + '</span><span>' + (r || "") + '</span></div>'; }
-  function grid(items, style, cols, ar) {
+  /* items: [file, title, ratio] or [file, title, year, ratio]; start shifts the numbering */
+  function grid(items, style, cols, ar, _, start) {
     return '<div class="gg" style="' + style + ';grid-template-columns:' + cols + '">' + items.map(function (it, i) {
-      return '<div class="gi"><div class="fr" style="--ar:' + (it[2] || ar) + '"><img src="' + src(it[0]) + '" alt="" loading="lazy" decoding="async"></div>' +
-        '<span><i>' + String(i + 1).padStart(2, "0") + '</i>' + it[1] + '</span></div>';
+      var y = /^\d{4}$/.test(it[2] || "") ? it[2] : "", a = y ? it[3] : it[2];
+      return '<div class="gi"><div class="fr" style="--ar:' + (a || ar) + '"><img src="' + src(it[0]) + '" alt="" loading="lazy" decoding="async"></div>' +
+        '<span><i>' + String((start || 0) + i + 1).padStart(2, "0") + '</i>' + it[1] + (y ? '<em>' + y + '</em>' : "") + '</span></div>';
     }).join("") + '</div>';
   }
   function wf(style) { return '<div class="wf" style="' + style + '"></div>'; }
   function lines(style, ws, h) { return '<div style="position:absolute;display:grid;gap:10px;' + style + '">' + ws.map(function (w) { return '<div class="wl" style="width:' + w + (h ? ";height:" + h : "") + '"></div>'; }).join("") + '</div>'; }
   function page(bg, ink, inner) { return '<div class="tp" style="--t-bg:' + bg + ';--t-ink:' + ink + '">' + inner + '</div>'; }
 
-  var OBJ = [["cer-dark-jug", "검은 주전자"], ["ch-tulip", "튤립 의자"], ["gl-green", "녹색 유리"], ["sc-kintsugi", "금으로 이은 두상"],
-    ["st-pear", "배"], ["ch-yellow", "노란 의자"], ["cer-blue-set", "푸른 도자"], ["gl-flower", "유리 꽃"],
-    ["st-bottles", "병"], ["cer-cup-speckle", "점박이 컵"], ["ch-orange", "주황 의자"], ["st-tulip", "튤립"]];
-  var PHOTO = [["sh-walker", "걷는 사람"], ["pt-bw-woman", "초상 I"], ["ld-sea-blue", "바다"], ["ld-dune-bw", "사구"],
-    ["fm-street", "거리"], ["sh-palm", "야자 그림자"], ["ld-lake-dusk", "호수"], ["fm-water-sparkle", "물빛"]];
-  var SPACE = [["int-light-line", "빛의 선"], ["arch-brutal-long", "긴 건물"], ["int-m2", "M2"], ["arch-grid-facade", "격자 외벽"]];
-  var SKY = [["ld-palm-beach", "해변"], ["arch-curve", "곡면"], ["ld-blue-hills", "푸른 능선"], ["ld-sea-gradient", "수평선"], ["ld-dune-gold", "금빛 사구"], ["arch-window-sky", "하늘 창"]];
+  /* captions: [file, English title, year] — English leads, Korean follows in quieter lines */
+  var OBJ = [["cer-dark-jug", "Black Jug", "2026"], ["ch-tulip", "Tulip Chair", "2025"], ["gl-green", "Green Glass", "2026"], ["sc-kintsugi", "Mended Head", "2024"],
+    ["st-pear", "Pear", "2026"], ["ch-yellow", "Yellow Chair", "2025"], ["cer-blue-set", "Blue Set", "2026"], ["gl-flower", "Glass Flower", "2025"],
+    ["st-bottles", "Bottles", "2024"], ["cer-cup-speckle", "Speckled Cup", "2026"], ["ch-orange", "Orange Chair", "2025"], ["st-tulip", "Tulip", "2026"]];
+  var PHOTO = [["sh-walker", "Walker", "2026"], ["pt-bw-woman", "Portrait I", "2025"], ["ld-sea-blue", "Sea", "2026"], ["ld-dune-bw", "Dune", "2024"],
+    ["fm-street", "Street", "2025"], ["sh-palm", "Palm Shadow", "2026"], ["ld-lake-dusk", "Lake", "2025"], ["fm-water-sparkle", "Water Light", "2026"]];
+  var SPACE = [["int-light-line", "Line of Light", "2026"], ["arch-brutal-long", "Long Building", "2025"], ["int-m2", "M2", "2025"], ["arch-grid-facade", "Grid Facade", "2024"]];
+  var SKY = [["ld-palm-beach", "Beach", "2026"], ["arch-curve", "Curve", "2025"], ["ld-blue-hills", "Blue Ridge", "2026"], ["ld-sea-gradient", "Horizon", "2024"], ["ld-dune-gold", "Gold Dune", "2025"], ["arch-window-sky", "Sky Window", "2026"]];
+  /* the menus of the basic pages: Cargo-like, the name on the left and a few words on the right */
+  var SP = "&nbsp;&nbsp;&nbsp;";
+  var MENU_A = "Information" + SP + "Instagram" + SP + "Email", MENU_B = "Information" + SP + "Index" + SP + "Email", MENU_C = "Index" + SP + "Information";
 
   /* ---------- template families ---------- */
   var F = {};
 
+  /* basic feed: one project after another, a picture and a line of words */
   F.feed = [
-    { bg: "#fcfcfc", ink: "#111", html: function () {
-      return row(N, "작업, 정보, 이메일", CLOCK) + ph("cer-vases-beige", "left:470px;top:96px;width:500px;height:620px") +
-        '<div style="position:absolute;left:28px;right:28px;top:740px;display:grid;grid-template-columns:1fr 1fr;gap:30px;font-size:16px"><span><span class="m dim">01 / 12</span>&nbsp;&nbsp;세 개의 병, 2025</span><p style="opacity:.7">작업실 창가에서 찍은 백자 연작. 유약을 입히기 전의 흙빛을 그대로 남겼습니다.</p></div>' + foot();
+    { bg: "#ffffff", ink: "#111", html: function () {
+      return row(N, "", MENU_A) + ph("cer-vases-beige", "left:470px;top:84px;width:500px;height:620px") +
+        '<div style="position:absolute;left:0;right:0;top:716px;text-align:center;font-size:13px" class="m dim">01 / 12</div>' +
+        '<div style="position:absolute;left:28px;right:28px;top:752px;display:grid;grid-template-columns:1fr 1fr;gap:30px;font-size:15px"><span><span class="m dim">01</span>&nbsp;&nbsp;Three Vessels</span>' +
+        '<p style="line-height:1.45">White porcelain, photographed by the studio window before glazing. ' + ko("유약을 입히기 전, 작업실 창가의 백자 세 점.", "opacity:.55") + '</p></div>' + foot();
     } },
-    { bg: "#f3efe6", ink: "#1b1a14", html: function () {
-      return row(N, "작업 · 정보", "이메일") + ph("ld-lake-dusk", "left:28px;top:84px;width:860px;height:640px") +
-        '<div style="position:absolute;left:920px;right:28px;top:84px;font-size:17px;display:grid;gap:14px"><b style="font-size:30px;font-weight:500;letter-spacing:-.03em">해 질 녘의 호수</b><p style="opacity:.75">호수 위로 해가 지는 20분을 같은 자리에서 기록한 연작의 첫 장입니다.</p><span class="m dim">2025 · 중형 필름 · 6 × 7</span></div>' + foot();
-    } },
-    { bg: "#fff", ink: "#111", html: function () {
-      return row(N, "작업, 정보, 이메일", CLOCK) + ph("ld-sea-deep", "left:28px;right:28px;top:76px;height:680px") +
-        '<div style="position:absolute;left:28px;top:772px;font-size:16px"><span class="m dim">03 / 12</span>&nbsp;&nbsp;깊은 바다, 2026</div>' + foot();
-    } },
-    { bg: "#fcfcfc", ink: "#111", html: function () {
-      return row(N, "작업 · 정보 · 이메일", "인스타그램 ↗") + ph("sc-kintsugi", "left:28px;top:90px;width:680px;height:600px") + ph("sc-hand", "left:732px;top:90px;width:680px;height:600px") +
-        '<div style="position:absolute;left:28px;right:28px;top:706px;display:grid;grid-template-columns:1fr 1fr;gap:24px;font-size:16px"><span>금으로 이은 두상 — 석고, 금박</span><span>손 — 석고, 2025</span></div>' + foot();
+    { bg: "#ffffff", ink: "#111", html: function () {
+      return row(N, "", MENU_B) + ph("ld-lake-dusk", "left:28px;top:76px;width:880px;height:660px") +
+        '<div style="position:absolute;left:940px;right:28px;top:76px;font-size:15px;line-height:1.45;display:grid;gap:12px"><span><span class="m dim">02</span>&nbsp;&nbsp;Lake at Dusk</span>' +
+        '<p>Twenty minutes of sunset over the lake, taken from the same spot. The first frame of a series.</p>' + ko("같은 자리에서 기록한 해 질 녘의 20분.", "opacity:.55") + '<span class="m dim">2025 · Medium format · 6 × 7</span></div>' + foot();
     } },
     { bg: "#fcfcfc", ink: "#111", html: function () {
-      return row(N, "", "정보, 이메일") + '<h3 class="big" style="left:24px;top:86px;font-size:150px;font-weight:600">' + N + '</h3>' +
-        '<div style="position:absolute;left:28px;top:330px;width:560px;font-size:18px;display:grid;gap:14px"><p>의자와 조명, 빈 무대를 찍는 사진가입니다. 사물이 놓인 자리와 그림자를 기록합니다.</p><span class="m dim">선택 작업 2019 — 2026</span></div>' +
-        ph("ch-black-stage", "right:28px;top:330px;width:520px;height:460px") + foot();
+      return row(N, "", MENU_A) + ph("ld-sea-deep", "left:28px;right:28px;top:76px;height:680px") +
+        '<div style="position:absolute;left:28px;right:28px;top:770px;display:flex;justify-content:space-between;font-size:15px"><span><span class="m dim">03</span>&nbsp;&nbsp;Deep Water, 2026</span>' + ko("깊은 물", "opacity:.5") + '</div>' + foot();
     } },
-    { bg: "#111", ink: "#eee", html: function () {
-      return row(N, "작업 · 정보", CLOCK) + ph("ld-dark-hill", "left:270px;top:100px;width:900px;height:600px") +
-        '<div style="position:absolute;left:0;right:0;top:730px;text-align:center;font-size:17px"><span class="m dim">06 / 12</span>&nbsp;&nbsp;어두운 언덕, 2026</div>' + foot();
+    { bg: "#ffffff", ink: "#111", html: function () {
+      return row(N, "", MENU_A) + ph("sc-kintsugi", "left:28px;top:76px;width:680px;height:600px") + ph("sc-hand", "left:732px;top:76px;width:680px;height:600px") +
+        '<div style="position:absolute;left:28px;right:28px;top:690px;display:grid;grid-template-columns:1fr 1fr;gap:24px;font-size:15px"><span><span class="m dim">04</span>&nbsp;&nbsp;Mended Head — plaster, gold leaf</span><span><span class="m dim">05</span>&nbsp;&nbsp;Hand — plaster, 2025</span></div>' + foot();
+    } },
+    { bg: "#ffffff", ink: "#111", html: function () {
+      return row(N, "", MENU_C) +
+        '<div style="position:absolute;left:28px;top:84px;width:640px;font-size:22px;line-height:1.3;letter-spacing:-.01em">' + N + ' photographs chairs, lamps and empty stages — where things are placed, and the shadows they leave.<br>' + ko("의자와 조명, 빈 무대를 찍습니다. 사물이 놓인 자리와 그림자를 기록합니다.", "font-size:15px;opacity:.5") + '</div>' +
+        ph("ch-black-stage", "left:28px;top:300px;width:640px;height:460px") + ph("ch-white-curve", "left:700px;top:84px;width:712px;height:676px") +
+        '<div style="position:absolute;left:28px;right:28px;top:774px;display:grid;grid-template-columns:1fr 1fr;gap:32px;font-size:15px"><span><span class="m dim">06</span>&nbsp;&nbsp;Black Stage</span><span><span class="m dim">07</span>&nbsp;&nbsp;White Curve</span></div>' + foot();
+    } },
+    { bg: "#f7f7f5", ink: "#161616", html: function () {
+      return row(N, "", MENU_B) + ph("ld-dark-hill", "left:270px;top:92px;width:900px;height:600px") +
+        '<div style="position:absolute;left:0;right:0;top:712px;text-align:center;font-size:15px"><span class="m dim">08 / 12</span>&nbsp;&nbsp;Dark Hill, 2026<br>' + ko("어두운 언덕", "opacity:.5") + '</div>' + foot();
     } }
   ];
 
+  /* basic grid: pictures in columns, a number and a title under each */
   F.grid = [
-    { bg: "#fff", ink: "#111", html: function () { return row(N, "작업 · 정보 · 이메일", "인스타그램 ↗") + grid(OBJ.slice(0, 8), "left:28px;right:28px;top:80px", "repeat(4,1fr)", "4 / 5"); } },
-    { bg: "#f3efe6", ink: "#1b1a14", html: function () { return row(N, "작업 · 정보", "이메일") + grid(PHOTO.slice(0, 6), "left:28px;right:28px;top:80px", "repeat(3,1fr)", "4 / 3"); } },
-    { bg: "#fcfcfc", ink: "#111", html: function () { return row(N, "색인", CLOCK) + grid(OBJ, "left:28px;right:28px;top:80px;gap:26px 12px", "repeat(6,1fr)", "3 / 4"); } },
-    { bg: "#141414", ink: "#eee", html: function () { return row(N, "작업 · 정보", "이메일") + grid(SKY.concat(SPACE.slice(0, 4)), "left:28px;right:28px;top:80px", "repeat(5,1fr)", "1 / 1"); } },
+    { bg: "#fff", ink: "#111", html: function () { return row(N, "", MENU_A) + grid(OBJ.slice(0, 8), "left:28px;right:28px;top:76px", "repeat(4,1fr)", "4 / 5"); } },
+    { bg: "#fff", ink: "#111", html: function () { return row(N, "", MENU_B) + grid(PHOTO.slice(0, 6), "left:28px;right:28px;top:76px", "repeat(3,1fr)", "4 / 3"); } },
+    { bg: "#fcfcfc", ink: "#111", html: function () { return row(N, "", MENU_C) + grid(OBJ, "left:28px;right:28px;top:76px;gap:26px 12px", "repeat(6,1fr)", "3 / 4"); } },
+    { bg: "#fff", ink: "#111", html: function () { return row(N, "", MENU_A) + grid(SKY.concat(SPACE.slice(0, 4)), "left:28px;right:28px;top:76px", "repeat(5,1fr)", "1 / 1"); } },
     { bg: "#fff", ink: "#111", html: function () {
-      return row(N, "작업 · 정보 · 이메일", "") +
-        grid([["int-light-line", "빛의 선", "16 / 10"], ["arch-grid-facade", "격자 외벽", "4 / 5"], ["arch-white-wall", "흰 벽", "4 / 5"]], "left:28px;right:28px;top:80px", "2fr 1fr 1fr") +
-        grid([["int-stairs", "계단", "4 / 5"], ["pt-bw-man", "초상 II", "4 / 5"], ["ld-dune-gold", "금빛 사구", "16 / 10"]], "left:28px;right:28px;top:520px", "1fr 1fr 2fr");
+      return row(N, "", MENU_B) +
+        grid([["int-light-line", "Line of Light", "2026", "16 / 10"], ["arch-grid-facade", "Grid Facade", "2024", "4 / 5"], ["arch-white-wall", "White Wall", "2025", "4 / 5"]], "left:28px;right:28px;top:76px", "2fr 1fr 1fr") +
+        grid([["int-stairs", "Stairs", "2026", "4 / 5"], ["pt-bw-man", "Portrait II", "2025", "4 / 5"], ["ld-dune-gold", "Gold Dune", "2024", "16 / 10"]], "left:28px;right:28px;top:520px", "1fr 1fr 2fr", null, 3);
     } },
-    { bg: "#fcfcfc", ink: "#111", html: function () { return row(N, "작업 · 정보", CLOCK) + grid([["fa-yellow-sky", "노란 드레스"], ["ld-lake-dusk", "호수"], ["fm-street", "거리"], ["sh-window-light", "창의 빛"]], "left:28px;right:28px;top:80px;gap:40px 24px", "repeat(2,1fr)", "16 / 9"); } }
+    { bg: "#f7f7f5", ink: "#161616", html: function () { return row(N, "", MENU_C) + grid([["fa-yellow-sky", "Yellow Dress", "2026"], ["ld-lake-dusk", "Lake", "2025"], ["fm-street", "Street", "2025"], ["sh-window-light", "Window Light", "2026"]], "left:28px;right:28px;top:76px;gap:40px 24px", "repeat(2,1fr)", "16 / 9"); } }
   ];
 
+  /* basic slideshow: one picture at a time, a counter and a caption */
   F.slide = [
-    { bg: "#0e0e0e", ink: "#ececec", html: function () {
-      return row(N, "작업 · 정보", "이메일") + ph("fa-yellow-sky", "left:420px;top:100px;width:600px;height:600px") +
-        '<span style="position:absolute;left:80px;top:390px;font-size:34px;opacity:.5">←</span><span style="position:absolute;right:80px;top:390px;font-size:34px;opacity:.5">→</span>' +
-        '<div style="position:absolute;left:0;right:0;top:730px;text-align:center"><span class="m dim">03 / 08</span>&nbsp;&nbsp;노란 드레스</div>' + foot(null, CLOCK);
+    { bg: "#ffffff", ink: "#111", html: function () {
+      return row(N, "", MENU_B) + ph("fa-yellow-sky", "left:450px;top:84px;width:540px;height:660px") +
+        '<span style="position:absolute;left:80px;top:400px;font-size:30px;opacity:.35">←</span><span style="position:absolute;right:80px;top:400px;font-size:30px;opacity:.35">→</span>' +
+        '<div style="position:absolute;left:28px;bottom:26px;font-size:14px;line-height:1.4"><span class="m dim">03 / 08</span><br>Yellow Dress, 2026</div>';
     } },
     { bg: "#fcfcfc", ink: "#111", html: function () {
-      return row(N, "작업 · 정보", "이메일") + ph("ld-sea-gradient", "left:120px;right:120px;top:90px;height:640px") +
-        '<span style="position:absolute;left:40px;top:390px;font-size:30px;opacity:.4">←</span><span style="position:absolute;right:40px;top:390px;font-size:30px;opacity:.4">→</span>' +
-        '<div style="position:absolute;left:120px;top:750px"><span class="m dim">01 / 06</span>&nbsp;&nbsp;수평선</div>' + foot();
+      return row(N, "", MENU_A) + ph("ld-sea-gradient", "left:120px;right:120px;top:84px;height:640px") +
+        '<span style="position:absolute;left:40px;top:390px;font-size:30px;opacity:.35">←</span><span style="position:absolute;right:40px;top:390px;font-size:30px;opacity:.35">→</span>' +
+        '<div style="position:absolute;left:120px;right:120px;top:742px;display:flex;justify-content:space-between;font-size:15px"><span><span class="m dim">01 / 06</span>&nbsp;&nbsp;Horizon</span>' + ko("수평선", "opacity:.5") + '</div>' + foot();
     } },
     { bg: "#000", ink: "#fff", html: function () {
-      return ph("ld-dune-gold", "inset:0") + '<div style="position:absolute;inset:0;background:linear-gradient(transparent 60%,rgba(0,0,0,.45))"></div>' +
-        row(N, "작업 · 정보", "이메일") + '<div style="position:absolute;left:28px;bottom:28px;font-size:22px"><span class="m" style="opacity:.7">05 / 12</span>&nbsp;&nbsp;금빛 사구</div>';
+      return ph("ld-dune-gold", "inset:0") + '<div style="position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.25),transparent 18%,transparent 70%,rgba(0,0,0,.4))"></div>' +
+        row(N, "", MENU_A) + '<div style="position:absolute;left:28px;bottom:26px;font-size:15px;line-height:1.4"><span class="m" style="opacity:.7">05 / 12</span><br>Gold Dune</div>';
     } },
     { bg: "#fff", ink: "#111", html: function () {
-      return '<div style="position:absolute;left:28px;top:22px;width:360px;display:grid;gap:26px;font-size:16px"><b class="tp-name">' + N + '</b>' +
+      return '<div style="position:absolute;left:28px;top:22px;width:340px;display:grid;gap:26px;font-size:15px"><b class="tp-name" style="font-weight:400">' + N + '</b>' +
         '<div style="display:grid;gap:6px">' + SPACE.map(function (s, i) { return '<span style="' + (i === 1 ? "" : "opacity:.4") + '"><span class="m">0' + (i + 1) + '</span>&nbsp;&nbsp;' + s[1] + '</span>'; }).join("") + '</div>' +
-        '<p style="opacity:.7">빛이 드는 실내를 기록하는 연작입니다. 사람이 떠난 뒤의 조명과 벽을 찍었습니다.</p></div>' +
+        '<p style="line-height:1.45;opacity:.75">A series on rooms filled with daylight: the lamps and walls left behind when people have gone.</p>' + ko("사람이 떠난 뒤의 조명과 벽을 기록한 연작.", "opacity:.5") + '</div>' +
         ph("int-light-line", "left:420px;right:28px;top:22px;bottom:22px");
     } },
-    { bg: "#fcfcfc", ink: "#111", html: function () {
-      return row(N, "작업 · 정보", CLOCK) + ph("arch-white-wall", "left:170px;right:170px;top:84px;height:600px") +
+    { bg: "#ffffff", ink: "#111", html: function () {
+      return row(N, "", MENU_C) + ph("arch-white-wall", "left:170px;right:170px;top:84px;height:600px") +
         '<div style="position:absolute;left:170px;right:170px;top:712px;display:grid;grid-template-columns:repeat(8,1fr);gap:10px">' +
-        OBJ.slice(0, 8).map(function (o, i) { return '<div style="aspect-ratio:1;overflow:hidden;' + (i ? "opacity:.45" : "outline:2px solid #111") + '"><img src="' + src(o[0]) + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover"></div>'; }).join("") + '</div>';
+        OBJ.slice(0, 8).map(function (o, i) { return '<div style="aspect-ratio:1;overflow:hidden;' + (i ? "opacity:.45" : "outline:1px solid #111") + '"><img src="' + src(o[0]) + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover"></div>'; }).join("") + '</div>';
     } },
-    { bg: "#e9e7e3", ink: "#111", html: function () {
-      return row(N, "", "정보") + ph("pt-bw-studio", "left:480px;top:70px;width:480px;height:700px") +
-        '<div style="position:absolute;left:28px;bottom:26px;font-size:17px;display:grid;gap:4px"><span>초상, 2026</span><span class="m dim">아카이벌 피그먼트 프린트</span></div><div style="position:absolute;right:28px;bottom:26px" class="m dim">02 / 09</div>';
+    { bg: "#f7f7f5", ink: "#161616", html: function () {
+      return row(N, "", "Information") + ph("pt-bw-studio", "left:480px;top:70px;width:480px;height:700px") +
+        '<div style="position:absolute;left:28px;bottom:26px;font-size:15px;display:grid;gap:4px"><span>Portrait, 2026</span><span class="m dim">Archival pigment print</span></div><div style="position:absolute;right:28px;bottom:26px" class="m dim">02 / 09</div>';
     } }
   ];
 
@@ -316,77 +329,77 @@
 
   F.blank = [
     { name: "빈 템플릿", n: 2, bg: "#fcfcfc", ink: "#111", html: function () {
-      return row(N) + '<div style="position:absolute;inset:110px 28px 80px;border:2px dashed #d6d6d6;border-radius:12px;display:grid;place-content:center;text-align:center;gap:8px"><b style="font-size:34px;font-weight:500;letter-spacing:-.03em">여기서 시작하세요.</b><span style="opacity:.45;font-size:20px">글, 이미지, 영상, 갤러리를 자유롭게 놓을 수 있습니다.</span></div>';
+      return row(N) + '<div style="position:absolute;inset:110px 28px 80px;border:2px dashed #d6d6d6;border-radius:12px;display:grid;place-content:center;text-align:center;gap:8px"><b style="font-size:34px;font-weight:500;letter-spacing:-.03em">Start here.</b><span style="opacity:.45;font-size:20px">Place text, images, video and galleries anywhere.</span><span class="ko" style="opacity:.35;font-size:16px">글, 이미지, 영상, 갤러리를 자유롭게 놓을 수 있습니다.</span></div>';
     } },
     { name: "와이어프레임 W102", n: 2, bg: "#fff", ink: "#111", html: function () {
-      return row(N, "작업, 정보, 이메일", CLOCK) + wf("left:460px;top:90px;width:520px;height:620px") + lines("left:28px;top:740px;width:500px", ["40%", "90%", "70%"]) + lines("left:760px;top:740px;width:640px", ["100%", "95%", "60%"]);
+      return row(N, "Work, Information, Email", CLOCK) + wf("left:460px;top:90px;width:520px;height:620px") + lines("left:28px;top:740px;width:500px", ["40%", "90%", "70%"]) + lines("left:760px;top:740px;width:640px", ["100%", "95%", "60%"]);
     } },
     { name: "와이어프레임 W203", n: 3, bg: "#fff", ink: "#111", html: function () {
       var cells = ""; for (var i = 0; i < 8; i++) cells += '<div style="display:grid;gap:8px"><div class="wf in" style="--ar:4/3"></div><div class="wl" style="width:' + (40 + (i * 17) % 50) + '%"></div></div>';
-      return row(N, "작업 · 정보 · 이메일", "인스타그램 ↗") + '<div style="position:absolute;left:28px;right:28px;top:84px;display:grid;grid-template-columns:repeat(4,1fr);gap:30px 16px">' + cells + '</div>';
+      return row(N, "Work · Information · Email", "Instagram ↗") + '<div style="position:absolute;left:28px;right:28px;top:84px;display:grid;grid-template-columns:repeat(4,1fr);gap:30px 16px">' + cells + '</div>';
     } },
     { name: "와이어프레임 W304", n: 2, bg: "#f4f4f4", ink: "#111", html: function () {
-      return row(N, "작업 · 정보", "이메일") + wf("left:200px;right:200px;top:90px;height:620px;background-color:#e9e9e9") + '<span style="position:absolute;left:80px;top:390px;font-size:34px;opacity:.35">←</span><span style="position:absolute;right:80px;top:390px;font-size:34px;opacity:.35">→</span><div style="position:absolute;left:0;right:0;top:740px;text-align:center" class="m dim">01 / 08</div>';
+      return row(N, "Work · Information", "Email") + wf("left:200px;right:200px;top:90px;height:620px;background-color:#e9e9e9") + '<span style="position:absolute;left:80px;top:390px;font-size:34px;opacity:.35">←</span><span style="position:absolute;right:80px;top:390px;font-size:34px;opacity:.35">→</span><div style="position:absolute;left:0;right:0;top:740px;text-align:center" class="m dim">01 / 08</div>';
     } },
     { name: "와이어프레임 W405", n: 4, bg: "#fff", ink: "#111", html: function () {
       var rows = ""; for (var i = 0; i < 14; i++) rows += '<div style="display:grid;grid-template-columns:1.2fr 1.6fr 1fr 60px;gap:20px;padding:9px 0;border-bottom:1px solid #eee"><div class="wl" style="width:' + (50 + i * 7 % 40) + '%"></div><div class="wl" style="width:' + (40 + i * 13 % 50) + '%"></div><div class="wl" style="width:60%"></div><div class="wl"></div></div>';
-      return row(N, "색인", "정보") + '<div style="position:absolute;left:28px;width:840px;top:90px">' + rows + '</div>' + wf("left:900px;right:28px;top:90px;height:540px");
+      return row(N, "Index", "Information") + '<div style="position:absolute;left:28px;width:840px;top:90px">' + rows + '</div>' + wf("left:900px;right:28px;top:90px;height:540px");
     } },
     { name: "와이어프레임 W506", n: 2, bg: "#fff", ink: "#111", html: function () {
       return '<div style="position:absolute;left:28px;top:22px;width:340px;display:grid;gap:22px;font-size:16px"><b class="tp-name">' + N + '</b></div>' + lines("left:28px;top:80px;width:340px", ["60%", "80%", "50%", "70%", "40%"]) + lines("left:28px;top:300px;width:340px", ["100%", "100%", "90%", "95%", "60%"]) + wf("left:400px;right:28px;top:22px;bottom:22px");
     } },
     { name: "와이어프레임 W607", n: 3, bg: "#fff", ink: "#111", html: function () {
-      return row(N, "작업 · 정보 · 이메일", "") +
+      return row(N, "Work · Information · Email", "") +
         '<div style="position:absolute;left:28px;right:28px;top:84px;display:grid;grid-template-columns:2fr 1fr 1.3fr;gap:16px;height:360px">' + '<div class="wf" style="position:relative"></div><div class="wf" style="position:relative"></div><div class="wf" style="position:relative"></div></div>' +
         '<div style="position:absolute;left:28px;right:28px;top:470px;display:grid;grid-template-columns:1fr 1.5fr 2fr;gap:16px;height:360px"><div class="wf" style="position:relative"></div><div class="wf" style="position:relative"></div><div class="wf" style="position:relative"></div></div>';
     } },
     { name: "와이어프레임 W708", n: 2, bg: "#fcfcfc", ink: "#111", html: function () {
-      return row(N, "", "정보, 이메일") + lines("left:28px;top:100px;width:900px;gap:22px", ["70%", "55%"], "70px") +
+      return row(N, "", "Information, Email") + lines("left:28px;top:100px;width:900px;gap:22px", ["70%", "55%"], "70px") +
         lines("left:28px;top:330px;width:560px", ["100%", "96%", "90%", "70%"]) + wf("right:28px;top:330px;width:520px;height:460px");
     } }
   ];
 
   F.populated = [
     { name: "채워진 템플릿 P101", n: 3, bg: "#fcfcfc", ink: "#111", html: function () {
-      return row(N + " 건축", "프로젝트 · 사무소 · 연락", "") + ph("int-skylight-tree", "left:28px;right:28px;top:72px;height:430px") +
-        '<div style="position:absolute;left:28px;top:516px;font-size:17px"><b style="font-weight:500">문래 공공 도서관</b>&nbsp;&nbsp;<span class="dim">2026 · 서울</span></div>' +
-        grid([["arch-grid-facade", "격자 외벽"], ["int-stairs", "계단"], ["int-m2", "M2"], ["arch-concrete-blocks", "콘크리트 블록"]], "left:28px;right:28px;top:570px", "repeat(4,1fr)", "4 / 3");
+      return row(N + " Architecture", "Projects · Office · Contact", "") + ph("int-skylight-tree", "left:28px;right:28px;top:72px;height:430px") +
+        '<div style="position:absolute;left:28px;top:516px;font-size:17px"><b style="font-weight:500">Mullae Public Library</b>&nbsp;&nbsp;<span class="dim">2026 · Seoul</span>&nbsp;&nbsp;<span class="ko dim">문래 공공 도서관</span></div>' +
+        grid([["arch-grid-facade", "Grid Facade"], ["int-stairs", "Stairs"], ["int-m2", "M2"], ["arch-concrete-blocks", "Concrete Blocks"]], "left:28px;right:28px;top:570px", "repeat(4,1fr)", "4 / 3");
     } },
     { name: "채워진 템플릿 P202", n: 3, bg: "#111", ink: "#eee", html: function () {
-      return row(N, "사진 · 전시 · 연락", CLOCK) +
-        grid([["pt-bw-woman", "초상 I", "3 / 4"], ["sh-walker", "걷는 사람", "4 / 3"], ["ld-dune-bw", "사구", "4 / 3"], ["pt-bw-man", "초상 II", "3 / 4"]], "left:28px;right:28px;top:80px;align-items:end", "0.75fr 1.33fr 1.33fr 0.75fr") +
-        grid([["sh-bars", "빛의 창살", "4 / 3"], ["st-bw-roses", "장미", "4 / 3"], ["hd-bw", "손", "4 / 3"]], "left:28px;right:28px;top:520px", "repeat(3,1fr)");
+      return row(N, "Photographs · Exhibitions · Contact", CLOCK) +
+        grid([["pt-bw-woman", "Portrait I", "3 / 4"], ["sh-walker", "Walker", "4 / 3"], ["ld-dune-bw", "Dune", "4 / 3"], ["pt-bw-man", "Portrait II", "3 / 4"]], "left:28px;right:28px;top:80px;align-items:end", "0.75fr 1.33fr 1.33fr 0.75fr") +
+        grid([["sh-bars", "Bars of Light", "4 / 3"], ["st-bw-roses", "Roses", "4 / 3"], ["hd-bw", "Hands", "4 / 3"]], "left:28px;right:28px;top:520px", "repeat(3,1fr)", null, null, 4);
     } },
     { name: "채워진 템플릿 P303", n: 2, bg: "#fff", ink: "#111", html: function () {
-      return '<div style="position:absolute;left:28px;top:22px;width:420px;display:grid;gap:22px;font-size:17px"><b class="tp-name">' + N + ' 갤러리</b>' +
-        '<div style="font-size:44px;font-weight:500;letter-spacing:-.04em;line-height:1.1">사물의 시간<br><span class="dim">Time of Objects</span></div>' +
-        '<div class="m" style="font-size:15px;line-height:1.7">2026. 10. 02 — 11. 15<br>화–일 11:00 — 19:00<br>입장 무료<br><span data-until="2026-10-02" data-ko="1">개막 10월 2일</span></div><p style="opacity:.75">손과 그릇, 빛에 관한 사진 여덟 점을 모은 전시입니다.</p></div>' +
+      return '<div style="position:absolute;left:28px;top:22px;width:420px;display:grid;gap:22px;font-size:17px"><b class="tp-name">' + N + ' Gallery</b>' +
+        '<div style="font-size:44px;font-weight:500;letter-spacing:-.04em;line-height:1.1">Time of Objects<br><span class="dim ko" style="font-size:24px">사물의 시간</span></div>' +
+        '<div class="m" style="font-size:15px;line-height:1.7">Oct 2 — Nov 15, 2026<br>Tue–Sun 11:00 — 19:00<br>Free admission<br><span data-until="2026-10-02">Opening Oct 2</span></div><p style="opacity:.75">Eight photographs about hands, bowls and light.<br><span class="ko" style="opacity:.7;font-size:15px">손과 그릇, 빛에 관한 사진 여덟 점.</span></p></div>' +
         ph("sc-hand", "left:480px;top:22px;width:450px;bottom:22px") + ph("cer-dark-jug", "left:950px;right:28px;top:22px;height:420px") + ph("cer-cup-speckle", "left:950px;right:28px;top:462px;bottom:22px");
     } },
     { name: "채워진 템플릿 P404", n: 3, bg: "#f6f4f0", ink: "#1b1a14", html: function () {
-      var items = [["cer-vases-beige", "백자 세 병", "₩ 128,000"], ["ch-tulip", "튤립 의자", "₩ 340,000"], ["gl-green", "녹색 유리 화병", "₩ 86,000"], ["cer-cup-speckle", "점박이 컵", "₩ 34,000"],
-        ["ch-yellow", "노란 의자", "₩ 420,000"], ["cer-blue-set", "푸른 도자 세트", "₩ 210,000"], ["gl-flower", "유리 꽃", "₩ 58,000"], ["st-yellow-jars", "노란 항아리", "₩ 96,000"]];
-      var fl = ["전체", "도자", "가구", "유리"].map(function (c, k) { return '<button type="button" class="lv-a" data-filter="' + (k ? c : "*") + '" style="' + (k ? "opacity:.5" : "font-weight:600") + '">' + c + '</button>'; }).join(" · ");
-      var catOf = function (f) { return /^ch-/.test(f) ? "가구" : /^gl-/.test(f) ? "유리" : "도자"; };
-      return row(N + " 상점", fl, "장바구니 (0)") +
+      var items = [["cer-vases-beige", "Three White Jars", "₩ 128,000"], ["ch-tulip", "Tulip Chair", "₩ 340,000"], ["gl-green", "Green Glass Vase", "₩ 86,000"], ["cer-cup-speckle", "Speckled Cup", "₩ 34,000"],
+        ["ch-yellow", "Yellow Chair", "₩ 420,000"], ["cer-blue-set", "Blue Ceramic Set", "₩ 210,000"], ["gl-flower", "Glass Flower", "₩ 58,000"], ["st-yellow-jars", "Yellow Jars", "₩ 96,000"]];
+      var fl = ["All", "Ceramics", "Furniture", "Glass"].map(function (c, k) { return '<button type="button" class="lv-a" data-filter="' + (k ? c : "*") + '" style="' + (k ? "opacity:.5" : "font-weight:600") + '">' + c + '</button>'; }).join(" · ");
+      var catOf = function (f) { return /^ch-/.test(f) ? "Furniture" : /^gl-/.test(f) ? "Glass" : "Ceramics"; };
+      return row(N + " Shop", fl, "Cart (0)") +
         '<div style="position:absolute;left:28px;right:28px;top:80px;display:grid;grid-template-columns:repeat(4,1fr);gap:30px 16px">' + items.map(function (x) {
           return '<div data-cat="' + catOf(x[0]) + '" style="display:grid;gap:8px"><div style="aspect-ratio:1;background:#ece9e2;overflow:hidden"><img src="' + src(x[0]) + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover"></div><div style="display:flex;justify-content:space-between;font-size:15px"><span>' + x[1] + '</span><span class="m">' + x[2] + '</span></div></div>';
         }).join("") + '</div>';
     } },
     { name: "채워진 템플릿 P505", n: 2, bg: "#000", ink: "#fff", html: function () {
-      return ph("dn-blur", "inset:0") + row(N + " 스튜디오", "작업 · 소개", "문의") +
-        '<h3 class="big" style="left:24px;bottom:110px;font-size:120px;font-weight:600">움직임의 잔상</h3><div style="position:absolute;left:28px;bottom:28px;font-size:17px;opacity:.8">무용 · 영상 · 2026</div>';
+      return ph("dn-blur", "inset:0") + row(N + " Studio", "Work · About", "Enquiries") +
+        '<h3 class="big" style="left:24px;bottom:110px;font-size:120px;font-weight:600">Afterimage of Motion</h3><div style="position:absolute;left:28px;bottom:28px;font-size:17px;opacity:.8">Dance · Film · 2026&nbsp;&nbsp;<span class="ko" style="opacity:.7">움직임의 잔상</span></div>';
     } },
     { name: "채워진 템플릿 P606", n: 3, bg: "#fcfcfc", ink: "#111", html: function () {
-      var cv = '<div style="display:grid;gap:6px">' + [["2026", "개인전 「사물의 시간」, 서울"], ["2025", "단체전 「표면」, 부산"], ["2024", "레지던시, 헬싱키"], ["2023", "사진집 『그림자 연구』 출간"]].map(function (x) { return '<div style="display:grid;grid-template-columns:70px 1fr;padding:6px 0;border-top:1px solid #e5e5e5"><span class="m dim">' + x[0] + '</span><span>' + x[1] + '</span></div>'; }).join("") + '</div>';
-      return row(N, "작업 · 이력 · 연락", "") + '<div style="position:absolute;left:28px;top:90px;width:560px;display:grid;gap:22px;font-size:17px"><div style="font-size:56px;font-weight:600;letter-spacing:-.045em;line-height:1.05">' + N + '<br><span class="dim" style="font-weight:400">패션 사진가</span></div>' + cv + '</div>' +
-        ph("fa-white-suit", "left:640px;right:28px;top:90px;height:470px") + grid([["fa-coat", "코트"], ["fa-profile", "옆모습"], ["fa-black-coat", "검은 코트"]], "left:640px;right:28px;top:590px", "repeat(3,1fr)", "4 / 3");
+      var cv = '<div style="display:grid;gap:6px">' + [["2026", "Solo show, Time of Objects, Seoul"], ["2025", "Group show, Surface, Busan"], ["2024", "Residency, Helsinki"], ["2023", "Book, A Study of Shadows"]].map(function (x) { return '<div style="display:grid;grid-template-columns:70px 1fr;padding:6px 0;border-top:1px solid #e5e5e5"><span class="m dim">' + x[0] + '</span><span>' + x[1] + '</span></div>'; }).join("") + '</div>';
+      return row(N, "Work · CV · Contact", "") + '<div style="position:absolute;left:28px;top:90px;width:560px;display:grid;gap:22px;font-size:17px"><div style="font-size:56px;font-weight:600;letter-spacing:-.045em;line-height:1.05">' + N + '<br><span class="dim" style="font-weight:400">Fashion Photographer</span></div>' + cv + '</div>' +
+        ph("fa-white-suit", "left:640px;right:28px;top:90px;height:470px") + grid([["fa-coat", "Coat"], ["fa-profile", "Profile"], ["fa-black-coat", "Black Coat"]], "left:640px;right:28px;top:590px", "repeat(3,1fr)", "4 / 3");
     } }
   ];
 
   F.populated = F.populated.concat([
     { name: "채워진 템플릿 P707", n: 3, bg: "#ffffff", ink: "#111", html: function () {
-      return ph("fa-profile", "left:0;top:0;width:760px;bottom:0") +
+      return ph("fa-profile", "left:0;top:0;width:760px;height:900px") +
         at("left:790px;right:28px;top:22px;display:flex;justify-content:space-between;font-size:15px", '<b class="tp-name">' + N + ' Journal</b><span>Issues · About</span>') +
         at("left:790px;right:28px;top:110px;font-family:var(--f-serif);font-size:76px;line-height:1;letter-spacing:-.02em", "The Face<br><i>in Profile</i>") +
         at("left:790px;right:28px;top:300px;font-family:var(--f-kserif);font-size:22px", ko("옆모습의 얼굴 — 저널 12호", "opacity:.6")) +
@@ -425,7 +438,7 @@
         at("left:28px;bottom:22px;font-size:15px", "Colour, glass, hands and paper — references for the spring collection. " + ko("봄 컬렉션 레퍼런스", "opacity:.55"));
     } },
     { name: "채워진 템플릿 P112", n: 2, bg: "#0b0b0b", ink: "#f0f0f0", html: function () {
-      return ph("dn-jump", "left:0;top:0;width:900px;bottom:0") +
+      return ph("dn-jump", "left:0;top:0;width:900px;height:900px") +
         at("left:930px;right:28px;top:22px;display:flex;justify-content:space-between;font-size:15px", '<b class="tp-name">' + N + ' Dance Company</b><span>Tour · Company</span>') +
         at("left:930px;right:28px;top:120px;font-family:var(--f-cond);font-stretch:62%;font-weight:800;font-size:128px;line-height:.88;text-transform:uppercase", "Weight<br>of Air") +
         at("left:930px;right:28px;top:380px;font-size:18px;line-height:1.5", "A new work for six dancers.<br>Premiere at Seongsu Stage, Seoul, 14 March 2027.<br><br>" + ko("여섯 무용수를 위한 신작 — 2027년 3월 14일 초연", "opacity:.6;font-size:15px")) +
@@ -441,15 +454,15 @@
     { name: "와이어프레임 W910", n: 2, bg: "#fff", ink: "#111", html: function () {
       var rows = ""; for (var i = 0; i < 7; i++) rows += '<div data-acc style="padding:12px 0;border-bottom:1px solid #eee"><div style="display:flex;justify-content:space-between;align-items:center"><div class="wl" style="width:' + (40 + i * 11 % 40) + '%;height:26px;' + (i === 1 ? "background:#cfcfcf" : "") + '"></div><div class="wl" style="width:60px"></div></div>' +
         '<div class="acc-more"><div style="display:grid;gap:8px;padding-top:12px"><div class="wl" style="width:90%"></div><div class="wl" style="width:62%"></div></div></div></div>';
-      return row(N, "색인 · 정보", CLOCK) + '<div style="position:absolute;left:28px;top:100px;width:560px">' + rows + '</div>' + wf("left:640px;right:28px;top:100px;bottom:70px");
+      return row(N, "Index · Information", CLOCK) + '<div style="position:absolute;left:28px;top:100px;width:560px">' + rows + '</div>' + wf("left:640px;right:28px;top:100px;bottom:70px");
     } },
     { name: "와이어프레임 W011", n: 2, bg: "#fff", ink: "#111", html: function () {
-      return wf("left:0;top:0;width:760px;bottom:0") + '<div style="position:absolute;left:790px;top:22px"><b class="tp-name">' + N + '</b></div>' +
+      return wf("left:0;top:0;width:760px;height:900px") + '<div style="position:absolute;left:790px;top:22px"><b class="tp-name">' + N + '</b></div>' +
         lines("left:790px;right:28px;top:110px", ["80%", "55%"], "60px") + lines("left:790px;right:28px;top:380px", ["100%", "96%", "90%", "94%", "70%"]);
     } },
     { name: "와이어프레임 W112", n: 3, bg: "#fff", ink: "#111", html: function () {
-      var cells = ""; for (var i = 0; i < 5; i++) cells += '<div style="display:grid;gap:6px"><div class="wf in" style="--ar:4/3"></div><div style="display:flex;justify-content:space-between;align-items:center"><div class="wl" style="width:60%"></div><button type="button" class="lv-a" data-add="p" style="font-size:13px">담기 +</button></div></div>';
-      return row(N, "상점 · 공방 · 수업", "장바구니 (0)") + wf("left:28px;top:80px;width:880px;height:560px") + lines("left:940px;right:28px;top:80px", ["60%", "100%", "95%", "80%", "50%"], "22px") +
+      var cells = ""; for (var i = 0; i < 5; i++) cells += '<div style="display:grid;gap:6px"><div class="wf in" style="--ar:4/3"></div><div style="display:flex;justify-content:space-between;align-items:center"><div class="wl" style="width:60%"></div><button type="button" class="lv-a" data-add="p" style="font-size:13px">Add +</button></div></div>';
+      return row(N, "Shop · Studio · Classes", "Cart (0)") + wf("left:28px;top:80px;width:880px;height:560px") + lines("left:940px;right:28px;top:80px", ["60%", "100%", "95%", "80%", "50%"], "22px") +
         '<div style="position:absolute;left:28px;right:28px;top:668px;display:grid;grid-template-columns:repeat(5,1fr);gap:14px">' + cells + '</div>';
     } }
   ]);
@@ -699,7 +712,7 @@
   (window.PHOTOS || []).forEach(function (p) { PH[p[0]] = p; });
   var GEN = window.TPLGEN;
   var genEnv = {
-    N: N, plain: site || "이름", esc: esc, src: src,
+    N: N, plain: site || "Name", esc: esc, src: src,
     photo: function (f) { var p = PH[f] || [f, f, "art"]; return { f: f, ko: p[1], g: p[2], en: GEN.enName(f) }; }
   };
   var HANDMADE = {};
@@ -824,20 +837,11 @@
 
   /* ---------- sections ---------- */
   function famOf(f) { return BASES.filter(function (b) { return b.fam === f; }); }
-  /* basic: feed / grid / slideshow side by side, one large card each and the list of its numbers */
+  /* basic, as Cargo shows it: feed, grid and slideshow side by side, each a column of cards */
   var basic = document.getElementById("basicCols");
   basic.innerHTML = ["feed", "grid", "slide"].map(function (f) {
-    var fam = famOf(f);
-    return '<div class="fam" data-fam="' + f + '"><h3 class="fam-t">' + FAM_KO[f] + ' <span class="fam-n m">' + fam.length + '</span></h3><div class="fam-card">' + card(fam[0]) + '</div>' +
-      '<ul class="vlist">' + fam.map(function (b, i) { return '<li><button type="button" data-n="' + b.first + '" aria-current="' + (i === 0) + '">' + tag(b.first).slice(0, 4) + '</button></li>'; }).join("") + '</ul></div>';
+    return '<div class="bcol"><h3 class="bcol-t">' + FAM_KO[f] + ' 템플릿 <span class="m">' + famOf(f).length + '</span></h3><div class="row row-1" data-family="' + f + '"></div></div>';
   }).join("");
-  basic.addEventListener("click", function (e) {
-    var btn = e.target.closest(".vlist button"); if (!btn) return;
-    var fam = btn.closest(".fam");
-    fam.querySelector(".fam-card").innerHTML = card(find(+btn.dataset.n));
-    fam.querySelectorAll(".vlist button").forEach(function (x) { x.setAttribute("aria-current", x === btn); });
-    watch(fam); markPicked();
-  });
   /* other sections: cards are added in batches as the page scrolls, so 1440 never sit in the page at once */
   var BATCH = 24;
   var more = "IntersectionObserver" in window ? new IntersectionObserver(function (es) {
@@ -846,7 +850,7 @@
   function colsOf(r) { return getComputedStyle(r).gridTemplateColumns.split(" ").length || 1; }
   function addBatch(r) {
     var list = famOf(r.dataset.family), from = +(r.dataset.shown || 0), folded = r.classList.contains("is-folded");
-    var to = Math.min(list.length, folded ? Math.max(from, colsOf(r) * 2) : from + BATCH);
+    var to = Math.min(list.length, folded ? Math.max(from, colsOf(r) * 3) : from + BATCH);
     var old = r.querySelector(".row-more"); if (old) { if (more) more.unobserve(old); old.remove(); }
     r.insertAdjacentHTML("beforeend", list.slice(from, to).map(function (b) { return card(b); }).join(""));
     r.dataset.shown = to;
@@ -857,30 +861,39 @@
     }
     watch(r); markPicked();
   }
-  /* the fold: first row whole, second row about 70%, then a fade */
+  /* the fold: two rows whole, the third about 70%, then a fade */
   function fold(r) {
     if (!r.classList.contains("is-folded")) { r.style.maxHeight = ""; return; }
     var c = colsOf(r), cards = r.querySelectorAll(".tpl");
-    if (cards.length < c * 2) addBatch(r);
-    var second = r.querySelectorAll(".tpl")[c]; if (!second) { r.style.maxHeight = ""; return; }
-    r.style.maxHeight = Math.round(second.offsetTop + second.offsetHeight * 0.7) + "px";
+    if (cards.length < c * 3) addBatch(r);
+    var third = r.querySelectorAll(".tpl")[c * 2]; if (!third) { r.style.maxHeight = ""; return; }
+    r.style.maxHeight = Math.round(third.offsetTop + third.offsetHeight * 0.7) + "px";
+    r.style.setProperty("--fold-fade", Math.round(third.offsetHeight * 0.55) + "px");
   }
+  /* one toggle per section: the three basic columns open and close together */
   document.querySelectorAll(".row[data-family]").forEach(function (r) {
-    var n = famOf(r.dataset.family).length;
     r.classList.add("is-folded");
     addBatch(r);
-    var t = document.createElement("div"); t.className = "row-toggle";
-    t.innerHTML = '<button type="button" aria-expanded="false"><span>펼치기</span> <span class="m">' + n + '개</span> <span aria-hidden="true">↓</span></button>';
-    r.after(t);
-    var btn = t.querySelector("button");
-    btn.addEventListener("click", function () {
-      var open = r.classList.toggle("is-folded") === false;
-      btn.setAttribute("aria-expanded", open);
-      btn.firstChild.textContent = open ? "접기" : "펼치기";
-      btn.lastChild.textContent = open ? "↑" : "↓";
-      if (open) { r.style.maxHeight = ""; addBatch(r); }
-      else { fold(r); r.closest(".sec").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" }); }
-    });
+    var sec = r.closest(".sec");
+    if (!sec.querySelector(".row-toggle")) {
+      var rows = [].slice.call(sec.querySelectorAll(".row[data-family]"));
+      var n = rows.reduce(function (a, x) { return a + famOf(x.dataset.family).length; }, 0);
+      var t = document.createElement("div"); t.className = "row-toggle";
+      t.innerHTML = '<button type="button" aria-expanded="false"><span>펼치기</span> <span class="m">' + n + '개</span> <span aria-hidden="true">↓</span></button>';
+      (sec.querySelector(".basic") || r).after(t);
+      var btn = t.querySelector("button");
+      btn.addEventListener("click", function () {
+        var open = btn.getAttribute("aria-expanded") !== "true";
+        btn.setAttribute("aria-expanded", open);
+        btn.firstChild.textContent = open ? "접기" : "펼치기";
+        btn.lastChild.textContent = open ? "↑" : "↓";
+        rows.forEach(function (x) {
+          x.classList.toggle("is-folded", !open);
+          if (open) { x.style.maxHeight = ""; addBatch(x); } else fold(x);
+        });
+        if (!open) sec.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+      });
+    }
     fold(r);
     /* the fold follows the card height: re-measure when pictures and layout settle */
     if ("ResizeObserver" in window) new ResizeObserver(function () { fold(r); }).observe(r.querySelector(".tpl"));
@@ -969,7 +982,7 @@
     });
     /* like Cargo, the site name opens the information page when there is no link for it */
     if (tp.querySelector('.lv-a[data-lv="info"]')) return;
-    var name = (site || "이름").toLowerCase(), w2 = document.createTreeWalker(tp, NodeFilter.SHOW_TEXT);
+    var name = (site || "Name").toLowerCase(), w2 = document.createTreeWalker(tp, NodeFilter.SHOW_TEXT);
     while ((t = w2.nextNode())) {
       var el2 = t.parentElement, v = t.nodeValue.trim();
       if (!v || v.toLowerCase().indexOf(name) < 0 || el2.closest(".lv-a, .ko, button")) continue;
@@ -1018,8 +1031,15 @@
   }
   function closeTop(tp) {
     var ls = tp.querySelectorAll(".lv-layer");
-    if (ls.length) ls[ls.length - 1].remove();
+    if (ls.length) { var top = ls[ls.length - 1]; top.remove(); if (top._origin) backTo(tp, top._origin); }
     markOn(tp); lock(tp);
+  }
+  /* back from a project: the page is where it was, and the thumbnail it came from is marked for a moment */
+  function backTo(tp, el) {
+    if (!el.isConnected) return;
+    var g = geom(tp), R = tp.getBoundingClientRect(), r = el.getBoundingClientRect(), y = (r.top - R.top) / g.k;
+    if (g.view && (y < g.top || y > g.top + g.H - 100)) g.view.scrollTo({ top: Math.max(0, y - 120) * g.k, behavior: "auto" });
+    el.classList.remove("lv-back"); void el.offsetWidth; el.classList.add("lv-back");
   }
   function closeAll(tp) { [].forEach.call(tp.querySelectorAll(".lv-layer"), function (l) { l.remove(); }); markOn(tp); lock(tp); }
   function markOn(tp, kind) {
@@ -1043,9 +1063,12 @@
       (ko ? '<p>서울에서 사진과 사물, 책을 만듭니다. 작은 출판사와 갤러리, 작업실과 함께 일합니다.</p>'
           : '<p>Makes photographs, objects and books in Seoul, working with small publishers, galleries and studios.</p><p class="ko" style="opacity:.55">서울에서 사진과 사물, 책을 만듭니다.</p>') +
       '<dl class="lv-dl">' + cv.map(function (c) { return '<div><dt class="m">' + c[0] + '</dt><dd>' + c[1] + '</dd></div>'; }).join("") + '</dl>' +
-      '<div class="lv-links"><button type="button" class="lv-a" data-lv="contact">' + esc(mail()) + '</button><button type="button" class="lv-a" data-lv="out">' + (ko ? "인스타그램" : "Instagram") + ' ↗</button></div>');
+      '<div class="lv-links"><button type="button" class="lv-a" data-lv="contact">' + esc(mail()) + '</button><button type="button" class="lv-a" data-lv="out">' + (ko ? "인스타그램" : "Instagram") + ' ↗</button>' +
+      (hasFeat(tp, "cv") ? '<button type="button" class="lv-a" data-cv>' + (ko ? "이력서 (인쇄용)" : "CV (printable)") + '</button>' : "") +
+      (hasFeat(tp, "vcard") ? '<button type="button" class="lv-a" data-vcard>' + (ko ? "연락처 저장" : "Save contact") + '</button>' : "") + '</div>');
     markOn(tp, "info");
   }
+  function hasFeat(tp, k) { var sp = tp._lv && tp._lv.spec; return !!(sp && sp.feats.indexOf(k) >= 0); }
   function openIndex(tp, ko) {
     var items = tp._lv && tp._lv.items && tp._lv.items.length ? tp._lv.items : gallery(tp); if (items.length < 3) items = poolItems(8, null, tp);
     items = items.slice(0, 10);
@@ -1092,22 +1115,24 @@
   /* pinned menu and marquee: they stay on screen while the page moves under them */
   function pinOnScroll(view, b) {
     var tp = view.querySelector(".tp"); if (!tp) return;
-    var pins = b.gen && b.gen.pin ? [].slice.call(tp.querySelectorAll(".tp-nav, .mq")) : [];
-    var bd = tp.querySelector(".bd");
+    var hide = !!(b.gen && b.gen.feats.indexOf("autohide") >= 0); /* the menu steps aside while you read down, and comes back when you scroll up */
+    var pins = b.gen && (b.gen.pin || hide) ? [].slice.call(tp.querySelectorAll(".tp-nav, .mq")) : [];
+    var bd = tp.querySelector(".bd"), last = 0, hidden = false;
     view.addEventListener("scroll", function () {
       var t = geom(tp).top;
-      pins.forEach(function (p) { p.style.transform = "translateY(" + t + "px)"; });
+      if (hide) { if (t > last + 3 && t > 120) hidden = true; else if (t < last - 3 || t <= 120) hidden = false; last = t; }
+      pins.forEach(function (p) { p.style.transition = hide ? "transform .25s ease" : ""; p.style.transform = "translateY(" + (hidden ? t - 140 : t) + "px)"; });
       if (bd) bd.style.transform = "translateY(" + t + "px)";
     }, { passive: true });
   }
 
   function words(ko) {
     return ko ? {
-      back: "← 목록", next: "다음 프로젝트 →", about: "만든 과정", info: "정보", year: "연도", mat: "재료", place: "장소",
+      back: "← 목록", next: "다음 프로젝트 →", prev: "← 이전", share: "링크 복사", about: "만든 과정", info: "정보", year: "연도", mat: "재료", place: "장소",
       text: "작업실 창가에서 계절이 바뀌는 동안 만든 연작입니다. 같은 자리에서 같은 시간에 기록하고, 그날의 빛이 달라지는 만큼만 바꾸었습니다.",
       text2: "전시와 책으로 함께 소개되었으며, 일부는 주문 제작으로 다시 만들 수 있습니다."
     } : {
-      back: "← Index", next: "Next project →", about: "Process", info: "Details", year: "Year", mat: "Material", place: "Place",
+      back: "← Index", next: "Next project →", prev: "← Previous", share: "Copy link", about: "Process", info: "Details", year: "Year", mat: "Material", place: "Place",
       text: "A series made at the studio window while the seasons changed. Recorded from the same place at the same hour, changing only as much as the light did.",
       text2: "Shown as an exhibition and a small book; some pieces can be made again to order."
     };
@@ -1116,7 +1141,7 @@
   var MATS = [["Archival pigment print", "피그먼트 프린트"], ["Stoneware", "석기"], ["Oil on linen", "린넨에 유채"], ["Oak, linen", "참나무, 린넨"], ["Risograph", "리소그래프"]];
 
   /* project page: what a thumbnail or a line of the index opens */
-  function openProject(tp, st, i, title) {
+  function openProject(tp, st, i, title, origin) {
     var items = st.items && st.items.length ? st.items : gallery(tp); if (!items.length) items = poolItems(4, null, tp);
     var n = items.length, pick = [], w = words(st.ko), ko = st.ko;
     for (var k = 0; k < Math.min(4, n); k++) pick.push(items[(i + k) % n]);
@@ -1125,9 +1150,14 @@
     var imgs = pick.map(function (it, k) { return it.src ? '<img src="' + it.src + '" alt="" data-pi="' + k + '">' : '<div class="wf in" style="--ar:4 / 3"></div>'; }).join("");
     var head = '<div class="lv-top"><button type="button" class="lv-a lv-x">' + w.back + '</button><span class="m">' + pad2(i + 1) + ' / ' + pad2(Math.max(8, n)) + '</span></div>';
     var text = '<b class="lv-h">' + esc(name) + '</b>' + meta + '<p>' + w.text + '</p><p style="opacity:.7">' + w.text2 + '</p>';
-    var foot = '<div class="pj-foot"><button type="button" class="lv-a" data-proj="' + ((i + 1) % Math.max(8, n)) + '">' + w.next + '</button></div>';
+    var tot = Math.max(8, n);
+    var foot = '<div class="pj-foot"><button type="button" class="lv-a" data-proj="' + ((i - 1 + tot) % tot) + '">' + w.prev + '</button><button type="button" class="lv-a" data-share="' + pad2(i + 1) + '">' + w.share + '</button><button type="button" class="lv-a" data-proj="' + ((i + 1) % tot) + '">' + w.next + '</button></div>';
     var d = layer(tp, "lv-page pj-" + kind, head + (kind === 1 ? '<div class="pj-text">' + text + '</div><div class="pj-imgs">' + imgs + '</div>' : kind === 2 ? '<div class="pj-text">' + text + '</div><div class="pj-imgs pj-grid">' + imgs + '</div>' : '<div class="pj-cols"><div class="pj-text">' + text + '</div><div class="pj-imgs">' + imgs + '</div></div>') + foot);
     d._items = pick;
+    /* grid memory: closing the project returns to the thumbnail it came from */
+    var pages = tp.querySelectorAll(".lv-page"), before = pages.length > 1 ? pages[pages.length - 2] : null;
+    d._origin = origin || (before && before._origin) || null;
+    if (before) before.remove();
     markOn(tp, "index");
   }
   /* product page: picture, price, options, quantity, and the shop's small print */
@@ -1236,19 +1266,49 @@
     if (st.main && !(im && im === st.main)) swap(st.main, src(f));
   }
 
+  /* hand-made templates that would otherwise do exactly what another template does get one or two
+     more working menu items, so no two of the 1440 share a feature list (found with ?check=features) */
+  var HAND_EXTRA = {
+    4: ["search"], 164: ["search"], 165: ["search"], 166: ["search"], 321: ["search"], 323: ["search"], 483: ["search"], 603: ["search"],
+    605: ["search"], 607: ["news"], 608: ["clock"], 609: ["search"], 611: ["news"], 612: ["news"], 613: ["contact"], 615: ["search"],
+    616: ["search", "news"], 618: ["news"], 619: ["clock"], 620: ["search", "news"], 621: ["search", "clock"], 622: ["search"], 623: ["news", "clock"],
+    626: ["search", "clock"], 963: ["news"], 964: ["search", "news"], 965: ["news", "clock"], 966: ["search", "contact"], 967: ["search", "clock"],
+    968: ["news"], 969: ["clock", "contact"], 971: ["search", "news", "clock"], 1201: ["news"], 1205: ["search"], 1206: ["search", "news"],
+    1207: ["search", "news"], 1210: ["news"], 1211: ["search"], 1212: ["clock"]
+  };
+
+
+  var EXTRA = { search: '<button type="button" class="lv-a" data-lv="search">Search</button>', news: '<button type="button" class="lv-a" data-lv="news">Newsletter</button>',
+    contact: '<button type="button" class="lv-a" data-lv="contact">Email</button>', clock: CLOCK };
+  function addExtras(tp, ex) {
+    /* next to the right-most link of the top menu; if the top has none on the right, in the top-right corner */
+    var cr = tp.getBoundingClientRect(), k = cr.width / 1440 || 1, link = null, best = -1;
+    $$(tp, ".lv-a").forEach(function (a) {
+      var r = a.getBoundingClientRect(), x = (r.left - cr.left) / k, y = (r.top - cr.top) / k;
+      if (y < 80 && x > 640 && x > best) { best = x; link = a; }
+    });
+    var near = link ? link.parentElement.textContent : "";
+    var sep = /·/.test(near) ? " · " : /,/.test(near) ? ", " : SP; /* the menu's own separator */
+    var html = ex.map(function (k) { return EXTRA[k]; }).join(sep);
+    if (link) link.insertAdjacentHTML("afterend", sep + html);
+    else tp.insertAdjacentHTML("beforeend", '<div class="tp-extra" style="position:absolute;right:28px;top:22px;font-size:15px">' + html + '</div>');
+  }
   function liven(view, b) {
     var tp = view.querySelector(".tp"); if (!tp) return [];
-    if (!b.gen) linkify(tp);
+    if (!b.gen) { linkify(tp); if (HAND_EXTRA[b.first]) addExtras(tp, HAND_EXTRA[b.first]); }
     var first = tp.querySelector(".tp-nav .lv-a:not(.tp-name)") || tp.querySelector(".lv-a");
-    var st = tp._lv = { cart: [], ko: b.gen ? b.gen.ko : isKo(first ? first.textContent : "작업"), own: !!b.gen || b.fam === "grad", items: b.items || null };
+    var st = tp._lv = { cart: [], ko: b.gen ? b.gen.ko : isKo(first ? first.textContent : "Work"), own: !!b.gen || b.fam === "grad", items: b.items || null };
     st.shop = !!tp.querySelector('.lv-a[data-lv="cart"]');
     st.pin = !!(b.gen && b.gen.pin);
+    st.spec = b.gen || null;
     if (b.gen) genSlides(tp, st, b);
     else if (!st.own) {
       setupSlides(tp, st); setupLists(tp, st);
       if (b.auto && st.slide) { st.autoplay = true; autoSlides(tp, st, b.auto); }
     }
     audioSetup(tp, st);
+    dragStrips(tp); swipe(tp, st);
+    if (b.gen && b.gen.feats.indexOf("peek") >= 0) peek(tp);
     $$(tp, "[data-filter],[data-page],[data-sort],[data-acc],[data-add]").forEach(function (el) { el.classList.add("lv-hot"); });
     /* type specimen: the big word is a type tester */
     [].forEach.call(tp.querySelectorAll("div"), function (el) {
@@ -1298,7 +1358,15 @@
         return;
       }
       var pj = t.closest("[data-proj]");
-      if (pj) { var tt = pj.children[1]; openProject(tp, st, +pj.dataset.proj, tt && !pj.closest(".lv-layer") ? tt.textContent : null); return; }
+      if (pj) { var tt = pj.children[1]; openProject(tp, st, +pj.dataset.proj, tt && !pj.closest(".lv-layer") ? tt.textContent : null, pj.closest(".lv-layer") ? null : pj); return; }
+      var vw = t.closest("[data-view]"); if (vw) { setView(tp, vw); return; }
+      var go = t.closest("[data-goto]"); if (go) { goSection(tp, +go.dataset.goto); return; }
+      var qb = t.closest("[data-quote]"); if (qb) { stepQuote(qb.closest("[data-quotes]"), +qb.dataset.quote); return; }
+      var mb = t.closest("[data-member]"); if (mb) { openMember(tp, st, mb); return; }
+      var prn = t.closest("[data-print]"); if (prn) { printCv(tp); return; }
+      if (t.closest("[data-cv]")) { openCv(tp, st); return; }
+      var vc = t.closest("[data-vcard]"); if (vc) { saveVcard(tp); return; }
+      var shr = t.closest("[data-share]"); if (shr) { try { navigator.clipboard.writeText("https://" + host + "/work/" + shr.dataset.share); } catch (err) {} toast(tp, (st.ko ? "작업 링크를 복사했습니다" : "Link copied") + " — " + host + "/work/" + shr.dataset.share); return; }
       var pimg = t.closest(".lv-page img[data-pi]"); if (pimg) { openLightbox(tp, pimg.closest(".lv-layer")._items, +pimg.dataset.pi); return; }
       var a = t.closest(".lv-a, .lv-pay");
       if (a && a.dataset.add != null) { addToCart(tp, st, a.dataset.add, a.closest("[data-add]") !== a ? a : null); return; }
@@ -1316,6 +1384,7 @@
         else if (k === "search") openSearch(tp, st);
         else if (k === "news") openNews(tp, st);
         else if (k === "lang") langSwap(tp, st);
+        else if (k === "dark") darkSwap(tp, a);
         else if (k === "contact") {
           try { navigator.clipboard.writeText(mail()); } catch (err) {}
           toast(tp, mail() + " 주소를 복사했습니다");
@@ -1349,7 +1418,7 @@
         var all = [].slice.call(tp.querySelectorAll(".gi")).filter(outside), gix = all.indexOf(gi);
         if (gi.querySelector("[data-add]")) return openProduct(tp, st, +gi.querySelector("[data-add]").dataset.add, priceOf(gi));
         var cap = gi.querySelector("span");
-        return openProject(tp, st, b.gen ? gix : gix, cap ? cap.textContent.replace(/^\s*\d+/, "").replace(/\d{4}\s*$/, "").trim() : null);
+        return openProject(tp, st, gix, cap ? cap.textContent.replace(/^\s*\d+/, "").replace(/\d{4}\s*$/, "").trim() : null, gi);
       }
       if (st.gs) {
         var G = st.gs, th = t.closest("[data-st]"), sg = t.closest("[data-sg]"), sd = t.closest("[data-sd]"), sl = t.closest("[data-sl]");
@@ -1390,13 +1459,115 @@
   function $$(root, s) { return [].slice.call(root.querySelectorAll(s)); }
   function outside(el) { return !el.closest(".lv-layer"); }
 
+  /* ---------- practical features (from what award-winning portfolio sites do; only ones that keep out of the way of the work) ---------- */
+  /* grid <-> list */
+  function setView(tp, btn) {
+    var list = btn.dataset.view === "list", bar = btn.parentNode;
+    $$(tp, ".gg").filter(outside).forEach(function (g) { g.classList.toggle("as-list", list); });
+    $$(bar, "[data-view]").forEach(function (x) { var on = x === btn; x.setAttribute("aria-pressed", on); x.style.opacity = on ? "" : ".5"; x.style.fontWeight = on ? "600" : ""; });
+    fitAfter(tp);
+  }
+  function fitAfter(tp) { var v = tp.closest(".mac-view"); if (v && v.classList.contains("live")) fitHeight(v); }
+  /* section index below the first screen */
+  function goSection(tp, i) {
+    var el = tp.querySelector('[data-sec="' + i + '"]'), g = geom(tp); if (!el || !g.view) return;
+    var y = (el.getBoundingClientRect().top - tp.getBoundingClientRect().top) / g.k;
+    g.view.scrollTo({ top: Math.max(0, y - 90) * g.k, behavior: reduce ? "auto" : "smooth" });
+  }
+  /* testimonials: one at a time */
+  var QUOTES_LIVE = [["Calm, careful and on time. The book came out better than we imagined.", "Editor, Low Tide Books"], ["They listened first and designed second. Our visitors noticed.", "Director, Second Light Gallery"],
+    ["Every photograph felt like the room it was taken in.", "Owner, Salt Kitchen"], ["A small studio that thinks in years, not weeks.", "Curator, Open Studio School"]];
+  function stepQuote(box, d) {
+    if (!box) return;
+    var i = (+box.dataset.quotes + d + QUOTES_LIVE.length) % QUOTES_LIVE.length, q = QUOTES_LIVE[i];
+    box.dataset.quotes = i; box.querySelector("[data-qt]").textContent = "“" + q[0] + "”"; box.querySelector("[data-qa]").textContent = q[1];
+  }
+  /* team: a name opens a short profile */
+  function openMember(tp, st, el) {
+    var nm = el.firstChild.textContent, role = el.dataset.role, ko = st.ko, pics = gallery(tp), pic = pics[+el.dataset.member % Math.max(1, pics.length)];
+    layer(tp, "lv-side", '<div class="lv-top"><span>' + (ko ? "팀" : "Team") + '</span><button type="button" class="lv-x">' + (ko ? "닫기" : "Close") + ' ✕</button></div>' +
+      (pic && pic.src ? '<img src="' + pic.src + '" alt="" style="width:100%;aspect-ratio:4/3;object-fit:contain">' : "") +
+      '<b class="lv-h">' + esc(nm) + '</b><p class="m" style="opacity:.6">' + esc(role) + '</p><p>' + (ko ? "작업실에서 전시와 책, 의뢰 작업을 함께 맡고 있습니다." : "Works on exhibitions, books and commissions at the studio.") + '</p>' +
+      '<div class="lv-links"><button type="button" class="lv-a" data-lv="contact">' + esc(mail()) + '</button></div>');
+  }
+  /* light / dark: the page swaps its two colours */
+  function darkSwap(tp, a) {
+    var bg = tp.style.getPropertyValue("--t-bg"), ink = tp.style.getPropertyValue("--t-ink");
+    tp.style.setProperty("--t-bg", ink); tp.style.setProperty("--t-ink", bg);
+    var SW = { Dark: "Light", Light: "Dark", "어둡게": "밝게", "밝게": "어둡게" };
+    a.textContent = SW[a.textContent] || a.textContent;
+  }
+  /* a strip of pictures you can drag sideways (mouse or finger) */
+  function dragStrips(tp) {
+    $$(tp, "[data-drag]").forEach(function (tr) {
+      var x0 = 0, start = 0, cur = 0, on = false;
+      var max = function () { return Math.max(0, tr.offsetWidth - tr.parentNode.offsetWidth); };
+      tr.addEventListener("pointerdown", function (e) { on = true; x0 = e.clientX; start = cur; tr.style.cursor = "grabbing"; try { tr.setPointerCapture(e.pointerId); } catch (err) {} });
+      tr.addEventListener("pointermove", function (e) {
+        if (!on) return;
+        cur = Math.min(0, Math.max(-max(), start + (e.clientX - x0) / geom(tp).k)); tr.style.transform = "translateX(" + cur + "px)";
+      });
+      var end = function (e) { if (!on) return; on = false; tr.style.cursor = "grab"; if (Math.abs(e.clientX - x0) > 5) tr._moved = true; };
+      tr.addEventListener("pointerup", end); tr.addEventListener("pointercancel", end);
+      tr.addEventListener("click", function (e) { if (tr._moved) { e.stopPropagation(); e.preventDefault(); tr._moved = false; } }, true);
+    });
+  }
+  /* swipe on a phone: the big picture and the slideshow follow a finger */
+  function swipe(tp, st) {
+    var x0 = null, y0 = 0;
+    tp.addEventListener("pointerdown", function (e) { if (e.pointerType === "mouse" || e.target.closest("[data-drag]")) return; x0 = e.clientX; y0 = e.clientY; }, { passive: true });
+    tp.addEventListener("pointerup", function (e) {
+      if (x0 == null) return; var dx = e.clientX - x0, dy = e.clientY - y0; x0 = null;
+      if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
+      var d = dx < 0 ? 1 : -1, lb = tp.querySelector(".lv-lb");
+      if (lb) lbStep(lb, d); else if (st.gs && e.target.closest("[data-sm]")) st.gs.show(st.gs.i + d);
+    }, { passive: true });
+  }
+  /* hover a thumbnail: it shows the project's other pictures in turn; leave, and it goes back */
+  function peek(tp) {
+    var timer = null, cur = null;
+    function stop() { if (timer) clearInterval(timer); timer = null; if (cur && cur._orig) cur.querySelector("img").src = cur._orig; cur = null; }
+    tp.addEventListener("mouseover", function (e) {
+      var gi = e.target.closest(".gi"); if (!gi || gi === cur || gi.closest(".lv-layer")) return;
+      stop(); cur = gi;
+      var im = gi.querySelector("img"); if (!im) return;
+      var orig = im.src, pool = gallery(tp).map(function (x) { return x.src; }).filter(function (x) { return x && x !== orig; }), k = $$(gi.parentNode, ".gi").indexOf(gi);
+      if (!pool.length) return;
+      var seq = [pool[(k * 3) % pool.length], pool[(k * 3 + 1) % pool.length], orig], n = 0;
+      gi._orig = orig;
+      timer = setInterval(function () { im.src = seq[n++ % seq.length]; }, 750);
+    });
+    tp.addEventListener("mouseout", function (e) { if (cur && !cur.contains(e.relatedTarget)) stop(); });
+  }
+  /* a printable CV: a clean sheet, then the browser's print dialog */
+  function printCv(tp) {
+    if (!tp.querySelector(".lv-cv")) return;
+    document.body.classList.add("print-cv");
+    var done = function () { document.body.classList.remove("print-cv"); window.removeEventListener("afterprint", done); };
+    window.addEventListener("afterprint", done);
+    try { window.print(); } catch (e) { done(); }
+  }
+  function openCv(tp, st) {
+    var ko = st.ko, rows = ko ? [["2026", "개인전 「하루의 표면」, 서울"], ["2025", "단체전 「빛과 그릇」, 부산"], ["2024", "레지던시, 제주"], ["2023", "작업집 『1,440분』 출간"], ["2021", "석사, 사진"]]
+      : [["2026", "Solo show, The Surface of a Day, Seoul"], ["2025", "Group show, Light and Vessels, Busan"], ["2024", "Residency, Jeju"], ["2023", "Book, 1,440 Minutes"], ["2021", "MFA, Photography"]];
+    layer(tp, "lv-page lv-cv", '<div class="lv-top"><button type="button" class="lv-a lv-x">' + (ko ? "← 정보" : "← Information") + '</button><button type="button" class="lv-a" data-print>' + (ko ? "인쇄 · PDF로 저장" : "Print · Save as PDF") + '</button></div>' +
+      '<b class="lv-h">' + N + '</b><p>' + esc(mail()) + ' · ' + esc(host) + '</p><dl class="lv-dl">' + rows.map(function (c) { return '<div><dt class="m">' + c[0] + '</dt><dd>' + c[1] + '</dd></div>'; }).join("") + '</dl>');
+  }
+  /* save the contact straight to a phone's address book */
+  function saveVcard(tp) {
+    var v = "BEGIN:VCARD\r\nVERSION:3.0\r\nFN:" + (site || "Name") + "\r\nEMAIL:" + mail() + "\r\nURL:https://" + host + "\r\nEND:VCARD\r\n";
+    var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([v], { type: "text/vcard" })); a.download = (site || "contact") + ".vcf";
+    document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    toast(tp, (tp._lv && tp._lv.ko ? "연락처 파일을 받았습니다" : "Contact card saved") + " (.vcf)");
+  }
+
   /* words that change with the clock: opening hours and days left; cards show them too */
   function liveText(root) {
     var now = new Date();
     $$(root, "[data-hours]").forEach(function (el) {
       var h = el.dataset.hours.split(","), o = +h[0], c = +h[1], days = el.dataset.days || "0123456", ko = !!el.dataset.ko;
       var open = days.indexOf(String(now.getDay())) >= 0 && now.getHours() >= o && now.getHours() < c;
-      el.textContent = ko ? (open ? "지금 영업 중 · " : "영업 종료 · ") + o + "–" + c + "시" : (open ? "Open now · " : "Closed · ") + o + "–" + c;
+      el.innerHTML = '<i class="open-dot' + (open ? " on" : "") + '" aria-hidden="true"></i>' + (ko ? (open ? "지금 영업 중 · " : "영업 종료 · ") + o + "–" + c + "시" : (open ? "Open now · " : "Closed · ") + o + "–" + c);
     });
     $$(root, "[data-until]").forEach(function (el) {
       var d = Math.ceil((new Date(el.dataset.until + "T00:00:00") - now) / 864e5), ko = !!el.dataset.ko;
@@ -1581,6 +1752,20 @@
   /* what this page does, shown next to the preview title */
   function featureList(tp, st) {
     var f = [], has = function (s) { return !!tp.querySelector(s); }, kinds = {};
+    /* generated templates: the features they were built with (no two share a set), then what every page has */
+    if (st.spec) {
+      f = GEN.describe(st.spec).feats.slice();
+      if (st.pin) f.push("고정 메뉴");
+      $$(tp, ".lv-a[data-lv]").forEach(function (a) { kinds[a.dataset.lv] = 1; });
+      if (kinds.menu && f.indexOf("메뉴 열기") < 0) f.unshift("메뉴 열기");
+      if (kinds.info) f.unshift("정보 페이지");
+      if (has("[data-proj]") || has(".gi")) f.push("프로젝트 페이지");
+      if (has(".gi [data-add]")) f.push("상품 페이지·주문서");
+      if (has("[data-quotes]")) f.push("후기 넘기기");
+      if (has("[data-member]")) f.push("팀 소개 창");
+      if (tp.querySelector("img")) f.push("사진 크게 보기");
+      return f;
+    }
     $$(tp, ".lv-a[data-lv]").forEach(function (a) { kinds[a.dataset.lv] = 1; });
     if (kinds.menu) f.push("메뉴 열기");
     if (kinds.info) f.push("정보 페이지");
@@ -1753,4 +1938,58 @@
 
   showShuffle();
   watch();
+
+  /* development check: templates.html?check=features writes, into <body data-features>, the
+     templates whose feature lists (as the preview shows them) repeat another's, and large pictures that get cropped */
+  if (/[?&]check=features/.test(location.search)) {
+    var box = document.createElement("div"), seen = {}, dup = [], keep = HAND_EXTRA;
+    HAND_EXTRA = {}; /* propose the whole table again */
+    box.style.cssText = "position:fixed;left:-99999px;top:0;width:1440px";
+    document.body.appendChild(box);
+    var crops = [], cropWhy = [], over = [], overWhy = [];
+    var keyOf = function (b) {
+      box.innerHTML = '<div class="mac-view"><div class="canvas">' + pageFor(b) + '</div></div>';
+      var tp = box.querySelector(".tp"), k = liven(box.firstChild, b).join(" · "); clearTimers();
+      /* measured as the preview shows it: the page made as tall as its content (fitHeight), then
+         - a large picture that is cropped (anything but the full first screen should be shown whole)
+         - any picture taller than the first screen or wider than the page (stretched with the page) */
+      fitHeight(box.firstChild);
+      var cr = tp.getBoundingClientRect();
+      $$(tp, ".ph").forEach(function (ph) {
+        var r = ph.getBoundingClientRect(), full = Math.abs(r.width - 1440) < 3 && Math.abs(r.height - 900) < 3;
+        var bad = r.height > 903 || r.width > 1443 || (!ph.classList.contains("contain") && !full && r.width * r.height >= 160000);
+        if (bad && crops.indexOf(b.first) < 0) { crops.push(b.first); cropWhy.push(tag(b.first) + " " + Math.round(r.width) + "×" + Math.round(r.height) + " " + ph.getAttribute("style")); }
+      });
+      /* the same on a phone (390 wide): a picture more than 300 × 300 that is not the full screen */
+      if (b.gen) {
+        box.innerHTML = '<div class="mac-view" style="width:390px"><div class="canvas mob">' + pageFor(b, true) + '</div></div>';
+        var mt = box.querySelector(".tp"), mr = mt.getBoundingClientRect();
+        /* nothing on a phone page may stick out sideways (strips and marquees are clipped on purpose) */
+        $$(mt, "*").forEach(function (el) {
+          if (el.closest(".mq, [data-drag], .lv-layer") || !el.getClientRects().length) return;
+          for (var up = el.parentElement, clipped = false; up && up !== mt; up = up.parentElement) { var ov = getComputedStyle(up).overflowX; if (ov !== "visible" && up.getBoundingClientRect().right <= mr.right + 2) { clipped = true; break; } }
+          if (clipped) return;
+          var r = el.getBoundingClientRect(); if (r.width && r.right > mr.right + 2 && over.indexOf(b.first) < 0) { over.push(b.first); overWhy.push(tag(b.first) + " " + Math.round(r.right - mr.left) + " " + el.tagName + " " + (el.getAttribute("style") || el.className || "").slice(0, 90) + " | parent: " + (el.parentElement.getAttribute("style") || el.parentElement.className || "").slice(0, 60)); }
+        });
+        $$(mt, ".ph:not(.contain)").forEach(function (ph) {
+          var r = ph.getBoundingClientRect();
+          if (/border-radius:\s*50%/.test(ph.getAttribute("style"))) return; /* a round mask is part of the design */
+          if (r.width >= 300 && r.height >= 300 && !(r.width >= mr.width - 2 && r.height >= 690) && crops.indexOf("m" + b.first) < 0) { crops.push("m" + b.first); cropWhy.push(tag(b.first) + " " + ph.getAttribute("style")); }
+        });
+      }
+      return k;
+    };
+    var COMBOS = [["search"], ["news"], ["clock"], ["contact"], ["search", "news"], ["search", "clock"], ["news", "clock"], ["search", "contact"], ["news", "contact"], ["clock", "contact"],
+      ["search", "news", "clock"], ["search", "news", "contact"], ["search", "clock", "contact"], ["news", "clock", "contact"], ["search", "news", "clock", "contact"]], propose = {};
+    /* generated templates first (their features are fixed), then the hand-made ones, which get extras when needed */
+    BASES.filter(function (b) { return b.gen; }).concat(BASES.filter(function (b) { return !b.gen; })).forEach(function (b) {
+      var k = keyOf(b);
+      if (seen[k] && !b.gen) for (var c = 0; c < COMBOS.length && seen[k]; c++) { HAND_EXTRA[b.first] = COMBOS[c]; k = keyOf(b); propose[b.first] = COMBOS[c]; }
+      if (seen[k]) dup.push(tag(b.first) + " = " + tag(seen[k]) + " : " + k); else seen[k] = b.first;
+    });
+    box.remove();
+    var same = JSON.stringify(propose) === JSON.stringify(keep);
+    document.body.dataset.features = JSON.stringify({ distinct: Object.keys(seen).length, repeats: dup, handExtraUpToDate: same, propose: propose, phoneOverflow: overWhy, cropWhy: cropWhy, cropped: crops.map(function (n) { return String(n).charAt(0) === "m" ? "phone " + tag(+String(n).slice(1)) : tag(n); }) });
+  }
+
 })();

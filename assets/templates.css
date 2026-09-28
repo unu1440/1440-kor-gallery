@@ -77,14 +77,6 @@
 #shuffle .sec-t { margin-bottom: clamp(10px, 1vw, 16px); }
 
 /* basic: feed / grid / slideshow side by side, each with its list of variants */
-.basic { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(28px, 3vw, 48px) clamp(14px, 1.6vw, 28px); }
-.fam { display: grid; gap: clamp(8px, 0.8vw, 12px); align-content: start; min-width: 0; }
-.fam-t { margin: 0; font-size: var(--fs-body); font-weight: 400; color: var(--ink); }
-.fam-n { color: var(--ink-3); font-size: var(--fs-small); margin-left: 0.4em; }
-/* 160 numbers per family: a short scrolling box */
-.vlist { list-style: none; margin: 0; padding: 0 0.4em 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(3.4em, 1fr)); gap: 0 0.8em; font-family: var(--mono); font-size: var(--fs-small); max-height: 8.2em; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
-.vlist button { font: inherit; padding: 0.1em 0; border: 0; background: none; color: var(--ink-3); cursor: pointer; text-align: left; white-space: nowrap; }
-.vlist button:hover, .vlist button[aria-current="true"] { color: var(--ink); }
 
 .row {
   display: grid;
@@ -274,6 +266,7 @@
 .gi .fr { aspect-ratio: var(--ar, 4 / 3); overflow: hidden; background: #ddd; }
 .gi span { font-size: 14px; display: flex; gap: 10px; white-space: nowrap; overflow: hidden; }
 .gi span i { font-style: normal; opacity: 0.45; font-family: var(--mono); }
+.gi span em { font-style: normal; opacity: 0.45; }
 
 /* Cargo-style wireframe placeholder: grey box with an X */
 .wf {
@@ -296,9 +289,9 @@
 
 .row-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 @media (min-width: 1700px) { .row { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-@media (max-width: 1100px) { .row, .basic { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1100px) { .row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) {
-  .row, .basic { grid-template-columns: 1fr; }
+  .row { grid-template-columns: 1fr; }
   .shuffle { grid-template-columns: 1fr 1fr; }
   .shuffle .tpl { grid-column: 1 / -1; grid-row: 1; }
   .shuffle .shuffle-prev { grid-row: 2; justify-self: start; }
@@ -580,8 +573,8 @@
 }
 
 /* ---------- lists like Cargo's template site: pages only, divided by hairlines ---------- */
-.row, .basic { gap: 0; overflow: hidden; border-top: 1px solid var(--ink-4); }
-.row > .tpl, .basic > .fam { padding: clamp(14px, 1.6vw, 26px) clamp(12px, 1.4vw, 24px) clamp(16px, 1.8vw, 28px); box-shadow: 1px 0 0 var(--ink-4), 0 1px 0 var(--ink-4); }
+.row { gap: 0; overflow: hidden; border-top: 1px solid var(--ink-4); }
+.row > .tpl { padding: clamp(14px, 1.6vw, 26px) clamp(12px, 1.4vw, 24px) clamp(16px, 1.8vw, 28px); box-shadow: 1px 0 0 var(--ink-4), 0 1px 0 var(--ink-4); }
 .shot .mac-view { aspect-ratio: 16 / 10; border-radius: 0; }
 .shot-empty .mac-view { background: var(--ink-4); opacity: 0.35; }
 @media (hover: hover) { .tpl-open:hover .shot { opacity: 0.86; } }
@@ -589,10 +582,47 @@
 .tpl.is-picked .shot { outline: 2px solid var(--accent); outline-offset: 3px; }
 .tpl-open { border-radius: 0; }
 
-/* folded: the first row whole, the second about 70%, fading out */
+/* folded: two rows whole, the third about 70%, fading out */
 .row { position: relative; }
-.row.is-folded::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 22%; background: linear-gradient(color-mix(in srgb, var(--bg) 0%, transparent), var(--bg)); pointer-events: none; }
+.row.is-folded::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: var(--fold-fade, 14%); background: linear-gradient(color-mix(in srgb, var(--bg) 0%, transparent), var(--bg)); pointer-events: none; }
 .row-toggle { display: flex; justify-content: center; border-top: 1px solid var(--ink-4); padding-top: clamp(12px, 1.2vw, 18px); }
 .row-toggle button { font: inherit; font-size: var(--fs-small); display: inline-flex; gap: 0.5em; align-items: baseline; padding: 0.5em 1.2em; border: 1px solid var(--ink-4); border-radius: 99px; background: var(--bg); color: var(--ink); cursor: pointer; }
 .row-toggle button .m { color: var(--ink-3); }
 @media (hover: hover) { .row-toggle button:hover { border-color: var(--ink); } }
+
+/* basic: three columns (feed, grid, slideshow), each a single column of cards, as Cargo shows them */
+.basic { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--ink-4); }
+.bcol { min-width: 0; box-shadow: 1px 0 0 var(--ink-4); }
+.bcol:last-child { box-shadow: none; }
+.bcol-t { margin: 0; padding: clamp(14px, 1.6vw, 26px) clamp(12px, 1.4vw, 24px) 0; font-size: var(--fs-body); font-weight: 400; color: var(--ink); }
+.bcol-t .m { color: var(--ink-3); font-size: var(--fs-small); margin-left: 0.4em; }
+.basic .row.row-1 { grid-template-columns: minmax(0, 1fr); border-top: 0; }
+.basic .row.row-1 > .tpl { box-shadow: none; }
+@media (max-width: 900px) {
+  .basic { grid-template-columns: minmax(0, 1fr); }
+  .bcol { box-shadow: 0 1px 0 var(--ink-4); }
+}
+
+/* a full-screen picture or veil fills the first screen (1440 × 900), not the page the preview makes taller */
+.canvas:not(.mob) .tp > [style*="inset:0"]:not(.bd):not(.lv-layer):not(.lv-menu) { bottom: auto; height: 900px; }
+
+/* ---------- practical features ---------- */
+/* grid shown as a list: a small picture, the title, the year */
+.gg.as-list { grid-template-columns: 1fr !important; gap: 0 !important; }
+.gg.as-list > .gi { display: grid; grid-template-columns: 96px 1fr; gap: 18px; align-items: center; padding: 8px 0; border-top: 1px solid color-mix(in srgb, currentColor 16%, transparent); }
+.gg.as-list > .gi > .fr, .gg.as-list > .gi > .ph { width: 96px; height: 64px; aspect-ratio: auto; }
+.gg.as-list > .gi > span { font-size: 18px; display: flex !important; opacity: 1 !important; position: static !important; color: inherit !important; background: none !important; padding: 0 !important; }
+/* back from a project: the thumbnail it came from is marked for a moment */
+.lv-back { animation: lvBack 1.4s ease; }
+@keyframes lvBack { 0%, 60% { outline: 2px solid currentColor; outline-offset: 4px; } 100% { outline: 2px solid transparent; outline-offset: 4px; } }
+/* opening hours: a small green dot while open */
+.open-dot { display: inline-block; width: 0.5em; height: 0.5em; border-radius: 50%; margin-right: 0.45em; vertical-align: 0.08em; background: currentColor; opacity: 0.35; }
+.open-dot.on { background: #20b35a; opacity: 1; }
+/* a CV printed from the preview: only the sheet */
+@media print {
+  body.print-cv > *:not(.preview) { display: none !important; }
+  body.print-cv .preview .pv-top, body.print-cv .preview .pv-bottom, body.print-cv .preview .shuffle-btn, body.print-cv .mac-bar, body.print-cv .tp > :not(.lv-cv) { display: none !important; }
+  body.print-cv .preview, body.print-cv .pv-box, body.print-cv .mac, body.print-cv .mac-view, body.print-cv .canvas { position: static !important; inset: auto !important; overflow: visible !important; zoom: 1 !important; transform: none !important; box-shadow: none !important; background: #fff !important; width: auto !important; height: auto !important; }
+  body.print-cv .lv-cv { position: static !important; height: auto !important; color: #000; background: #fff; }
+  body.print-cv .lv-cv .lv-top { display: none; }
+}

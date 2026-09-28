@@ -26,6 +26,17 @@
   function chance(r, p) { return r() < p; }
   function shuffled(r, a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(r() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
   function pad2(n) { return String(n).padStart(2, "0"); }
+  /* a large picture (not one that fills the whole screen) is shown whole, never cropped */
+  /* the first screen: a full-screen picture fills this, never the whole (taller) page */
+  var FIRST = "left:0;top:0;width:1440px;height:900px";
+  function bigPic(style) {
+    if (style.indexOf(FIRST) === 0) return false;
+    if (/--fit:\s*contain/.test(style)) return true;
+    if (/inset:\s*0/.test(style)) return false;
+    var w = /(?:^|;)\s*width:\s*(\d+)/.exec(style), h = /(?:^|;)\s*height:\s*(\d+)/.exec(style);
+    var W = w ? +w[1] : 900, H = h ? +h[1] : 700;
+    return W * H >= 160000 || (W >= 300 && H >= 300);
+  }
   function arv(a) { var m = String(a).split("/"); return m.length > 1 ? +m[0] / +m[1] : +a; }
   function px(x, y, w, h) { return "left:" + Math.round(x) + "px;top:" + Math.round(y) + "px;width:" + Math.round(w) + "px;height:" + Math.round(h) + "px"; }
 
@@ -61,12 +72,14 @@
     "slides-thumbs": "슬라이드쇼(썸네일)", "slides-list": "목록에 올려 사진 바꾸기",
     audio: "오디오 플레이어", accordion: "펼침 목록", form: "문의 양식", hours: "영업시간 표시", countdown: "남은 날 표시", sort: "표 정렬",
     rake: "빛 비추기", model: "3D 뷰어", compare: "전후 비교", loupe: "돋보기", daylight: "낮밤 조명", docent: "오디오 도슨트", guestbook: "방명록", scale: "실제 크기 보기",
-    rooms: "전시장 평면도", roster: "작가 명단", menu: "메뉴 열기", tickets: "입장권 담기", marquee: "흘러가는 글자", backdrop: "배경 효과"
+    rooms: "전시장 평면도", roster: "작가 명단", menu: "메뉴 열기", tickets: "입장권 담기", marquee: "흘러가는 글자", backdrop: "배경 효과",
+    view: "그리드·목록 보기 전환", drag: "끌어서 넘기는 사진 줄", peek: "올리면 사진 넘김", dark: "밝게·어둡게 전환", autohide: "내리면 숨는 메뉴",
+    toc: "섹션 목차", cv: "인쇄용 이력서", vcard: "연락처 저장(vCard)"
   };
 
   var NAV_ITEMS = {
     home: ["Work", "작업"], info: ["Info", "정보"], index: ["Index", "색인"], contact: ["Contact", "연락"], shop: ["Shop", "상점"], cart: ["Cart (0)", "장바구니 (0)"],
-    search: ["Search", "검색"], news: ["Newsletter", "뉴스레터"], lang: ["EN / 한", "한 / EN"]
+    search: ["Search", "검색"], news: ["Newsletter", "뉴스레터"], lang: ["EN / 한", "한 / EN"], dark: ["Dark", "어둡게"]
   };
   var SEPS = [" · ", ", ", "&nbsp;&nbsp;&nbsp;", " / "];
 
@@ -107,9 +120,10 @@
     var util = [];
     if (f.products || f.tickets) util.push(["cart"]);
     if (f.lang) util.push(["lang"]);
+    if (f.dark) util.push(["dark"]);
     return { main: it, util: util };
   }
-  var LV = { home: "home", info: "info", index: "index", contact: "contact", shop: "home", cart: "cart", search: "search", news: "news", lang: "lang" };
+  var LV = { home: "home", info: "info", index: "index", contact: "contact", shop: "home", cart: "cart", search: "search", news: "news", lang: "lang", dark: "dark" };
   function navBtn(c, k) {
     var w = NAV_ITEMS[k[0]], main = c.ko ? w[1] : w[0], other = c.ko ? w[0] : w[1];
     return '<button type="button" class="lv-a" data-lv="' + LV[k[0]] + '"' + (c.f.lang && k[0] !== "lang" ? ' data-t="' + other + '"' : "") + '>' + main + '</button>';
@@ -163,7 +177,7 @@
   /* ---------- a rendering context: photographs, words, wireframe mode ---------- */
   function ctx(spec, env) {
     var c = {
-      s: spec, f: {}, env: env, wire: spec.cat === "blank", N: env.N, ko: spec.ko, sc: SCALES[spec.type.scale], al: spec.type.align,
+      s: spec, v: spec.v || 0, f: {}, env: env, wire: spec.cat === "blank", N: env.N, ko: spec.ko, sc: SCALES[spec.type.scale], al: spec.type.align,
       sep: SEPS[spec.seed % SEPS.length], P: spec.photos.map(function (f) { return env.photo(f); }), slides: null
     };
     spec.feats.forEach(function (k) { c.f[k.replace(/-.*/, "")] = true; c.f[k] = true; });
@@ -181,7 +195,7 @@
     c.img = function (i, style, attrs) {
       if (c.wire) return '<div class="wf" style="' + style + '" ' + (attrs || "") + '></div>';
       var p = c.P[i]; if (!p) return "";
-      return '<div class="ph" style="' + style + '" ' + (attrs || "") + '><img src="' + c.src(p.f) + '" alt="" loading="lazy" decoding="async"></div>';
+      return '<div class="ph' + (bigPic(style) ? " contain" : "") + '" style="' + style + '" ' + (attrs || "") + '><img src="' + c.src(p.f) + '" alt="" loading="lazy" decoding="async"></div>';
     };
     c.lines = function (ws, style, h) { return '<div style="display:grid;gap:10px;' + (style || "") + '">' + ws.map(function (w) { return '<div class="wl" style="width:' + w + (h ? ";height:" + h + "px" : "") + '"></div>'; }).join("") + '</div>'; };
     c.para = function (en, ko, style) {
@@ -242,24 +256,126 @@
     return '<div class="bd bd-' + k + '" data-backdrop aria-hidden="true"></div>';
   }
   /* below the first screen: the list of projects, a word about the site, contact, footer */
+  /* ---------- below the first screen ----------
+     Each generated template carries its own run of blocks (spec.more: two or three blocks and a footer),
+     and no two templates share the same run, so scrolling down never shows the same page twice. */
+  var NEWS = [["Sep 12", "New prints in the shop", "숍에 새 프린트"], ["Aug 30", "Open studio, everyone welcome", "열린 작업실"], ["Jul 04", "Book launch, second edition", "책 2판 출간"],
+    ["Jun 18", "Talk at the city library", "시립 도서관 강연"], ["May 02", "Residency by the sea", "바닷가 레지던시"], ["Mar 21", "Commissions open for autumn", "가을 의뢰 받습니다"]];
+  var EXH = [["2026", "Solo show, Harbour Room"], ["2025", "Group show, Surface Studies"], ["2024", "Residency, North Coast"], ["2023", "Book, Quiet Rooms"], ["2022", "Group show, Paper Weather"], ["2021", "Award, Young Makers"]];
+  var CLIENTS = ["Low Tide Books", "Blue Hour Radio", "Field Notes Press", "Salt Kitchen", "Second Light Gallery", "Room Tone Records", "Common Ground Café", "Half Moon Hotel",
+    "Paper Weather Journal", "Open Studio School", "North Facing Films", "Small Objects Fair"];
+  var MORE_BLOCKS = ["table", "list", "cv", "news", "clients", "statement", "about", "contact", "timeline", "stats", "quotes", "team"];
+  var QUOTES = [["Calm, careful and on time. The book came out better than we imagined.", "Editor, Low Tide Books"], ["They listened first and designed second. Our visitors noticed.", "Director, Second Light Gallery"],
+    ["Every photograph felt like the room it was taken in.", "Owner, Salt Kitchen"], ["A small studio that thinks in years, not weeks.", "Curator, Open Studio School"]];
+  var STATS = [["12", "Years in practice", "작업한 해"], ["48", "Exhibitions", "전시"], ["9", "Books", "책"], ["140", "Commissions", "의뢰"], ["6", "Cities", "도시"], ["1,440", "Minutes a day", "하루의 분"]];
+  var MORE_FOOTS = ["line", "columns", "name"];
+  var HEADS = { table: [["Index", "작업 목록"], ["Selected Work", "주요 작업"], ["Projects", "프로젝트"]], list: [["Work", "작업"], ["Archive", "아카이브"], ["Series", "연작"]],
+    cv: [["Exhibitions", "전시"], ["CV", "이력"], ["Selected Shows", "주요 전시"]], news: [["News", "소식"], ["Updates", "새 소식"], ["Notes", "노트"]],
+    clients: [["Clients", "함께한 곳"], ["Collaborators", "협업"], ["Worked With", "함께 일한 곳"]], timeline: [["Timeline", "연표"], ["Years", "해마다"], ["Chronology", "연대기"]],
+    stats: [["In Numbers", "숫자로 보기"], ["Figures", "숫자"], ["So Far", "지금까지"]], quotes: [["Kind Words", "후기"], ["Testimonials", "추천사"], ["What They Say", "함께한 분들의 말"]],
+    team: [["Team", "팀"], ["Studio", "작업실 사람들"], ["People", "사람들"]] };
+  var MORE_EN = { table: "Index", list: "Work", cv: "CV", news: "News", clients: "Clients", statement: "Statement", about: "About", contact: "Contact", timeline: "Timeline", stats: "Numbers", quotes: "Words", team: "Team" };
+  function moreKey(m) { return m.join(">"); }
+  function pickMore(r) {
+    var n = 2 + Math.floor(r() * 3), b = shuffled(r, MORE_BLOCKS).slice(0, n);
+    return b.concat(["f-" + pick(r, MORE_FOOTS)]);
+  }
   function below(c, B, flow) {
-    var ko = c.ko, s = c.s, w = c.wire, x = B.x, wd = B.w, rows = "", fs = Math.round(22 * Math.min(c.sc, 1.5));
-    for (var k = 0; k < 8; k++) {
-      var ti = (s.seed + k * 3) % TITLES.length, mt = MATS[(s.seed + k) % MATS.length];
-      rows += '<div data-proj="' + k + '" style="display:grid;grid-template-columns:' + (flow ? "34px minmax(0,1fr) 0 46px" : "64px minmax(0,1fr) minmax(0,.7fr) 70px") + ';gap:14px;padding:11px 0;border-top:1px solid color-mix(in srgb,currentColor 18%,transparent);align-items:baseline">' +
-        '<span class="m" style="font-size:14px;opacity:.55">' + pad2(k + 1) + '</span>' + (w ? c.lines([(35 + k * 9 % 40) + "%"], "", 12) : '<span>' + c.t(TITLES[ti], TITLES_KO[ti]) + '</span>') +
-        (w ? c.lines(["50%"], "", 10) : '<span style="font-size:15px;opacity:.6;overflow:hidden;white-space:nowrap">' + (flow ? "" : ko ? mt[1] : mt[0]) + '</span>') + '<span class="m" style="font-size:14px;opacity:.55;text-align:right">' + (2026 - k % 6) + '</span></div>';
-    }
-    var ab = ABOUT[(s.seed + 4) % ABOUT.length];
-    var ic = [["mail", "contact"], ["camera", "out"], ["play", "out"], ["note", "out"], ["pin", "out"]].slice(0, 3 + s.seed % 3);
-    var two = flow ? "1fr" : "1.4fr 1fr";
-    return '<div class="tp-more" style="' + (flow ? "position:relative;padding:28px 0 20px" : "position:absolute;left:" + x + "px;width:" + wd + "px;top:900px;padding:56px 0 30px") + ';display:grid;gap:' + (flow ? 32 : 56) + 'px">' +
-      '<div><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px"><b style="font-size:' + Math.round(fs * 1.4) + 'px;font-weight:600;letter-spacing:-.03em">' + c.t("Index", "작업 목록") + '</b><span class="m" style="font-size:14px;opacity:.55">08</span></div>' +
-        '<div style="font-size:' + fs + 'px">' + rows + '</div></div>' +
-      '<div style="display:grid;grid-template-columns:' + two + ';gap:' + (flow ? 24 : 48) + 'px;align-items:start">' + c.para(ab[0], ab[1], "font-size:" + Math.round(fs * 1.1) + "px;line-height:1.35;letter-spacing:-.02em") +
-        '<div style="display:grid;gap:14px;font-size:16px"><button type="button" class="lv-a" data-lv="contact" style="justify-self:start">' + icon("mail", 18) + '&nbsp; hello@' + c.env.plain + '.kor.gallery</button>' +
-        '<div style="display:flex;gap:16px">' + ic.map(function (i) { return '<button type="button" class="lv-a" data-lv="' + i[1] + '" aria-label="' + i[0] + '">' + icon(i[0], 22) + '</button>'; }).join("") + '</div></div></div>' +
-      '<div style="display:flex;justify-content:space-between;font-size:14px;opacity:.6;border-top:1px solid color-mix(in srgb,currentColor 18%,transparent);padding-top:14px"><span>' + c.foot + '</span><button type="button" class="lv-a" data-lv="top">' + icon("up", 16) + ' ' + (ko ? "맨 위로" : "Back to top") + '</button></div></div>';
+    var s = c.s, w = c.wire, fs = Math.round(22 * Math.min(c.sc, 1.5)), line = "border-top:1px solid color-mix(in srgb,currentColor 18%,transparent)";
+    var m = s.more || ["table", "about", "f-line"], hv = s.seed % 3, al = "text-align:" + (c.al === "center" && !flow ? "center" : "left");
+    var T = function (en, ko, style) { return w ? c.lines([(30 + en.length * 3 % 50) + "%"], "", 12) : '<span style="' + (style || "") + '">' + c.t(en, ko) + '</span>'; };
+    var head = function (k, count) {
+      var h = HEADS[k][hv];
+      return '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px"><b style="font-size:' + (flow ? Math.min(28, Math.round(fs * 1.4)) : Math.round(fs * 1.4)) + 'px;font-weight:600;letter-spacing:-.03em;min-width:0;overflow-wrap:anywhere">' + (w ? c.lines(["30%"], "", 16) : c.t(h[0], h[1])) + '</b>' +
+        (count ? '<span class="m" style="font-size:14px;opacity:.55">' + pad2(count) + '</span>' : "") + '</div>';
+    };
+    var B2 = {
+      table: function () {
+        var rows = "";
+        for (var k = 0; k < 8; k++) {
+          var ti = (s.seed + k * 3) % TITLES.length, mt = MATS[(s.seed + k) % MATS.length];
+          rows += '<div data-proj="' + k + '" style="display:grid;grid-template-columns:' + (flow ? "34px minmax(0,1fr) 46px" : "64px minmax(0,1fr) minmax(0,.7fr) 70px") + ';gap:14px;padding:11px 0;' + line + ';align-items:baseline">' +
+            '<span class="m" style="font-size:14px;opacity:.55">' + pad2(k + 1) + '</span>' + T(TITLES[ti], TITLES_KO[ti]) +
+            (flow ? "" : T(mt[0], mt[1], "font-size:15px;opacity:.6;overflow:hidden;white-space:nowrap")) + '<span class="m" style="font-size:14px;opacity:.55;text-align:right">' + (2026 - k % 6) + '</span></div>';
+        }
+        return '<div>' + head("table", 8) + '<div style="font-size:' + fs + 'px">' + rows + '</div></div>';
+      },
+      list: function () {
+        var big = flow ? Math.min(30, Math.round(fs * 1.3)) : Math.round(fs * 1.9), rows = "";
+        for (var k = 0; k < 6; k++) { var ti = (s.seed + k * 5 + 1) % TITLES.length; rows += '<div data-proj="' + k + '" style="cursor:pointer;overflow-wrap:anywhere">' + T(TITLES[ti], TITLES_KO[ti]) + (w ? "" : '<sup class="m" style="font-size:.4em;opacity:.5;margin-left:.3em">' + (2026 - k) + '</sup>') + '</div>'; }
+        return '<div style="' + al + '">' + head("list") + '<div style="font-size:' + big + 'px;line-height:1.12;letter-spacing:-.03em;font-weight:500">' + rows + '</div></div>';
+      },
+      cv: function () {
+        var rows = EXH.map(function (e, k) { return '<div style="display:grid;grid-template-columns:' + (flow ? "56px 1fr" : "110px 1fr") + ';gap:14px;padding:8px 0;' + (k ? line : "") + '"><span class="m" style="opacity:.55">' + e[0] + '</span>' + T(e[1], "") + '</div>'; }).join("");
+        return '<div style="display:grid;grid-template-columns:' + (flow ? "1fr" : "1fr 2fr") + ';gap:' + (flow ? 8 : 40) + 'px">' + head("cv") + '<div style="font-size:' + Math.round(fs * .85) + 'px">' + rows + '</div></div>';
+      },
+      news: function () {
+        var items = NEWS.slice(s.seed % 3, s.seed % 3 + 3);
+        return '<div>' + head("news") + '<div style="display:grid;grid-template-columns:' + (flow ? "1fr" : "repeat(3,1fr)") + ';gap:' + (flow ? 18 : 28) + 'px">' + items.map(function (x) {
+          return '<div style="' + line + ';padding-top:12px;display:grid;gap:8px"><span class="m" style="font-size:14px;opacity:.55">' + x[0] + '</span>' + T(x[1], x[2], "font-size:" + Math.round(fs * .95) + "px;line-height:1.3") + '</div>';
+        }).join("") + '</div></div>';
+      },
+      clients: function () {
+        var names = shuffled(rng(s.seed * 3 + 1), CLIENTS).slice(0, flow ? 8 : 12);
+        return '<div>' + head("clients") + '<div style="columns:' + (flow ? 2 : 4) + ';column-gap:24px;font-size:' + Math.round(fs * .8) + 'px;line-height:1.6">' + names.map(function (x) { return '<div>' + T(x, "") + '</div>'; }).join("") + '</div></div>';
+      },
+      statement: function () {
+        var ab = ABOUT[(s.seed + 2) % ABOUT.length];
+        return '<div style="' + al + ';max-width:' + (flow ? "none" : "1100px") + ';' + (c.al === "center" && !flow ? "margin:0 auto" : "") + '">' +
+          (w ? c.lines(["100%", "96%", "70%"], "", Math.round(fs * 1.2)) : '<p style="font-size:' + Math.round(fs * (flow ? 1.25 : 1.9)) + 'px;line-height:1.15;letter-spacing:-.03em;margin:0">' + c.t(ab[0], ab[1]) + '</p>') + '</div>';
+      },
+      about: function () {
+        var ab = ABOUT[(s.seed + 4) % ABOUT.length];
+        return '<div style="display:grid;grid-template-columns:' + (flow ? "1fr" : "1.4fr 1fr") + ';gap:' + (flow ? 24 : 48) + 'px;align-items:start">' + c.para(ab[0], ab[1], "font-size:" + Math.round(fs * 1.1) + "px;line-height:1.35;letter-spacing:-.02em;margin:0") +
+          (w ? "" : '<p class="ko" style="font-size:15px;opacity:.55;margin:0">' + ab[1] + '</p>') + '</div>';
+      },
+      timeline: function () {
+        var ys = EXH.slice(0, flow ? 4 : 6).slice().reverse();
+        return '<div>' + head("timeline") + '<div style="display:grid;grid-template-columns:' + (flow ? "1fr" : "repeat(" + ys.length + ",1fr)") + ';gap:' + (flow ? 10 : 0) + 'px;' + (flow ? "" : "border-top:2px solid currentColor") + '">' + ys.map(function (e) {
+          return '<div style="padding:' + (flow ? "0" : "14px 14px 0 0") + ';display:grid;gap:6px;' + (flow ? line + ";padding-top:10px" : "") + '"><span class="m" style="font-size:' + Math.round(fs * 1.1) + 'px">' + e[0] + '</span>' + T(e[1], "", "font-size:15px;opacity:.75;line-height:1.35") + '</div>';
+        }).join("") + '</div></div>';
+      },
+      stats: function () {
+        var st = shuffled(rng(s.seed + 11), STATS).slice(0, flow ? 4 : 4);
+        return '<div>' + head("stats") + '<div style="display:grid;grid-template-columns:' + (flow ? "1fr 1fr" : "repeat(4,1fr)") + ';gap:20px">' + st.map(function (x) {
+          return '<div data-stat style="' + line + ';padding-top:12px;display:grid;gap:4px"><b class="m" style="font-size:' + Math.round(fs * (flow ? 1.8 : 2.6)) + 'px;font-weight:500;letter-spacing:-.04em;line-height:1">' + x[0] + '</b>' + T(x[1], x[2], "font-size:15px;opacity:.65") + '</div>';
+        }).join("") + '</div></div>';
+      },
+      quotes: function () {
+        var q = QUOTES[(s.seed) % QUOTES.length];
+        return '<div data-quotes="' + (s.seed % QUOTES.length) + '" style="' + al + '">' + head("quotes") + '<p data-qt style="font-size:' + Math.round(fs * (flow ? 1.15 : 1.5)) + 'px;line-height:1.25;letter-spacing:-.02em;margin:0 0 12px">' + (w ? c.lines(["90%", "60%"], "", 14) : "“" + q[0] + "”") + '</p>' +
+          '<div style="display:flex;gap:18px;align-items:baseline;font-size:14px;' + (c.al === "center" && !flow ? "justify-content:center" : "") + '"><span data-qa style="opacity:.6">' + (w ? "" : q[1]) + '</span><button type="button" class="lv-a" data-quote="-1" aria-label="이전 후기">←</button><button type="button" class="lv-a" data-quote="1" aria-label="다음 후기">→</button></div></div>';
+      },
+      team: function () {
+        var ppl = shuffled(rng(s.seed + 5), PEOPLE).slice(0, flow ? 4 : 6);
+        return '<div>' + head("team") + '<div style="display:grid;grid-template-columns:' + (flow ? "1fr" : "repeat(3,1fr)") + ';gap:0 24px;font-size:' + fs + 'px">' + ppl.map(function (nm, k) {
+          var ro = ROLES[(k + s.seed) % ROLES.length];
+          return '<button type="button" class="lv-a" data-member="' + k + '" data-role="' + ro[0] + '" style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;' + line + ';text-align:left;width:100%"><span>' + (w ? c.lines(["60%"], "", 12) : nm) + '</span><span style="font-size:14px;opacity:.55">' + ro[0] + '</span></button>';
+        }).join("") + '</div></div>';
+      },
+      contact: function () {
+        var ic = [["mail", "contact"], ["camera", "out"], ["play", "out"], ["note", "out"], ["pin", "out"]].slice(0, 3 + s.seed % 3);
+        return '<div style="display:grid;gap:14px;' + al + '"><button type="button" class="lv-a" data-lv="contact" style="justify-self:' + (c.al === "center" && !flow ? "center" : "start") + ';font-size:' + (flow ? Math.min(22, Math.round(fs * .9)) : Math.round(fs * 1.8)) + 'px;letter-spacing:-.03em;max-width:100%;overflow-wrap:anywhere;text-align:inherit">hello@' + c.env.plain + '.kor.gallery</button>' +
+          '<div style="display:flex;gap:16px;' + (c.al === "center" && !flow ? "justify-content:center" : "") + '">' + ic.map(function (i) { return '<button type="button" class="lv-a" data-lv="' + i[1] + '" aria-label="' + i[0] + '">' + icon(i[0], 22) + '</button>'; }).join("") + '</div></div>';
+      }
+    };
+    var up = '<button type="button" class="lv-a" data-lv="top">' + icon("up", 16) + ' ' + (c.ko ? "맨 위로" : "Back to top") + '</button>';
+    var FOOT = {
+      "f-line": function () { return '<div style="display:flex;justify-content:space-between;font-size:14px;opacity:.6;' + line + ';padding-top:14px"><span>' + c.foot + '</span>' + up + '</div>'; },
+      "f-columns": function () {
+        return '<div style="display:grid;grid-template-columns:' + (flow ? "1fr 1fr" : "repeat(4,1fr)") + ';gap:20px;font-size:14px;line-height:1.5;' + line + ';padding-top:14px"><span>' + c.foot + '</span>' +
+          '<span style="opacity:.7">' + c.t(CITIES[s.seed % 10] + ", Korea", CITIES_KO[s.seed % 10]) + '</span><span style="opacity:.7">Instagram<br>Newsletter</span><span style="text-align:right">' + up + '</span></div>';
+      },
+      "f-name": function () {
+        return '<div style="' + line + ';padding-top:14px;display:grid;gap:10px"><div style="display:flex;justify-content:space-between;font-size:14px;opacity:.6"><span>© 2026</span>' + up + '</div>' +
+          '<div style="font-size:' + (flow ? 64 : 180) + 'px;font-weight:700;letter-spacing:-.06em;line-height:.85;overflow:hidden;white-space:nowrap">' + c.N + '</div></div>';
+      }
+    };
+    var blocks = m.filter(function (k) { return B2[k]; });
+    var html = blocks.map(function (k, i) { return '<div data-sec="' + i + '">' + B2[k]() + '</div>'; }).join("") + FOOT[m[m.length - 1]]();
+    if (c.f.toc) html = '<div style="display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;' + line + ';padding-top:10px"><span style="opacity:.55">' + (c.ko ? "이 페이지" : "On this page") + '</span>' +
+      blocks.map(function (k, i) { return '<button type="button" class="lv-a" data-goto="' + i + '">' + MORE_EN[k] + '</button>'; }).join("") + '</div>' + html;
+    return '<div class="tp-more" style="' + (flow ? "position:relative;padding:28px 0 20px" : "position:absolute;left:" + B.x + "px;width:" + B.w + "px;top:900px;padding:56px 0 30px") + ';display:grid;grid-template-columns:minmax(0,1fr);gap:' + (flow ? 32 : 64) + 'px">' + html + '</div>';
   }
 
   /* ---------- feature blocks placed inside a layout ---------- */
@@ -310,6 +426,8 @@
       l = '<button type="button" class="lv-a" data-filter="*" style="font-weight:600">' + (ko ? "전체" : "All") + '</button>' + cats.map(function (g) { return c.sep + '<button type="button" class="lv-a" data-filter="' + g + '" style="opacity:.5">' + name[g][ko ? 1 : 0] + '</button>'; }).join("");
     }
     if (f.pages) r = [1, 2, 3].map(function (p) { return '<button type="button" class="lv-a m" data-page="' + p + '" style="' + (p === 1 ? "font-weight:600" : "opacity:.5") + '">' + p + '</button>'; }).join("&nbsp;&nbsp;") + '&nbsp;&nbsp;<button type="button" class="lv-a" data-page="+">→</button>';
+    if (f.view) r = '<button type="button" class="lv-a" data-view="grid" aria-pressed="true" style="font-weight:600">' + (ko ? "격자" : "Grid") + '</button>' + c.sep +
+      '<button type="button" class="lv-a" data-view="list" aria-pressed="false" style="opacity:.5">' + (ko ? "목록" : "List") + '</button>' + (r ? "&nbsp;&nbsp;&nbsp;&nbsp;" + r : "");
     if (!l && !r) return "";
     return '<div style="display:flex;justify-content:space-between;gap:20px;font-size:15px;margin-bottom:18px">' + '<span>' + l + '</span><span>' + r + '</span></div>';
   }
@@ -384,16 +502,16 @@
   /* one picture, or a few, with words */
   function slidesN(s) { return s.feats.some(function (f) { return /^slides/.test(f); }) ? 8 : 1; }
   L["hero-center"] = { fam: "feed", ko: "가운데 사진 한 장", modes: ["click", "arrows", "auto", "dots"], need: slidesN, render: function (c, B) {
-    var w = Math.min(600, B.w * .44), h = B.h - 80, x = B.x + (B.w - w) / 2, n = c.f.slides ? 8 : 1;
+    var w = Math.min([600, 480, 720, 540][c.v], B.w * .5), h = B.h - 80 - [0, 80, 0, 40][c.v], x = [B.x + (B.w - w) / 2, B.x, B.x + (B.w - w) / 2, B.x + B.w - w][c.v], n = c.f.slides ? 8 : 1;
     return slideMain(c, 0, px(x, B.y, w, h), n) + c.one(0, n, "left:" + B.x + "px;right:" + (1440 - B.x - B.w) + "px;top:" + (B.y + h + 22) + "px;text-align:" + c.al) + slideCtl(c, n, "left:" + (x + w + 30) + "px;top:" + (B.y + h - 30) + "px");
   } };
   L["hero-wide"] = { fam: "feed", ko: "넓은 사진 한 장", modes: ["click", "arrows", "auto", "dots"], need: slidesN, render: function (c, B) {
-    var h = B.h - 70, n = c.f.slides ? 8 : 1;
+    var h = B.h - [70, 160, 110, 70][c.v], n = c.f.slides ? 8 : 1;
     return slideMain(c, 0, px(B.x, B.y, B.w, h), n) + c.one(0, n, "left:" + B.x + "px;top:" + (B.y + h + 20) + "px") + slideCtl(c, n, "right:" + (1440 - B.x - B.w) + "px;top:" + (B.y + h + 14) + "px");
   } };
   L["hero-bleed"] = { fam: "feed", ko: "화면 가득 사진", bleed: true, modes: ["click", "auto", "dots"], need: slidesN, render: function (c) {
     var n = c.f.slides ? 8 : 1;
-    return slideMain(c, 0, "inset:0", n) + '<div style="position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.28),transparent 22%,transparent 70%,rgba(0,0,0,.4));pointer-events:none"></div>' +
+    return slideMain(c, 0, FIRST, n) + '<div style="position:absolute;' + FIRST + ';background:linear-gradient(rgba(0,0,0,.28),transparent 22%,transparent 70%,rgba(0,0,0,.4));pointer-events:none"></div>' +
       '<div style="color:#fff">' + c.one(0, n, "left:28px;bottom:" + (c.s.nav === "bottom" || c.s.nav === "corners" ? 70 : 28) + "px;font-size:20px") + slideCtl(c, n, "right:28px;bottom:" + (c.s.nav === "bottom" || c.s.nav === "corners" ? 70 : 30) + "px") + '</div>';
   } };
   L["split"] = { fam: "feed", ko: "반반 나눔", panel: true, modes: ["click", "arrows", "auto", "dots"], need: slidesN, render: function (c, B) {
@@ -416,9 +534,10 @@
       c.one(0, 1, "left:" + B.x + "px;top:" + (B.y + h + 16) + "px") + c.one(1, 1, "left:" + (B.x + w + 24) + "px;top:" + (B.y + h + 16) + "px");
   } };
   L["feed-row"] = { fam: "feed", ko: "가로로 흐르는 사진", need: function () { return 4; }, render: function (c, B) {
-    var h = B.h - 60, ws = [h * .75, h * 1.2, h * .8, h * .75], x = B.x, out = "";
-    ws.forEach(function (w, i) { out += c.img(i, px(x, B.y, w, h)) + c.one(i, 1, "left:" + x + "px;top:" + (B.y + h + 16) + "px"); x += w + 20; });
-    return out + '<div style="position:absolute;right:28px;top:' + (B.y + h + 16) + 'px;font-size:15px;opacity:.55">' + (c.ko ? "옆으로 넘겨 보기 →" : "Scroll sideways →") + '</div>';
+    var h = B.h - 60, ws = [h * .75, h * 1.2, h * .8, h * .75], x = 0, out = "";
+    ws.forEach(function (w, i) { out += c.img(i, px(x, 0, w, h)) + c.one(i, 1, "left:" + x + "px;top:" + (h + 16) + "px"); x += w + 20; });
+    return '<div style="position:absolute;left:' + B.x + 'px;top:' + B.y + 'px;width:' + (1440 - B.x) + 'px;height:' + (h + 44) + 'px;overflow:hidden"><div data-drag style="position:absolute;left:0;top:0;width:' + x + 'px;height:100%;cursor:grab;touch-action:pan-y">' + out + '</div></div>' +
+      '<div style="position:absolute;right:28px;top:' + (B.y + h + 16) + 'px;font-size:15px;opacity:.55">' + (c.ko ? "끌어서 넘겨 보기 →" : "Drag to see more →") + '</div>';
   } };
   L["collage"] = { fam: "feed", ko: "자유 배치", need: function () { return 5; }, render: function (c, B) {
     var spots = [[0, .05, .27, .5], [.3, 0, .22, .36], [.56, .12, .3, .44], [.14, .6, .24, .38], [.72, .58, .26, .4]], out = "";
@@ -437,33 +556,38 @@
 
   /* slideshows: the picture changes, the page stays */
   L["slide-frame"] = { fam: "slide", ko: "액자형 슬라이드쇼", slide: true, modes: ["click", "arrows", "auto", "dots"], need: function () { return 8; }, render: function (c, B) {
-    var w = B.w * .56, h = B.h - 90, x = B.x + (B.w - w) / 2;
-    return slideMain(c, 0, px(x, B.y, w, h), 8) + c.one(0, 8, "left:" + B.x + "px;right:" + (1440 - B.x - B.w) + "px;top:" + (B.y + h + 22) + "px;text-align:center") +
+    var w = B.w * [.56, .44, .72, .5][c.v], h = B.h - 90, x = [B.x + (B.w - w) / 2, B.x, B.x + (B.w - w) / 2, B.x + B.w - w][c.v];
+    return slideMain(c, 0, px(x, B.y, w, h), 8) + c.one(0, 8, "left:" + (c.v % 2 ? x : B.x) + "px;" + (c.v % 2 ? "width:" + w + "px" : "right:" + (1440 - B.x - B.w) + "px") + ";top:" + (B.y + h + 22) + "px;text-align:" + (c.v === 1 ? "left" : c.v === 3 ? "right" : "center")) +
       (c.f["slides-arrows"] ? '<button type="button" class="lv-btn" data-sg="-1" style="position:absolute;left:' + (B.x + 30) + 'px;top:' + (B.y + h / 2 - 20) + 'px;font-size:34px;opacity:.5">←</button><button type="button" class="lv-btn" data-sg="1" style="position:absolute;left:' + (B.x + B.w - 60) + 'px;top:' + (B.y + h / 2 - 20) + 'px;font-size:34px;opacity:.5">→</button>' : slideCtl(c, 8, "left:" + (B.x + B.w - 240) + "px;top:" + (B.y + h + 22) + "px"));
   } };
   L["slide-bleed"] = { fam: "slide", ko: "화면 가득 슬라이드쇼", slide: true, bleed: true, modes: ["click", "auto", "dots", "arrows"], need: function () { return 8; }, render: function (c) {
     var low = c.s.nav === "bottom" || c.s.nav === "corners" ? 70 : 28;
-    return slideMain(c, 0, "inset:0", 8) + '<div style="position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.3),transparent 20%,transparent 72%,rgba(0,0,0,.42));pointer-events:none"></div>' +
+    return slideMain(c, 0, FIRST, 8) + '<div style="position:absolute;' + FIRST + ';background:linear-gradient(rgba(0,0,0,.3),transparent 20%,transparent 72%,rgba(0,0,0,.42));pointer-events:none"></div>' +
       '<div style="color:#fff">' + c.one(0, 8, "left:28px;bottom:" + low + "px;font-size:20px") + slideCtl(c, 8, "right:28px;bottom:" + (low + 2) + "px") + '</div>';
   } };
   L["slide-thumbs"] = { fam: "slide", ko: "썸네일 슬라이드쇼", slide: true, modes: ["thumbs"], need: function () { return 9; }, render: function (c, B) {
-    var h = B.h - 150, tw = (Math.min(B.w, 1100) - 7 * 10) / 8, tx = B.x + (B.w - Math.min(B.w, 1100)) / 2, out = slideMain(c, 0, px(B.x + B.w * .15, B.y, B.w * .7, h), 9);
-    for (var k = 1; k < 9; k++) out += c.img(k, px(tx + (k - 1) * (tw + 10), B.y + h + 40, tw, tw * .7) + ";cursor:pointer;opacity:.6", 'data-st="' + k + '"');
-    return out + c.one(0, 9, "left:" + (B.x + B.w * .15) + "px;top:" + (B.y + h + 10) + "px;font-size:14px");
+    if (c.v % 2) { /* thumbnails in two columns on the right */
+      var cw = 220, mw = B.w - cw - 40, th = (B.h - 60 - 3 * 10) / 4, o2 = slideMain(c, 0, px(B.x, B.y, mw, B.h - 40), 9);
+      for (var j = 1; j < 9; j++) o2 += c.img(j, px(B.x + mw + 40 + ((j - 1) % 2) * (cw / 2 + 5), B.y + Math.floor((j - 1) / 2) * (th + 10), cw / 2 - 5, th) + ";cursor:pointer;opacity:.6", 'data-st="' + j + '"');
+      return o2 + c.one(0, 9, "left:" + B.x + "px;top:" + (B.y + B.h - 26) + "px;font-size:14px");
+    }
+    var h = B.h - 150, tw = (Math.min(B.w, 1100) - 7 * 10) / 8, tx = B.x + (B.w - Math.min(B.w, 1100)) / 2, mx = c.v ? B.x : B.x + B.w * .15, out = slideMain(c, 0, px(mx, B.y, B.w * .7, h), 9);
+    for (var k = 1; k < 9; k++) out += c.img(k, px((c.v ? B.x : tx) + (k - 1) * (tw + 10), B.y + h + 40, tw, tw * .7) + ";cursor:pointer;opacity:.6", 'data-st="' + k + '"');
+    return out + c.one(0, 9, "left:" + mx + "px;top:" + (B.y + h + 10) + "px;font-size:14px");
   } };
   L["index-list"] = { fam: "slide", ko: "색인 목록과 사진", slide: true, modes: ["list"], need: function () { return 10; }, render: function (c, B) {
-    var fs = Math.round(18 * Math.min(c.sc, 1.9)), w = B.w * .42, rows = "";
+    var fs = Math.round(18 * Math.min(c.sc, 1.9)), w = B.w * [.42, .34, .5, .3][c.v], right = c.v % 2, rows = "";
     for (var k = 0; k < 10; k++) rows += '<div data-sl="' + k + '" style="display:grid;grid-template-columns:52px 1fr auto;gap:10px;padding:5px 0;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent);' + (k ? "opacity:.35" : "") + '">' +
       '<span class="m" style="font-size:14px">' + pad2(k + 1) + '</span>' + (c.wire ? c.lines([(40 + k * 7 % 40) + "%"], "align-self:center", 10) : '<span>' + c.title(k) + '</span>') + '<span class="m" style="font-size:14px;opacity:.6">' + c.year(k) + '</span></div>';
-    return '<div style="position:absolute;' + px(B.x, B.y, w, B.h) + ';font-size:' + fs + 'px;line-height:1.25;overflow:hidden">' + rows + '</div>' + slideMain(c, 0, px(B.x + w + 40, B.y, B.w - w - 40, B.h), 10);
+    return '<div style="position:absolute;' + px(right ? B.x + B.w - w : B.x, B.y, w, B.h) + ';font-size:' + fs + 'px;line-height:1.25;overflow:hidden">' + rows + '</div>' + slideMain(c, 0, px(right ? B.x : B.x + w + 40, B.y, B.w - w - 40, B.h), 10);
   } };
   L["slide-side"] = { fam: "slide", ko: "사진과 설명 칸", slide: true, panel: true, modes: ["click", "arrows", "auto", "dots"], need: function () { return 8; }, render: function (c, B) {
-    var w = B.w * .66, tx = B.x + w + 36, tw = B.w - w - 36, ab = ABOUT[(c.s.seed + 1) % ABOUT.length];
-    return slideMain(c, 0, px(B.x, B.y, w, B.h), 8) + '<div style="position:absolute;' + px(tx, B.y, tw, B.h) + ';display:flex;flex-direction:column;gap:20px;text-align:' + c.al + '">' +
+    var w = B.w * [.66, .58, .72, .62][c.v], flip = c.v % 2, tw = B.w - w - 36, tx = flip ? B.x : B.x + w + 36, ab = ABOUT[(c.s.seed + 1) % ABOUT.length];
+    return slideMain(c, 0, px(flip ? B.x + tw + 36 : B.x, B.y, w, B.h), 8) + '<div style="position:absolute;' + px(tx, B.y, tw, B.h) + ';display:flex;flex-direction:column;gap:20px;text-align:' + c.al + '">' +
       c.one(0, 8, "position:static;font-size:" + Math.round(18 * Math.min(c.sc, 1.6)) + "px") + c.para(ab[0], ab[1], "font-size:16px;opacity:.75") + panel(c, tw) + '</div>' + slideCtl(c, 8, "left:" + tx + "px;top:" + (B.y + B.h - 40) + "px");
   } };
   L["slide-film"] = { fam: "slide", ko: "양옆이 보이는 슬라이드쇼", slide: true, modes: ["click", "arrows", "auto", "dots"], need: function () { return 8; }, render: function (c, B) {
-    var w = B.w * .5, h = B.h - 80, x = B.x + (B.w - w) / 2, side = (B.w - w) / 2 - 30;
+    var w = B.w * [.5, .6, .42, .55][c.v], h = B.h - 80 - [0, 60, 0, 120][c.v], x = B.x + (B.w - w) / 2, side = (B.w - w) / 2 - 30;
     return c.img(7, px(B.x - side * .4, B.y + 50, side, h - 100) + ";opacity:.4", 'data-sprev') + c.img(1, px(x + w + 30, B.y + 50, side + side * .4, h - 100) + ";opacity:.4", 'data-snext') +
       slideMain(c, 0, px(x, B.y, w, h), 8) + c.one(0, 8, "left:" + x + "px;top:" + (B.y + h + 20) + "px") + slideCtl(c, 8, "left:" + (x + w - 200) + "px;top:" + (B.y + h + 16) + "px");
   } };
@@ -766,9 +890,9 @@
   var GROUPS = ["obj", "people", "land", "space", "art", "life", "dream"];
   /* kinds of site that want particular pictures (file prefixes, see photos.js) */
   var PREFS = {
-    "p-shop": ["cer", "ch", "gl", "st", "hd"], "p-cafe": ["fd", "st", "cer", "pl", "fl"], "p-band": ["mu", "dn", "ct", "sky"], "p-studio": ["arch", "int", "kr"],
-    "p-publisher": ["bk", "paint", "art", "ab", "tx", "rt"], "p-photo": ["pt", "fa", "sh", "fm", "ld"], "p-gallery": ["art", "paint", "sc", "int"], "p-class": ["cer", "hd", "paint", "fl", "fd"],
-    "p-cv": ["pt", "fa", "art", "paint", "sc"], "g-cover": ["bk", "arch", "pt", "ld"], "gr-students": ["art", "paint", "sc", "cer", "gl", "dn", "fa", "bk"]
+    "p-shop": ["cer", "ch", "gl", "st", "hd", "lp", "tex", "obj"], "p-cafe": ["fd", "st", "cer", "pl", "fl", "cf", "tea", "fr"], "p-band": ["mu", "dn", "ct", "sky", "stg", "neon"], "p-studio": ["arch", "int", "kr", "cn", "stair", "wnd"],
+    "p-publisher": ["bk", "paint", "art", "ab", "tx", "rt", "book", "pap"], "p-photo": ["pt", "fa", "sh", "fm", "ld", "mt", "sea", "strt", "fog"], "p-gallery": ["art", "paint", "sc", "int", "gal", "scu"], "p-class": ["cer", "hd", "paint", "fl", "fd", "tex"],
+    "p-cv": ["pt", "fa", "art", "paint", "sc", "scu"], "g-cover": ["bk", "arch", "pt", "ld", "book"], "gr-students": ["art", "paint", "sc", "cer", "gl", "dn", "fa", "bk", "scu", "gal"]
   };
 
   function pickFeats(r, cat, lay, nav) {
@@ -776,19 +900,36 @@
     (L0.req || []).forEach(function (x) { f.push(x); });
     if (L0.slide) f.push("slides-" + pick(r, L0.modes));
     else if (L0.modes && chance(r, .4)) f.push("slides-" + pick(r, L0.modes));
-    if (L0.grid && cat !== "grad") { if (chance(r, .4)) f.push("filter"); else if (chance(r, .3) && lay !== "rows" && lay.indexOf("masonry") < 0 && lay !== "sheet" && lay !== "p-journal") f.push("pages"); if (chance(r, .2) && f.indexOf("products") < 0 && lay !== "p-journal") f.push("products"); }
+    if (L0.grid && cat !== "grad") { if (chance(r, .4)) f.push("filter"); else if (chance(r, .3) && lay !== "rows" && lay.indexOf("masonry") < 0 && lay !== "sheet" && lay !== "p-journal") f.push("pages"); if (cat !== "basic" && chance(r, .2) && f.indexOf("products") < 0 && lay !== "p-journal") f.push("products"); }
     if (L0.grid && cat === "grad" && chance(r, .6)) f.push("filter");
     if (L0.hero) f.push(pick(r, ["rake", "model", "compare", "loupe", "daylight", "docent", "guestbook", "scale"]));
     var heroTakesPanel = f.some(function (x) { return /^(docent|guestbook|scale|daylight)$/.test(x); });
-    if (L0.panel && !heroTakesPanel && !f.some(function (x) { return /^(audio|accordion|form)$/.test(x); }) && chance(r, .55)) f.push(pick(r, ["audio", "accordion", "form"]));
+    var quiet = cat === "basic";
+    if (L0.panel && !heroTakesPanel && !f.some(function (x) { return /^(audio|accordion|form)$/.test(x); }) && chance(r, .55)) f.push(quiet ? "accordion" : pick(r, ["audio", "accordion", "form"]));
     if (["top3", "top2", "center", "burger"].indexOf(nav) >= 0 && !f.some(function (x) { return x === "hours" || x === "countdown"; }) && chance(r, .3)) f.push(pick(r, ["hours", "countdown"]));
-    if (cat !== "blank" && !L0.bleed && ["top3", "top2", "center", "burger", "bottom"].indexOf(nav) >= 0 && chance(r, .14)) f.push("marquee");
-    if (cat !== "blank" && !L0.bleed && chance(r, .14)) f.push("backdrop");
-    var n = 1 + Math.floor(r() * 3), pool = shuffled(r, NAVFEATS);
+    if (!quiet && cat !== "blank" && !L0.bleed && ["top3", "top2", "center", "burger", "bottom"].indexOf(nav) >= 0 && chance(r, .14)) f.push("marquee");
+    if (!quiet && cat !== "blank" && !L0.bleed && chance(r, .14)) f.push("backdrop");
+    if (L0.grid && cat !== "blank" && chance(r, .35)) f.push("view");
+    if (L0.grid && cat !== "blank" && chance(r, .3)) f.push("peek");
+    if (lay === "feed-row") f.push("drag");
+    if (!L0.bleed && chance(r, .15)) f.push("autohide");
+    if (cat !== "blank" && chance(r, .18)) f.push("dark");
+    if (chance(r, .25)) f.push("toc");
+    if (chance(r, .15)) f.push("cv");
+    if (chance(r, .15)) f.push("vcard");
+    var n = Math.floor(r() * 5), pool = shuffled(r, NAVFEATS); /* 0–4 of the menu features */
     for (var i = 0; i < pool.length && n > 0; i++) { f.push(pool[i]); n--; }
     return f.sort();
   }
-  function navFor(r, lay) { var L0 = L[lay], ok = NAVS.filter(function (n) { return !(L0.bleed && (n === "left" || n === "right")); }); return pick(r, ok); }
+  function navFor(r, lay, cat) {
+    var L0 = L[lay], ok = NAVS.filter(function (n) { return !(L0.bleed && (n === "left" || n === "right")); });
+    if (cat === "basic") ok = ["top2", "top2", "top2", "top2", "top3", "top3", "burger", "bottom", "corners"].concat(L0.bleed ? [] : ["left", "right"]);
+    return pick(r, ok);
+  }
+  /* basic templates follow Cargo's basic sites: a light page, one plain face at reading size, small captions */
+  var BASIC_PAL = [["#ffffff", "#111111"], ["#ffffff", "#111111"], ["#fcfcfc", "#111111"], ["#f7f7f5", "#161616"], ["#ffffff", "#1a1a1a"]];
+  var BASIC_FACE = ["sans", "sans", "sans", "sans", "sans", "serif", "mono", "cond"];
+  var BASIC_OUT = ["name-big", "sheet"]; /* too loud for a basic page */
 
   /* basic templates share one set of pictures, as Cargo's basic templates do */
   var SHARED = ["ld-lake-dusk", "ld-sea-deep", "ch-black-stage", "ld-dark-hill", "int-light-line", "arch-white-wall", "ld-dune-gold", "fm-street", "ld-sea-gradient", "pt-bw-studio",
@@ -799,32 +940,41 @@
     "fa-black-coat", "cer-shelf", "arch-steps-teal", "st-tulip", "fa-yellow-sky", "ch-orange", "bk-red-fan", "sh-palm", "ab-waves-white", "hd-blue", "st-coffee", "dn-jump", "paint-knife", "paint-violet",
     "art-green-abstract-painting", "sc-kintsugi", "mu-blue-spotlight-stage", "ab-pastel-spheres", "paint-grey", "art-red-brown-abstract", "mu-stage-greyscale", "tx-blue-stain", "paint-green", "paint-white"];
   function build(photos, plan) {
-    var specs = [], used = {}, skeys = {}, fkeys = {};
+    var specs = [], used = {}, skeys = {}, fkeys = {}, feat1 = {}, mkeys = {}, lkeys = {}; /* feat1: no two templates share the same set of features */
     /* plan: [[cat, fam-list, count, firstNo], …] */
     plan.forEach(function (p) {
       var cat = p[0], lays = p[1], count = p[2], no = p[3];
       for (var i = 0; i < count; i++) {
         var r = rng(no * 131 + 17), spec = null;
-        for (var tries = 0; tries < 400 && !spec; tries++) {
-          var lay = lays[(i + tries) % lays.length], nav = navFor(r, lay);
+        for (var tries = 0; tries < 4000 && !spec; tries++) {
+          var lay = lays[(i + tries) % lays.length];
+          if (cat === "basic" && BASIC_OUT.indexOf(lay) >= 0) continue;
+          var nav = navFor(r, lay, cat);
           if (cat === "grad" && nav === "corners") continue;
           var feats = pickFeats(r, cat, lay, nav);
-          var type = { scale: pick(r, ["s", "m", "l", "xl"]), "case": pick(r, CASES), align: pick(r, ALIGNS) };
+          var type = cat === "basic" ? { scale: pick(r, ["s", "s", "s", "m"]), "case": pick(r, ["none", "none", "none", "upper"]), align: pick(r, ["left", "left", "left", "center"]) } :
+            { scale: pick(r, ["s", "m", "l", "xl"]), "case": pick(r, CASES), align: pick(r, ALIGNS) };
           if (cat === "graphic" && type["case"] === "lower" && chance(r, .5)) type["case"] = "upper";
-          var cap = pick(r, CAPS);
+          var v = Math.floor(r() * 4); /* composition variant: picture size and side */
+          var cap = cat === "basic" ? pick(r, ["below", "below", "numbered", "numbered", "hover", "none"]) : pick(r, CAPS);
           var sk = nav + "|" + lay + "|" + feats.join("+");
-          var fk = sk + "|" + type.scale + "|" + type["case"] + "|" + type.align + "|" + cap;
-          if (skeys[sk] || fkeys[fk]) continue;
-          skeys[sk] = 1; fkeys[fk] = 1;
-          var pal = cat === "graphic" ? GPAL[(no * 7) % GPAL.length] : cat === "blank" ? PAL_BLANK[no % PAL_BLANK.length] : cat === "grad" ? pick(r, PAL_BASIC.concat(GPAL.slice(0, 6))) : PAL_BASIC[(no * 3 + i) % PAL_BASIC.length];
-          var kr = chance(r, .5);
+          var fk = sk + "|" + v + "|" + type.scale + "|" + type["case"] + "|" + type.align + "|" + cap;
+          var pin = nav !== "corners" && chance(r, .6), fset = feats.join("+") + (pin ? "|pin" : ""); /* a menu that stays put counts as a feature */
+          if (skeys[sk] || fkeys[fk] || feat1[fset]) continue;
+          var lk = lookKey({ cat: cat, layout: lay, v: v, nav: nav, cap: cap, type: type }); /* the first screen must not look like another's */
+          if (lkeys[lk]) continue;
+          lkeys[lk] = 1;
+          skeys[sk] = 1; fkeys[fk] = 1; feat1[fset] = 1;
+          var pal = cat === "graphic" ? GPAL[(no * 7) % GPAL.length] : cat === "blank" ? PAL_BLANK[no % PAL_BLANK.length] : cat === "basic" ? BASIC_PAL[(no * 3 + i) % BASIC_PAL.length] : cat === "grad" ? pick(r, PAL_BASIC.concat(GPAL.slice(0, 6))) : PAL_BASIC[(no * 3 + i) % PAL_BASIC.length];
           var face = cat === "graphic" ? pick(r, ["sans", "cond", "wide", "serif", "shoulders", "fraunces", "unbounded", "bricolage", "instrument", "cond"]) : cat === "blank" ? "sans" :
-            kr ? pick(r, ["suit", "maru", "sans", "suit", "maru", "galmuri"]) : pick(r, ["sans", "serif", "cond", "mono", "instrument", "bricolage"]);
-          spec = { no: no, cat: cat, seed: no, nav: nav, layout: lay, type: type, cap: cap, feats: feats, bg: pal[0], ink: pal[1], face: face,
-            ko: cat === "graphic" || cat === "grad" ? false : kr, groups: shuffled(r, GROUPS).slice(0, 3), key: fk, skey: sk };
-          spec.pin = nav !== "corners" && (no * 11) % 10 < 7; /* menu stays put while the page scrolls */
+            cat === "basic" ? pick(r, BASIC_FACE) : pick(r, ["sans", "serif", "cond", "mono", "instrument", "bricolage"]);
+          spec = { no: no, cat: cat, seed: no, v: v, nav: nav, layout: lay, type: type, cap: cap, feats: feats, bg: pal[0], ink: pal[1], face: face,
+            ko: false, groups: shuffled(r, GROUPS).slice(0, 3), key: fk, skey: sk };
+          spec.pin = pin; /* menu stays put while the page scrolls */
         }
         if (!spec) throw new Error("no free combination for " + cat + " " + no);
+        for (var rm = rng(no * 7919 + 5), mk; !spec.more || mkeys[mk = moreKey(spec.more)];) spec.more = pickMore(rm);
+        mkeys[moreKey(spec.more)] = 1;
         specs.push(spec); no++;
       }
     });
@@ -837,11 +987,7 @@
     specs.forEach(function (s) { if (s.cat !== "basic" && s.cat !== "blank") demand += Math.min(L[s.layout].need(s, boxOf(s)) || 0, P0.length); });
     var strict = P0.length >= demand; /* enough pictures for every template to have its own */
     specs.forEach(function (s) {
-      if (s.cat === "basic") {
-        var nb = Math.min(L[s.layout].need(s, boxOf(s)) || 0, 60), off0 = (s.no * 5) % shared.length;
-        s.photos = []; for (var q = 0; q < nb; q++) s.photos.push(shared[(off0 + q) % shared.length]);
-        return;
-      }
+      if (s.cat === "basic") return; /* after the others, below */
       var B = boxOf(s), need = Math.min(L[s.layout].need(s, B) || 0, P0.length);
       if (s.feats.indexOf("model") >= 0 || s.cat === "blank") need = 0; /* wireframes show no photographs */
       if (s.cat === "grad") s.groups = /rake|compare|loupe|daylight|scale/.test(s.feats.join()) ? ART_G : ["art", "obj", "space"];
@@ -854,11 +1000,25 @@
       else { got = order(pref).slice(0, need); if (got.length < need) got = got.concat(order(rest).slice(0, need - got.length)); }
       s.photos = got.map(function (p) { used[p.f] = (used[p.f] || 0) + 1; return p.f; });
     });
+    /* basic templates draw from the whole pool, least used first (pictures no other template shows
+       come first), so each looks different; never the same picture twice within one */
+    var BP = photos.map(function (p, i) { return { f: p[0], i: i }; }), bused = {};
+    BP.forEach(function (p) { bused[p.f] = used[p.f] ? 1 : 0; });
+    specs.forEach(function (s) {
+      if (s.cat !== "basic") return;
+      var nb = Math.min(L[s.layout].need(s, boxOf(s)) || 0, 60, BP.length), off = (s.no * 37) % BP.length;
+      s.photos = BP.slice().sort(function (x, y) { return (bused[x.f] || 0) - (bused[y.f] || 0) || ((x.i - off + BP.length) % BP.length) - ((y.i - off + BP.length) % BP.length); })
+        .slice(0, nb).map(function (p) { bused[p.f] = (bused[p.f] || 0) + 1; return p.f; });
+    });
+    specs.basicPool = BP.length;
     specs.strict = strict; specs.demand = demand; specs.pool = P0.length;
     return specs;
   }
 
   /* the content box a menu position leaves, the same numbers navHtml uses */
+  /* what the first screen looks like, apart from colours, words and pictures */
+  var V_LAYOUTS = ["slide-frame", "slide-thumbs", "index-list", "slide-side", "slide-film", "hero-center", "hero-wide"];
+  function lookKey(s) { return [s.cat, s.layout, V_LAYOUTS.indexOf(s.layout) >= 0 ? s.v : "-", s.nav, s.cap, s.type.scale, s.type.align].join("|"); }
   function boxOf(s) {
     var b = boxOf0(s); if (s.feats.indexOf("marquee") >= 0) b.h -= 40; return b;
   }
@@ -869,7 +1029,18 @@
     if (s.nav === "center") return { w: 1384, h: 860 - (20 + Math.round(34 * Math.min(SCALES[s.type.scale], 1.9)) * 1.05 + 44) };
     return { w: 1384, h: 776 };
   }
-  function enName(f) { return f.replace(/^[a-z]+-/, "").split("-").map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(" "); }
+  /* English title of a photograph: older files carry words ("ld-lake-dusk" → "Lake Dusk"); newer ones end in a
+     source id ("sky-sky-u1b0615c"), so they get an invented two-word title, the same one every time */
+  var EN_A = ["Blue", "Quiet", "Late", "Early", "White", "Slow", "Low", "High", "Warm", "Cold", "Soft", "Far", "Near", "Still", "Pale", "Deep", "Second", "Last", "First", "Open"];
+  var EN_B = ["Hour", "Room", "Field", "Water", "Light", "Study", "Morning", "Line", "Weather", "Garden", "Shadow", "Stone", "Window", "Season", "Distance", "Table", "Evening", "Surface", "Path", "Air"];
+  function enName(f) {
+    var w = f.split("-");
+    if (/^[up](?=[0-9a-z]*\d)[0-9a-z]{5,8}$/.test(w[w.length - 1])) {
+      for (var h = 0, i = 0; i < f.length; i++) h = (h * 31 + f.charCodeAt(i)) >>> 0;
+      return EN_A[h % EN_A.length] + " " + EN_B[Math.floor(h / EN_A.length) % EN_B.length];
+    }
+    return f.replace(/^[a-z]+-/, "").split("-").map(function (x) { return x.charAt(0).toUpperCase() + x.slice(1); }).join(" ");
+  }
 
   /* one template page, 1440 × 900 */
   function render(spec, env) {
@@ -905,12 +1076,12 @@
       var sl = c.f.slides ? Math.min(n, spec.feats.indexOf("slides-thumbs") >= 0 ? 9 : 8) : 0;
       if (spec.layout === "text-led" || spec.layout === "name-big") out.push(big(spec.layout === "name-big" ? c.N : c.t(ABOUT[(spec.seed + 3) % 8][0].split(".")[0], ABOUT[(spec.seed + 3) % 8][1].split(".")[0]), spec.layout === "name-big" ? 56 : 30));
       if (sl) {
-        out.push('<div style="position:relative;height:' + (spec.layout.indexOf("bleed") >= 0 ? 520 : 440) + 'px">' + slideMain(c, 0, "inset:0", sl) + '</div>' + cap(0, sl));
+        out.push('<div style="position:relative;height:' + (spec.layout.indexOf("bleed") >= 0 ? 520 : 440) + 'px">' + slideMain(c, 0, "inset:0;--fit:contain", sl) + '</div>' + cap(0, sl));
         if (spec.feats.indexOf("slides-thumbs") >= 0) { var th = ""; for (var k = 1; k < sl; k++) th += '<div style="position:relative;aspect-ratio:1">' + c.img(k, "inset:0;cursor:pointer;opacity:.6", 'data-st="' + k + '"') + '</div>'; out.push('<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">' + th + '</div>'); }
         else if (spec.feats.indexOf("slides-list") >= 0) { var ls = ""; for (var k2 = 0; k2 < Math.min(sl, 6); k2++) ls += '<div data-sl="' + k2 + '" style="padding:6px 0;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent);' + (k2 ? "opacity:.35" : "") + '">' + pad2(k2 + 1) + '&nbsp;&nbsp;' + c.title(k2) + '</div>'; out.push('<div style="font-size:17px">' + ls + '</div>'); }
         else out.push('<div style="position:relative;height:36px">' + slideCtl(c, sl, "left:0;top:0") + '</div>');
       } else {
-        for (var m = 0; m < Math.min(n || (c.wire ? 3 : 0), 4); m++) out.push('<div style="position:relative;aspect-ratio:' + (m % 2 ? "4 / 3" : "4 / 5") + '">' + c.img(m, "inset:0") + '</div>' + cap(m, 1));
+        for (var m = 0; m < Math.min(n || (c.wire ? 3 : 0), 4); m++) out.push('<div style="position:relative;aspect-ratio:' + (m % 2 ? "4 / 3" : "4 / 5") + '">' + c.img(m, "inset:0;--fit:contain") + '</div>' + cap(m, 1));
       }
       if (spec.layout === "split" || spec.layout === "slide-side" || L0.panel) out.push(c.para(ABOUT[spec.seed % 8][0], ABOUT[spec.seed % 8][1], "font-size:17px"));
     } else if (kind === "grid") {
@@ -922,25 +1093,25 @@
     } else if (kind === "list") {
       var ttl = { "g-table": "Index", "gr-catalog": "Works", "g-issue": "No. " + pad2(spec.seed % 60 + 1), "gr-program": "Programme", "p-event": c.t("Open House", "오픈 하우스"), "g-calendar": MONTHS[(spec.seed + 8) % 12], "gr-roster": "Artists", "gr-plan": "Floor plan", "p-cafe": c.t("Today", "오늘의 메뉴"), "p-band": TRACKS[spec.seed % TRACKS.length], "g-lineup": "Live", "g-wordgrid": gt[0], "g-shapes": "Forms", "index-list": c.t("Index", "작업") }[spec.layout];
       out.push(big(ttl, 40));
-      if (spec.layout === "index-list") { out.push('<div style="position:relative;height:300px">' + slideMain(c, 0, "inset:0", Math.min(n, 10)) + '</div>'); var il = ""; for (var r = 0; r < Math.min(n, 10); r++) il += '<div data-sl="' + r + '" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent);' + (r ? "opacity:.35" : "") + '"><span>' + c.title(r) + '</span><span class="m" style="font-size:13px">' + c.year(r) + '</span></div>'; out.push('<div style="font-size:17px">' + il + '</div>'); }
+      if (spec.layout === "index-list") { out.push('<div style="position:relative;height:300px">' + slideMain(c, 0, "inset:0;--fit:contain", Math.min(n, 10)) + '</div>'); var il = ""; for (var r = 0; r < Math.min(n, 10); r++) il += '<div data-sl="' + r + '" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent);' + (r ? "opacity:.35" : "") + '"><span>' + c.title(r) + '</span><span class="m" style="font-size:13px">' + c.year(r) + '</span></div>'; out.push('<div style="font-size:17px">' + il + '</div>'); }
       else if (spec.layout === "g-table" || spec.layout === "gr-catalog") { var tr = ""; for (var t2 = 0; t2 < 9; t2++) tr += '<tr><td class="m">' + pad2(t2 + 1) + '</td><td>' + (spec.layout === "g-table" ? TITLES : WORKS.map(function (x) { return x[0]; }))[(t2 + spec.seed) % 12] + '</td><td class="m y">' + (2026 - (t2 * 5 + spec.seed) % 9) + '</td></tr>'; out.push('<table class="tbl" data-sorttable style="position:relative;width:100%;font-size:17px"><thead><tr><th data-sort="0">No.</th><th data-sort="1">' + (spec.layout === "g-table" ? "Project" : "Title") + '</th><th data-sort="2" class="y">Year</th></tr></thead><tbody>' + tr + '</tbody></table>'); }
-      else if (spec.layout === "gr-roster") { var nm = shuffled(c.r, PEOPLE).slice(0, 10); out.push('<div data-rimg style="position:relative;height:300px">' + c.img(0, "inset:0") + '</div><div data-rlab>' + glabel(c, 0, nm[0]) + '</div><div style="font-size:24px;line-height:1.25;letter-spacing:-.03em">' + nm.map(function (x, i) { var ro = ROLES[(i + spec.seed) % ROLES.length]; return '<div data-rf="' + (c.P[i % 6] ? c.P[i % 6].f : "") + '" data-role="' + ro[0] + '" style="' + (i ? "opacity:.35" : "") + '">' + x + ' <span style="font-size:13px;opacity:.6">' + ro[0] + '</span></div>'; }).join("") + '</div>'); }
+      else if (spec.layout === "gr-roster") { var nm = shuffled(c.r, PEOPLE).slice(0, 10); out.push('<div data-rimg style="position:relative;height:300px">' + c.img(0, "inset:0;--fit:contain") + '</div><div data-rlab>' + glabel(c, 0, nm[0]) + '</div><div style="font-size:24px;line-height:1.25;letter-spacing:-.03em">' + nm.map(function (x, i) { var ro = ROLES[(i + spec.seed) % ROLES.length]; return '<div data-rf="' + (c.P[i % 6] ? c.P[i % 6].f : "") + '" data-role="' + ro[0] + '" style="' + (i ? "opacity:.35" : "") + '">' + x + ' <span style="font-size:13px;opacity:.6">' + ro[0] + '</span></div>'; }).join("") + '</div>'); }
       else if (spec.layout === "gr-plan") { out.push(GR.plan.render(c, { x: 0, y: 0, w: W / .72, h: 220 }).replace(/<div style="position:absolute;left:[^"]*;display:flex;flex-direction:column;gap:16px">[\s\S]*$/, "").replace('style="position:absolute;', 'style="position:relative;display:block;') + '<p class="ko" style="font-size:15px;opacity:.6">방을 누르면 그 방의 작업이 열립니다.</p>'); }
       else if (spec.layout === "p-band" || spec.layout === "g-lineup") { out.push('<div style="font-size:17px">' + [0, 1, 2, 3].map(function (k3) { return '<div style="display:grid;grid-template-columns:70px 1fr auto;gap:10px;padding:8px 0;border-top:1px solid color-mix(in srgb,currentColor 20%,transparent)"><span class="m">' + MONTHS[(spec.seed + k3 * 2) % 12] + ' ' + pad2(3 + k3 * 6) + '</span><span>' + c.t(CITIES[(spec.seed + k3) % 10], CITIES_KO[(spec.seed + k3) % 10]) + '</span>' + (c.f.tickets ? '<button type="button" class="lv-a" data-add="t' + k3 + '">' + (ko ? "예매" : "Tickets") + '</button>' : "<span></span>") + '</div>'; }).join("") + '</div>'); }
-      else { var ac = ""; for (var a2 = 0; a2 < 6; a2++) { var wt = WORDS[(a2 + spec.seed) % WORDS.length]; ac += '<div data-acc style="border-top:1px solid;padding:10px 0"><div style="display:flex;justify-content:space-between;font-size:19px"><span>' + (spec.layout === "p-cafe" ? (ko ? ["오늘의 수프", "구운 채소", "과일 타르트", "보리차", "드립 커피", "빵"] : ["Soup", "Roast vegetables", "Fruit tart", "Barley tea", "Filter coffee", "Bread"])[a2] : spec.layout === "gr-program" ? ["Opening night", "Artist talks", "Portfolio review", "Closing party", "Family morning", "Tours"][a2] : wt[0] + ' <span class="ko" style="font-size:14px;opacity:.6">' + wt[1] + '</span>') + '</span><span data-acc-i>+</span></div><div class="acc-more" style="font-size:15px;opacity:.7;padding-top:6px">' + (ko ? "자세한 내용과 시간, 장소를 적습니다." : "Details, time and place.") + '</div></div>'; } out.push('<div>' + ac + '</div>'); if (n) out.push('<div style="position:relative;aspect-ratio:4 / 3">' + c.img(0, "inset:0") + '</div>'); }
+      else { var ac = ""; for (var a2 = 0; a2 < 6; a2++) { var wt = WORDS[(a2 + spec.seed) % WORDS.length]; ac += '<div data-acc style="border-top:1px solid;padding:10px 0"><div style="display:flex;justify-content:space-between;font-size:19px"><span>' + (spec.layout === "p-cafe" ? (ko ? ["오늘의 수프", "구운 채소", "과일 타르트", "보리차", "드립 커피", "빵"] : ["Soup", "Roast vegetables", "Fruit tart", "Barley tea", "Filter coffee", "Bread"])[a2] : spec.layout === "gr-program" ? ["Opening night", "Artist talks", "Portfolio review", "Closing party", "Family morning", "Tours"][a2] : wt[0] + ' <span class="ko" style="font-size:14px;opacity:.6">' + wt[1] + '</span>') + '</span><span data-acc-i>+</span></div><div class="acc-more" style="font-size:15px;opacity:.7;padding-top:6px">' + (ko ? "자세한 내용과 시간, 장소를 적습니다." : "Details, time and place.") + '</div></div>'; } out.push('<div>' + ac + '</div>'); if (n) out.push('<div style="position:relative;aspect-ratio:4 / 3">' + c.img(0, "inset:0;--fit:contain") + '</div>'); }
     } else {
       /* type-led pages: the words first, then the picture */
       var word = spec.layout === "g-giant" || spec.layout === "g-repeat" ? c.N : spec.layout === "g-stack" || spec.layout === "g-bands" ? shuffled(c.r, WORDS).slice(0, 4).map(function (x) { return x[0]; }).join("<br>") : spec.layout === "g-specimen" ? "Aa 가나" : spec.layout === "g-quote" ? "“" + ABOUT[(spec.seed + 6) % 8][0].split(".")[0] + ".”" : spec.layout === "gr-poster" ? "Degree<br>Show<br>2026" : gt[0];
       out.push(big(word, spec.layout === "g-quote" || spec.layout === "g-manifesto" ? 30 : 60));
       out.push('<span class="ko" style="font-size:16px;opacity:.7">' + (spec.layout === "g-manifesto" ? ABOUT[(spec.seed + 2) % 8][1] : gt[1]) + '</span>');
-      if (n) out.push('<div style="position:relative;aspect-ratio:' + (spec.layout === "g-circle" ? "1;border-radius:50%;overflow:hidden" : "4 / 5") + '">' + c.img(0, "inset:0" + (spec.layout === "g-circle" ? ";border-radius:50%" : "")) + '</div>');
+      if (n) out.push('<div style="position:relative;aspect-ratio:' + (spec.layout === "g-circle" ? "1;border-radius:50%;overflow:hidden" : "4 / 5") + '">' + c.img(0, "inset:0" + (spec.layout === "g-circle" ? ";border-radius:50%" : ";--fit:contain")) + '</div>');
       if (spec.layout === "g-ticket") out.push('<button type="button" class="lv-a" data-add="t0" style="justify-self:start;font-size:18px;border:2px solid;padding:10px 16px">' + (ko ? "표 담기 →" : "Get tickets →") + '</button>');
     }
     var pan = L0.hero ? "" : panel(c, W); if (pan) out.push(pan);
     var wd = widget(c); if (wd) out.push('<div style="font-size:15px;opacity:.7">' + wd + '</div>');
     out.push(below(c, { x: 0, w: W }, true));
     var cs = spec.type["case"] === "upper" ? "text-transform:uppercase;" : spec.type["case"] === "lower" ? "text-transform:lowercase;" : "";
-    return { html: (c.f.backdrop ? backdrop(c) : "") + '<div class="m-body" style="position:absolute;left:16px;right:16px;top:64px;display:grid;gap:20px">' + out.join("") + '</div>' + head, style: cs, slides: c.slides };
+    return { html: (c.f.backdrop ? backdrop(c) : "") + '<div class="m-body" style="position:absolute;left:16px;right:16px;top:64px;display:grid;grid-template-columns:minmax(0,1fr);gap:20px">' + out.join("") + '</div>' + head, style: cs, slides: c.slides };
   }
   function describe(spec) {
     var L0 = L[spec.layout];
@@ -967,7 +1138,7 @@
     return { plan: pl, specs: build(photos, pl.map(function (p) { return [p.cat, p.lays, p.gen, p.first + p.hand]; })) };
   }
 
-  var API = { SHARED: SHARED, HAND_USED: HAND_USED, icon: icon, renderMobile: renderMobile, build: build, plan: plan, catalogue: catalogue, SECTIONS: SECTIONS, HAND: HAND, render: render, describe: describe, FAMS: FAMS, FACES: FACES, FEAT_KO: FEAT_KO, enName: enName, layouts: L };
+  var API = { lookKey: lookKey, bigPic: bigPic, SHARED: SHARED, HAND_USED: HAND_USED, icon: icon, renderMobile: renderMobile, build: build, plan: plan, catalogue: catalogue, SECTIONS: SECTIONS, HAND: HAND, render: render, describe: describe, FAMS: FAMS, FACES: FACES, FEAT_KO: FEAT_KO, enName: enName, layouts: L };
   if (typeof module !== "undefined" && module.exports) module.exports = API;
   root.TPLGEN = API;
 })(typeof window !== "undefined" ? window : globalThis);

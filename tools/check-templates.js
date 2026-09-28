@@ -54,6 +54,19 @@ if (hl !== gl) bad("tpl-gen.js HAND_USED is out of date with the hand-made templ
 G.HAND_USED.forEach(function (f) { use["samples/" + f + ".jpg"] = (use["samples/" + f + ".jpg"] || 0) + 1; });
 var counts = Object.keys(use).map(function (k) { return use[k]; }).sort(function (a, b) { return a - b; });
 console.log("generated " + specs.length + " + hand-made " + hand + " = " + (specs.length + hand));
+/* captions: English photo titles must read as words, not file ids */
+photos.forEach(function (p) { var t = G.enName(p[0]); if (/[A-Za-z]\d{3,}|\d{3,}[A-Za-z]/.test(t)) bad("photo title looks like a file id: " + p[0] + " → " + t); });
+/* the page below the first screen: no two templates share the same run of blocks */
+var mruns = {};
+specs.forEach(function (s) { var k = (s.more || []).join(">"); if (!k) bad(s.no + " has no blocks below the first screen"); else if (mruns[k]) bad(s.no + " has the same page below as " + mruns[k] + ": " + k); mruns[k] = s.no; });
+console.log("unique runs below the first screen: " + Object.keys(mruns).length + " of " + specs.length);
+/* the first screen: no two templates share layout, composition variant, menu position, caption style and type size/alignment */
+var looks = {};
+specs.forEach(function (s) { var k = G.lookKey(s); if (looks[k]) bad(s.no + " looks like " + looks[k] + " on the first screen: " + k); looks[k] = s.no; });
+console.log("unique first screens: " + Object.keys(looks).length + " of " + specs.length);
+var fsets = {};
+specs.forEach(function (s) { var k = s.feats.join("+") + (s.pin ? "|pin" : ""); if (fsets[k]) bad(s.no + " has the same features as " + fsets[k] + ": " + k); fsets[k] = s.no; });
+console.log("unique feature sets: " + Object.keys(fsets).length + " of " + specs.length + " (hand-made pages included: templates.html?check=features)");
 console.log("unique nav+layout+features: " + Object.keys(sk).length + ", unique combinations: " + Object.keys(fk).length);
 console.log("photographs: " + photos.length + " in the pool; basic templates share " + G.SHARED.length);
 console.log("other templates: " + counts.length + " photographs used; per photograph min " + counts[0] + " / median " + counts[counts.length >> 1] + " / max " + counts[counts.length - 1]);
