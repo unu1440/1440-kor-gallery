@@ -12,6 +12,10 @@ var HAND = G.HAND;
 var photos = sandbox.window.PHOTOS, cat = G.catalogue(photos, HAND), specs = cat.specs, fail = 0;
 function bad(m) { console.error("✗ " + m); fail++; }
 
+/* templates.js is one scope: two functions or variables with the same name silently replace each other */
+var page = fs.readFileSync(path.join(root, "assets/templates.js"), "utf8"), names = {};
+(page.match(/^  (?:function|var) [A-Za-z0-9_$]+/gm) || []).forEach(function (m) { var n = m.trim().split(" ")[1]; if (names[n]) bad("templates.js declares " + n + " twice"); names[n] = 1; });
+
 var last = cat.plan[cat.plan.length - 1];
 if (last.first + last.hand + last.gen - 1 !== 1440) bad("numbers end at " + (last.first + last.hand + last.gen - 1) + ", not 1440");
 var hand = Object.keys(HAND).reduce(function (a, k) { return a + HAND[k]; }, 0);

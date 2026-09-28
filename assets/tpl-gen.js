@@ -42,7 +42,17 @@
     cond: ["'Archivo', 'Pretendard Variable', sans-serif", "75%"],
     wide: ["'Archivo', 'Pretendard Variable', sans-serif", "118%"],
     serif: ["'Newsreader', 'Nanum Myeongjo', serif", "100%"],
-    mono: ["'Geist Mono', 'Pretendard Variable', monospace", "100%"]
+    mono: ["'Geist Mono', 'Pretendard Variable', monospace", "100%"],
+    /* Korean faces (assets/fonts) */
+    suit: ["'SUIT', 'Inter', sans-serif", "100%"],
+    maru: ["'MaruBuri', 'Newsreader', serif", "100%"],
+    galmuri: ["'Galmuri11', 'Geist Mono', monospace", "100%"],
+    /* display faces from Google Fonts, for type-led pages */
+    instrument: ["'Instrument Serif', 'MaruBuri', serif", "100%"],
+    bricolage: ["'Bricolage Grotesque', 'SUIT', sans-serif", "100%"],
+    shoulders: ["'Big Shoulders Display', 'SUIT', sans-serif", "100%"],
+    fraunces: ["'Fraunces', 'MaruBuri', serif", "100%"],
+    unbounded: ["'Unbounded', 'SUIT', sans-serif", "100%"]
   };
   var FEAT_KO = {
     index: "작업 색인", contact: "연락처", shop: "상점·장바구니", search: "검색", news: "뉴스레터 구독", lang: "한/영 전환", clock: "실시간 시계",
@@ -51,7 +61,7 @@
     "slides-thumbs": "슬라이드쇼(썸네일)", "slides-list": "목록에 올려 사진 바꾸기",
     audio: "오디오 플레이어", accordion: "펼침 목록", form: "문의 양식", hours: "영업시간 표시", countdown: "남은 날 표시", sort: "표 정렬",
     rake: "빛 비추기", model: "3D 뷰어", compare: "전후 비교", loupe: "돋보기", daylight: "낮밤 조명", docent: "오디오 도슨트", guestbook: "방명록", scale: "실제 크기 보기",
-    rooms: "전시장 평면도", roster: "작가 명단", menu: "메뉴 열기"
+    rooms: "전시장 평면도", roster: "작가 명단", menu: "메뉴 열기", tickets: "입장권 담기", marquee: "흘러가는 글자", backdrop: "배경 효과"
   };
 
   var NAV_ITEMS = {
@@ -90,12 +100,12 @@
   function navItems(c) {
     var f = c.f, it = [["home"], ["info"]];
     if (f.index) it.push(["index"]);
-    if (f.shop || f.products) it.push(["shop"]);
+    if (f.products) it.push(["shop"]);
     if (f.contact) it.push(["contact"]);
     if (f.search) it.push(["search"]);
     if (f.news) it.push(["news"]);
     var util = [];
-    if (f.shop || f.products) util.push(["cart"]);
+    if (f.products || f.tickets) util.push(["cart"]);
     if (f.lang) util.push(["lang"]);
     return { main: it, util: util };
   }
@@ -146,6 +156,7 @@
         B = { x: 28, y: 84, w: 1384, h: 776 };
     }
     var hasFoot = ["top3", "top2", "center", "burger"].indexOf(s.nav) >= 0;
+    if (c.f.marquee) { if (s.nav === "bottom") B.y += 40; B.h -= 40; }
     return { html: h, box: B, foot: hasFoot };
   }
 
@@ -206,6 +217,49 @@
       return '<div style="position:absolute;font-size:16px;' + style + '">' + txt + '</div>';
     };
     return c;
+  }
+
+  /* ---------- icons: drawn for 1440, 24 × 24, stroke in the text colour ---------- */
+  var ICONS = {
+    ne: '<path d="M7 17 17 7M9 7h8v8"/>', mail: '<rect x="3" y="5.5" width="18" height="13" rx="1.5"/><path d="m3.5 6.5 8.5 7 8.5-7"/>',
+    camera: '<rect x="3" y="6.5" width="18" height="13" rx="2"/><circle cx="12" cy="13" r="3.6"/><path d="M8.5 6.5 10 4h4l1.5 2.5"/>',
+    play: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/>', note: '<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>',
+    pin: '<path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
+    globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.8 3 2.8 15 0 18M12 3c-2.8 3-2.8 15 0 18"/>', up: '<path d="M12 19V5M6 11l6-6 6 6"/>'
+  };
+  function icon(k, size) { return '<svg viewBox="0 0 24 24" width="' + (size || 20) + '" height="' + (size || 20) + '" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-.2em" aria-hidden="true">' + ICONS[k] + '</svg>'; }
+
+  /* a line of words that keeps moving, like a notice board */
+  function marquee(c) {
+    var ko = c.ko, t = c.s.seed, words = ko ? ["새 작업 공개", MONTHS[t % 12] + " " + (3 + t % 25) + "일 열린 작업실", "주문 제작 받습니다", CITIES_KO[t % 10] + "에서"] : ["New work online", "Open studio " + MONTHS[t % 12] + " " + (3 + t % 25), "Commissions open", "From " + CITIES[t % 10]];
+    var line = words.join(" &nbsp;✦&nbsp; ") + " &nbsp;✦&nbsp; ";
+    var top = c.s.nav === "bottom" ? 0 : 866;
+    return '<div data-marquee class="mq" style="position:absolute;left:0;right:0;top:' + top + 'px;height:34px;background:var(--t-ink);color:var(--t-bg);font-size:16px;line-height:34px"><div class="mq-in">' + line + line + line + line + '</div></div>';
+  }
+  /* a quiet ground under the page: soft colour, dots or lines */
+  function backdrop(c) {
+    var k = ["grad", "dots", "lines", "grain"][c.s.seed % 4];
+    return '<div class="bd bd-' + k + '" data-backdrop aria-hidden="true"></div>';
+  }
+  /* below the first screen: the list of projects, a word about the site, contact, footer */
+  function below(c, B, flow) {
+    var ko = c.ko, s = c.s, w = c.wire, x = B.x, wd = B.w, rows = "", fs = Math.round(22 * Math.min(c.sc, 1.5));
+    for (var k = 0; k < 8; k++) {
+      var ti = (s.seed + k * 3) % TITLES.length, mt = MATS[(s.seed + k) % MATS.length];
+      rows += '<div data-proj="' + k + '" style="display:grid;grid-template-columns:' + (flow ? "34px minmax(0,1fr) 0 46px" : "64px minmax(0,1fr) minmax(0,.7fr) 70px") + ';gap:14px;padding:11px 0;border-top:1px solid color-mix(in srgb,currentColor 18%,transparent);align-items:baseline">' +
+        '<span class="m" style="font-size:14px;opacity:.55">' + pad2(k + 1) + '</span>' + (w ? c.lines([(35 + k * 9 % 40) + "%"], "", 12) : '<span>' + c.t(TITLES[ti], TITLES_KO[ti]) + '</span>') +
+        (w ? c.lines(["50%"], "", 10) : '<span style="font-size:15px;opacity:.6;overflow:hidden;white-space:nowrap">' + (flow ? "" : ko ? mt[1] : mt[0]) + '</span>') + '<span class="m" style="font-size:14px;opacity:.55;text-align:right">' + (2026 - k % 6) + '</span></div>';
+    }
+    var ab = ABOUT[(s.seed + 4) % ABOUT.length];
+    var ic = [["mail", "contact"], ["camera", "out"], ["play", "out"], ["note", "out"], ["pin", "out"]].slice(0, 3 + s.seed % 3);
+    var two = flow ? "1fr" : "1.4fr 1fr";
+    return '<div class="tp-more" style="' + (flow ? "position:relative;padding:28px 0 20px" : "position:absolute;left:" + x + "px;width:" + wd + "px;top:900px;padding:56px 0 30px") + ';display:grid;gap:' + (flow ? 32 : 56) + 'px">' +
+      '<div><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px"><b style="font-size:' + Math.round(fs * 1.4) + 'px;font-weight:600;letter-spacing:-.03em">' + c.t("Index", "작업 목록") + '</b><span class="m" style="font-size:14px;opacity:.55">08</span></div>' +
+        '<div style="font-size:' + fs + 'px">' + rows + '</div></div>' +
+      '<div style="display:grid;grid-template-columns:' + two + ';gap:' + (flow ? 24 : 48) + 'px;align-items:start">' + c.para(ab[0], ab[1], "font-size:" + Math.round(fs * 1.1) + "px;line-height:1.35;letter-spacing:-.02em") +
+        '<div style="display:grid;gap:14px;font-size:16px"><button type="button" class="lv-a" data-lv="contact" style="justify-self:start">' + icon("mail", 18) + '&nbsp; hello@' + c.env.plain + '.kor.gallery</button>' +
+        '<div style="display:flex;gap:16px">' + ic.map(function (i) { return '<button type="button" class="lv-a" data-lv="' + i[1] + '" aria-label="' + i[0] + '">' + icon(i[0], 22) + '</button>'; }).join("") + '</div></div></div>' +
+      '<div style="display:flex;justify-content:space-between;font-size:14px;opacity:.6;border-top:1px solid color-mix(in srgb,currentColor 18%,transparent);padding-top:14px"><span>' + c.foot + '</span><button type="button" class="lv-a" data-lv="top">' + icon("up", 16) + ' ' + (ko ? "맨 위로" : "Back to top") + '</button></div></div>';
   }
 
   /* ---------- feature blocks placed inside a layout ---------- */
@@ -436,7 +490,7 @@
       '<div style="display:grid;gap:6px;align-content:start"><span class="m" style="font-size:12px;opacity:.55">' + MONTHS[(k * 3 + c.s.seed) % 12] + ' ' + (k * 4 + 2) + ', 2026</span>' + (c.wire ? c.lines(["90%", "60%"]) : '<b style="font-weight:500;font-size:19px">' + c.title(k) + '</b><span style="font-size:14px;opacity:.65">' + c.t("Notes from the studio, with pictures and a short reading list.", "작업실에서 쓴 메모와 사진, 짧은 읽을거리.") + '</span>') + '</div></div>';
     return out + '<div style="position:absolute;' + px(B.x + w + 36, B.y, B.w - w - 36, B.h) + ';overflow:hidden">' + toolbar(c, catsOf(c, 6)) + list + '</div>';
   } };
-  P["band"] = { ko: "음악가", feats: ["audio"], need: function () { return 1; }, render: function (c, B) {
+  P["band"] = { ko: "음악가", feats: ["audio", "tickets"], need: function () { return 1; }, render: function (c, B) {
     var w = B.w * .46, fs = Math.round(64 * Math.min(c.sc, 2));
     var dates = [0, 1, 2, 3].map(function (k) { return '<div style="display:grid;grid-template-columns:90px 1fr auto;gap:12px;padding:7px 0;border-top:1px solid color-mix(in srgb,currentColor 20%,transparent)"><span class="m">' + MONTHS[(c.s.seed + k * 2) % 12] + ' ' + pad2(3 + k * 6) + '</span><span>' + c.t(CITIES[(c.s.seed + k) % 10], CITIES_KO[(c.s.seed + k) % 10]) + '</span><button type="button" class="lv-a" data-add="t' + k + '">' + (k === 1 ? (c.ko ? "매진" : "Sold out") : (c.ko ? "예매" : "Tickets")) + '</button></div>'; }).join("");
     return c.img(0, px(B.x, B.y, w, B.h)) + '<div style="position:absolute;' + px(B.x + w + 40, B.y, B.w - w - 40, B.h) + ';display:flex;flex-direction:column;gap:26px">' +
@@ -634,7 +688,7 @@
       var t = ["I started with the smallest one on the shelf.", "Each is made to the width of my hand.", "The colour runs where it was hottest.", "I keep the cracked ones; they tell me the temperature."];
       return '<button type="button" class="dc-play" style="justify-self:start;font:inherit;font-size:15px;padding:10px 18px;border-radius:99px;border:0;background:var(--t-ink);color:var(--t-bg);cursor:pointer">▶ Play</button><div style="display:grid;gap:8px;font-size:19px;line-height:1.35">' + t.map(function (x, i) { return '<div class="dc-line" style="opacity:' + (i ? .3 : 1) + ';transition:opacity .4s">' + x + '</div>'; }).join("") + '</div>';
     }
-    if (f.guestbook) return '<form class="gb-form" style="display:flex;gap:8px;width:' + Math.min(w, 420) + 'px"><input aria-label="메모" placeholder="Leave a note" style="flex:1;font:inherit;font-size:15px;padding:9px 12px;border:1px solid;background:transparent;color:inherit"><button style="font:inherit;font-size:14px;padding:9px 14px;border:0;background:var(--t-ink);color:var(--t-bg);cursor:pointer">Pin</button></form><div class="gb-wall" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:15px"><div class="gb-note" style="background:#fff3a6;color:#111;padding:12px;transform:rotate(-1.5deg)">Congratulations!</div><div class="gb-note" style="background:#cfe9ff;color:#111;padding:12px;transform:rotate(1deg)">좋은 전시 감사합니다</div></div>';
+    if (f.guestbook) return '<form class="gb-form" style="display:flex;gap:8px;width:' + Math.min(w, 420) + 'px"><input aria-label="메모" placeholder="Leave a note" style="flex:1;min-width:0;font:inherit;font-size:15px;padding:9px 12px;border:1px solid;background:transparent;color:inherit"><button style="font:inherit;font-size:14px;padding:9px 14px;border:0;background:var(--t-ink);color:var(--t-bg);cursor:pointer">Pin</button></form><div class="gb-wall" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:15px"><div class="gb-note" style="background:#fff3a6;color:#111;padding:12px;transform:rotate(-1.5deg)">Congratulations!</div><div class="gb-note" style="background:#cfe9ff;color:#111;padding:12px;transform:rotate(1deg)">좋은 전시 감사합니다</div></div>';
     if (f.daylight) return '<div class="daylight-t m" style="font-size:36px;letter-spacing:-.02em">0000/1440</div>';
     return panel(c, Math.min(w, 460));
   }
@@ -695,7 +749,7 @@
       c.img(0, px(B.x + B.w * .63, B.y, B.w * .37, B.h * .6)) + c.img(1, px(B.x + B.w * .63, B.y + B.h * .6 + 16, B.w * .2, B.h * .4 - 16));
   } };
   Object.keys(GR).forEach(function (k) { var g = GR[k]; L["gr-" + k] = { fam: "grad", ko: g.ko, hero: !!g.hero, panel: !!(g.panel || g.hero), grid: !!g.grid, need: g.need, render: g.render, req: k === "roster" ? ["roster"] : k === "plan" ? ["rooms"] : k === "catalog" ? ["sort"] : k === "program" ? ["accordion"] : [] }; });
-  L["g-table"].req = ["sort"]; L["g-calendar"].req = ["accordion"]; L["g-wordgrid"].req = ["accordion"]; L["g-shapes"].req = ["accordion"];
+  L["g-table"].req = ["sort"]; L["g-ticket"].req = ["tickets"]; L["g-calendar"].req = ["accordion"]; L["g-wordgrid"].req = ["accordion"]; L["g-shapes"].req = ["accordion"];
 
   /* ---------- the catalogue ---------- */
   var FAMS = {
@@ -706,7 +760,7 @@
     graphic: Object.keys(G).map(function (k) { return "g-" + k; }),
     grad: Object.keys(GR).map(function (k) { return "gr-" + k; })
   };
-  var NAVFEATS = ["index", "contact", "shop", "search", "news", "lang", "clock"];
+  var NAVFEATS = ["index", "contact", "search", "news", "lang", "clock"];
   var PAL_BASIC = [["#fcfcfc", "#111111"], ["#ffffff", "#111111"], ["#f3efe6", "#1b1a14"], ["#111111", "#ececec"], ["#e9e7e3", "#111111"], ["#000000", "#ffffff"], ["#eef0f2", "#15181c"], ["#f6f4f0", "#1b1a14"], ["#f4d9cf", "#2d1f1c"], ["#dfe8d5", "#1c2a17"]];
   var PAL_BLANK = [["#ffffff", "#111111"], ["#fcfcfc", "#111111"], ["#f4f4f4", "#111111"]];
   var GROUPS = ["obj", "people", "land", "space", "art", "life", "dream"];
@@ -728,8 +782,10 @@
     var heroTakesPanel = f.some(function (x) { return /^(docent|guestbook|scale|daylight)$/.test(x); });
     if (L0.panel && !heroTakesPanel && !f.some(function (x) { return /^(audio|accordion|form)$/.test(x); }) && chance(r, .55)) f.push(pick(r, ["audio", "accordion", "form"]));
     if (["top3", "top2", "center", "burger"].indexOf(nav) >= 0 && !f.some(function (x) { return x === "hours" || x === "countdown"; }) && chance(r, .3)) f.push(pick(r, ["hours", "countdown"]));
+    if (cat !== "blank" && !L0.bleed && ["top3", "top2", "center", "burger", "bottom"].indexOf(nav) >= 0 && chance(r, .14)) f.push("marquee");
+    if (cat !== "blank" && !L0.bleed && chance(r, .14)) f.push("backdrop");
     var n = 1 + Math.floor(r() * 3), pool = shuffled(r, NAVFEATS);
-    for (var i = 0; i < pool.length && n > 0; i++) { var k = pool[i]; if (k === "shop" && f.indexOf("products") >= 0) continue; f.push(k); n--; }
+    for (var i = 0; i < pool.length && n > 0; i++) { f.push(pool[i]); n--; }
     return f.sort();
   }
   function navFor(r, lay) { var L0 = L[lay], ok = NAVS.filter(function (n) { return !(L0.bleed && (n === "left" || n === "right")); }); return pick(r, ok); }
@@ -753,9 +809,12 @@
           if (skeys[sk] || fkeys[fk]) continue;
           skeys[sk] = 1; fkeys[fk] = 1;
           var pal = cat === "graphic" ? GPAL[(no * 7) % GPAL.length] : cat === "blank" ? PAL_BLANK[no % PAL_BLANK.length] : cat === "grad" ? pick(r, PAL_BASIC.concat(GPAL.slice(0, 6))) : PAL_BASIC[(no * 3 + i) % PAL_BASIC.length];
-          var face = cat === "graphic" ? pick(r, ["sans", "cond", "wide", "serif", "sans", "cond"]) : cat === "blank" ? "sans" : pick(r, ["sans", "sans", "serif", "cond", "mono", "sans"]);
+          var kr = chance(r, .5);
+          var face = cat === "graphic" ? pick(r, ["sans", "cond", "wide", "serif", "shoulders", "fraunces", "unbounded", "bricolage", "instrument", "cond"]) : cat === "blank" ? "sans" :
+            kr ? pick(r, ["suit", "maru", "sans", "suit", "maru", "galmuri"]) : pick(r, ["sans", "serif", "cond", "mono", "instrument", "bricolage"]);
           spec = { no: no, cat: cat, seed: no, nav: nav, layout: lay, type: type, cap: cap, feats: feats, bg: pal[0], ink: pal[1], face: face,
-            ko: cat === "graphic" || cat === "grad" ? false : chance(r, .5), groups: shuffled(r, GROUPS).slice(0, 3), key: fk, skey: sk };
+            ko: cat === "graphic" || cat === "grad" ? false : kr, groups: shuffled(r, GROUPS).slice(0, 3), key: fk, skey: sk };
+          spec.pin = nav !== "corners" && (no * 11) % 10 < 7; /* menu stays put while the page scrolls */
         }
         if (!spec) throw new Error("no free combination for " + cat + " " + no);
         specs.push(spec); no++;
@@ -780,6 +839,9 @@
 
   /* the content box a menu position leaves, the same numbers navHtml uses */
   function boxOf(s) {
+    var b = boxOf0(s); if (s.feats.indexOf("marquee") >= 0) b.h -= 40; return b;
+  }
+  function boxOf0(s) {
     if (s.nav === "left" || s.nav === "right") return { w: 1122, h: 844 };
     if (s.nav === "bottom") return { w: 1384, h: 800 };
     if (s.nav === "corners") return { w: 1384, h: 760 };
@@ -793,11 +855,71 @@
     var c = ctx(spec, env), L0 = L[spec.layout];
     c.bleedInk = !!L0.bleed;
     var nav = navHtml(c), body = L0.render(c, nav.box);
-    var foot = "";
-    if (nav.foot && !L0.bleed) foot = '<div class="tp-foot"><span>' + c.foot + '</span><span>' + widget(c) + '</span></div>';
+    var foot = "", mq = c.f.marquee;
+    if (nav.foot && !L0.bleed) foot = '<div class="tp-foot"' + (mq ? ' style="bottom:48px"' : "") + '><span>' + c.foot + '</span><span>' + widget(c) + '</span></div>';
     else if (widget(c)) foot = '<div class="tp-foot" style="' + (L0.bleed ? "color:#fff;opacity:.85" : "") + '"><span></span><span>' + widget(c) + '</span></div>';
     var cs = spec.type["case"] === "upper" ? "text-transform:uppercase;" : spec.type["case"] === "lower" ? "text-transform:lowercase;" : "";
-    return { html: body + nav.html + foot, style: cs, slides: c.slides };
+    var more = below(c, { x: nav.box.x, w: nav.box.w });
+    return { html: (c.f.backdrop ? backdrop(c) : "") + body + (mq ? marquee(c) : "") + foot + more + nav.html, style: cs, slides: c.slides, pin: spec.pin };
+  }
+  /* ---------- the same template on a phone: 390 wide, one column, a menu button ----------
+     Built from the same spec, so words, colours, type, features and pictures stay the template's own. */
+  var KIND = {};
+  "hero-center hero-wide hero-bleed split text-led diptych feed-row collage name-big slide-frame slide-bleed slide-thumbs slide-side slide-film p-photo p-studio p-cv p-gallery gr-left gr-right gr-band gr-trio".split(" ").forEach(function (k) { KIND[k] = "media"; });
+  "grid-3 grid-4 grid-5 grid-6 masonry-3 masonry-4 rows bento sheet p-shop p-publisher p-journal p-class gr-students".split(" ").forEach(function (k) { KIND[k] = "grid"; });
+  "index-list g-table gr-catalog g-issue gr-program p-event g-calendar gr-roster gr-plan p-cafe p-band g-lineup g-wordgrid g-shapes".split(" ").forEach(function (k) { KIND[k] = "list"; });
+  function renderMobile(spec, env) {
+    var c = ctx(spec, env), L0 = L[spec.layout], W = 358, kind = KIND[spec.layout] || "type", ko = c.ko, out = [], n = c.P.length;
+    var items = navItems(c), menu = items.main.map(function (k) { return navBtn(c, k); }).join("");
+    var util = items.util.filter(function (k) { return k[0] === "cart"; }).map(function (k) { return navBtn(c, k); }).join("");
+    var head = '<div class="tp-nav" style="position:absolute;left:16px;right:16px;top:0;height:56px;display:flex;justify-content:space-between;align-items:center;font-size:16px;background:var(--t-bg);z-index:3"><button type="button" class="lv-a tp-name" data-lv="home">' + c.N + '</button>' +
+      '<span style="display:flex;gap:16px;align-items:center">' + util + (c.f.lang ? navBtn(c, ["lang"]) : "") + '<button type="button" class="lv-a" data-lv="menu"><span style="display:inline-block;width:20px;border-top:2px solid;border-bottom:2px solid;height:7px;vertical-align:.1em"></span></button></span><span hidden>' + menu + '</span></div>';
+    var big = function (t, f) { return '<div style="font-size:' + Math.round((f || 44) * Math.min(1.2, .7 + c.sc / 4)) + 'px;font-weight:700;letter-spacing:-.045em;line-height:.95;overflow-wrap:anywhere;text-align:' + c.al + '">' + t + '</div>'; };
+    var cap = function (i, nn) { return '<div style="position:relative;min-height:22px">' + c.one(i, nn, "left:0;top:0;font-size:15px") + '</div>'; };
+    var gt = gtitle(c);
+    if (c.f.marquee) out.push('<div data-marquee class="mq" style="position:relative;margin:0 -16px;height:30px;background:var(--t-ink);color:var(--t-bg);font-size:14px;line-height:30px"><div class="mq-in">' + marquee(c).replace(/^.*<div class="mq-in">|<\/div><\/div>$/g, "") + '</div></div>');
+    if (L0.hero) {
+      out.push('<div style="position:relative;height:420px">' + hero(c, 0, 0, W, 420) + '</div>' + glabel(c, 0) + '<div style="display:grid;gap:12px">' + extras(c, W) + '</div>');
+    } else if (kind === "media") {
+      var sl = c.f.slides ? Math.min(n, spec.feats.indexOf("slides-thumbs") >= 0 ? 9 : 8) : 0;
+      if (spec.layout === "text-led" || spec.layout === "name-big") out.push(big(spec.layout === "name-big" ? c.N : c.t(ABOUT[(spec.seed + 3) % 8][0].split(".")[0], ABOUT[(spec.seed + 3) % 8][1].split(".")[0]), spec.layout === "name-big" ? 56 : 30));
+      if (sl) {
+        out.push('<div style="position:relative;height:' + (spec.layout.indexOf("bleed") >= 0 ? 520 : 440) + 'px">' + slideMain(c, 0, "inset:0", sl) + '</div>' + cap(0, sl));
+        if (spec.feats.indexOf("slides-thumbs") >= 0) { var th = ""; for (var k = 1; k < sl; k++) th += '<div style="position:relative;aspect-ratio:1">' + c.img(k, "inset:0;cursor:pointer;opacity:.6", 'data-st="' + k + '"') + '</div>'; out.push('<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">' + th + '</div>'); }
+        else if (spec.feats.indexOf("slides-list") >= 0) { var ls = ""; for (var k2 = 0; k2 < Math.min(sl, 6); k2++) ls += '<div data-sl="' + k2 + '" style="padding:6px 0;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent);' + (k2 ? "opacity:.35" : "") + '">' + pad2(k2 + 1) + '&nbsp;&nbsp;' + c.title(k2) + '</div>'; out.push('<div style="font-size:17px">' + ls + '</div>'); }
+        else out.push('<div style="position:relative;height:36px">' + slideCtl(c, sl, "left:0;top:0") + '</div>');
+      } else {
+        for (var m = 0; m < Math.min(n || (c.wire ? 3 : 0), 4); m++) out.push('<div style="position:relative;aspect-ratio:' + (m % 2 ? "4 / 3" : "4 / 5") + '">' + c.img(m, "inset:0") + '</div>' + cap(m, 1));
+      }
+      if (spec.layout === "split" || spec.layout === "slide-side" || L0.panel) out.push(c.para(ABOUT[spec.seed % 8][0], ABOUT[spec.seed % 8][1], "font-size:17px"));
+    } else if (kind === "grid") {
+      var cols = spec.layout === "grid-6" || spec.layout === "p-publisher" ? 3 : 2, gp = "", count = Math.min(c.wire ? 8 : n, 12);
+      var pages = c.f.pages ? 3 : 1, per = Math.ceil(count / pages);
+      if (/^p-|gr-/.test(spec.layout)) out.push(big(spec.layout === "p-shop" ? c.t("New objects", "새로 들어온 물건") : spec.layout === "p-publisher" ? c.t("Books", "책") : spec.layout === "gr-students" ? "Graduates" : spec.layout === "p-class" ? c.t("Classes", "수업") : c.t("Journal", "읽을거리"), 34));
+      for (var g = 0; g < count; g++) gp += c.fig(g, spec.layout === "p-publisher" ? "2 / 3" : "4 / 5", g % per, pages > 1 ? ' data-pg="' + (Math.floor(g / per) + 1) + '"' + (g >= per ? ' style="display:none"' : "") : "");
+      out.push(toolbar(c, catsOf(c, count)) + '<div class="gg cap-' + spec.cap + '" style="position:relative;grid-template-columns:repeat(' + cols + ',1fr);gap:18px 10px">' + gp + '</div>');
+    } else if (kind === "list") {
+      var ttl = { "g-table": "Index", "gr-catalog": "Works", "g-issue": "No. " + pad2(spec.seed % 60 + 1), "gr-program": "Programme", "p-event": c.t("Open House", "오픈 하우스"), "g-calendar": MONTHS[(spec.seed + 8) % 12], "gr-roster": "Artists", "gr-plan": "Floor plan", "p-cafe": c.t("Today", "오늘의 메뉴"), "p-band": TRACKS[spec.seed % TRACKS.length], "g-lineup": "Live", "g-wordgrid": gt[0], "g-shapes": "Forms", "index-list": c.t("Index", "작업") }[spec.layout];
+      out.push(big(ttl, 40));
+      if (spec.layout === "index-list") { out.push('<div style="position:relative;height:300px">' + slideMain(c, 0, "inset:0", Math.min(n, 10)) + '</div>'); var il = ""; for (var r = 0; r < Math.min(n, 10); r++) il += '<div data-sl="' + r + '" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid color-mix(in srgb,currentColor 14%,transparent);' + (r ? "opacity:.35" : "") + '"><span>' + c.title(r) + '</span><span class="m" style="font-size:13px">' + c.year(r) + '</span></div>'; out.push('<div style="font-size:17px">' + il + '</div>'); }
+      else if (spec.layout === "g-table" || spec.layout === "gr-catalog") { var tr = ""; for (var t2 = 0; t2 < 9; t2++) tr += '<tr><td class="m">' + pad2(t2 + 1) + '</td><td>' + (spec.layout === "g-table" ? TITLES : WORKS.map(function (x) { return x[0]; }))[(t2 + spec.seed) % 12] + '</td><td class="m y">' + (2026 - (t2 * 5 + spec.seed) % 9) + '</td></tr>'; out.push('<table class="tbl" data-sorttable style="position:relative;width:100%;font-size:17px"><thead><tr><th data-sort="0">No.</th><th data-sort="1">' + (spec.layout === "g-table" ? "Project" : "Title") + '</th><th data-sort="2" class="y">Year</th></tr></thead><tbody>' + tr + '</tbody></table>'); }
+      else if (spec.layout === "gr-roster") { var nm = shuffled(c.r, PEOPLE).slice(0, 10); out.push('<div data-rimg style="position:relative;height:300px">' + c.img(0, "inset:0") + '</div><div data-rlab>' + glabel(c, 0, nm[0]) + '</div><div style="font-size:24px;line-height:1.25;letter-spacing:-.03em">' + nm.map(function (x, i) { var ro = ROLES[(i + spec.seed) % ROLES.length]; return '<div data-rf="' + (c.P[i % 6] ? c.P[i % 6].f : "") + '" data-role="' + ro[0] + '" style="' + (i ? "opacity:.35" : "") + '">' + x + ' <span style="font-size:13px;opacity:.6">' + ro[0] + '</span></div>'; }).join("") + '</div>'); }
+      else if (spec.layout === "gr-plan") { out.push(GR.plan.render(c, { x: 0, y: 0, w: W / .72, h: 220 }).replace(/<div style="position:absolute;left:[^"]*;display:flex;flex-direction:column;gap:16px">[\s\S]*$/, "").replace('style="position:absolute;', 'style="position:relative;display:block;') + '<p class="ko" style="font-size:15px;opacity:.6">방을 누르면 그 방의 작업이 열립니다.</p>'); }
+      else if (spec.layout === "p-band" || spec.layout === "g-lineup") { out.push('<div style="font-size:17px">' + [0, 1, 2, 3].map(function (k3) { return '<div style="display:grid;grid-template-columns:70px 1fr auto;gap:10px;padding:8px 0;border-top:1px solid color-mix(in srgb,currentColor 20%,transparent)"><span class="m">' + MONTHS[(spec.seed + k3 * 2) % 12] + ' ' + pad2(3 + k3 * 6) + '</span><span>' + c.t(CITIES[(spec.seed + k3) % 10], CITIES_KO[(spec.seed + k3) % 10]) + '</span>' + (c.f.tickets ? '<button type="button" class="lv-a" data-add="t' + k3 + '">' + (ko ? "예매" : "Tickets") + '</button>' : "<span></span>") + '</div>'; }).join("") + '</div>'); }
+      else { var ac = ""; for (var a2 = 0; a2 < 6; a2++) { var wt = WORDS[(a2 + spec.seed) % WORDS.length]; ac += '<div data-acc style="border-top:1px solid;padding:10px 0"><div style="display:flex;justify-content:space-between;font-size:19px"><span>' + (spec.layout === "p-cafe" ? (ko ? ["오늘의 수프", "구운 채소", "과일 타르트", "보리차", "드립 커피", "빵"] : ["Soup", "Roast vegetables", "Fruit tart", "Barley tea", "Filter coffee", "Bread"])[a2] : spec.layout === "gr-program" ? ["Opening night", "Artist talks", "Portfolio review", "Closing party", "Family morning", "Tours"][a2] : wt[0] + ' <span class="ko" style="font-size:14px;opacity:.6">' + wt[1] + '</span>') + '</span><span data-acc-i>+</span></div><div class="acc-more" style="font-size:15px;opacity:.7;padding-top:6px">' + (ko ? "자세한 내용과 시간, 장소를 적습니다." : "Details, time and place.") + '</div></div>'; } out.push('<div>' + ac + '</div>'); if (n) out.push('<div style="position:relative;aspect-ratio:4 / 3">' + c.img(0, "inset:0") + '</div>'); }
+    } else {
+      /* type-led pages: the words first, then the picture */
+      var word = spec.layout === "g-giant" || spec.layout === "g-repeat" ? c.N : spec.layout === "g-stack" || spec.layout === "g-bands" ? shuffled(c.r, WORDS).slice(0, 4).map(function (x) { return x[0]; }).join("<br>") : spec.layout === "g-specimen" ? "Aa 가나" : spec.layout === "g-quote" ? "“" + ABOUT[(spec.seed + 6) % 8][0].split(".")[0] + ".”" : spec.layout === "gr-poster" ? "Degree<br>Show<br>2026" : gt[0];
+      out.push(big(word, spec.layout === "g-quote" || spec.layout === "g-manifesto" ? 30 : 60));
+      out.push('<span class="ko" style="font-size:16px;opacity:.7">' + (spec.layout === "g-manifesto" ? ABOUT[(spec.seed + 2) % 8][1] : gt[1]) + '</span>');
+      if (n) out.push('<div style="position:relative;aspect-ratio:' + (spec.layout === "g-circle" ? "1;border-radius:50%;overflow:hidden" : "4 / 5") + '">' + c.img(0, "inset:0" + (spec.layout === "g-circle" ? ";border-radius:50%" : "")) + '</div>');
+      if (spec.layout === "g-ticket") out.push('<button type="button" class="lv-a" data-add="t0" style="justify-self:start;font-size:18px;border:2px solid;padding:10px 16px">' + (ko ? "표 담기 →" : "Get tickets →") + '</button>');
+    }
+    var pan = L0.hero ? "" : panel(c, W); if (pan) out.push(pan);
+    var wd = widget(c); if (wd) out.push('<div style="font-size:15px;opacity:.7">' + wd + '</div>');
+    out.push(below(c, { x: 0, w: W }, true));
+    var cs = spec.type["case"] === "upper" ? "text-transform:uppercase;" : spec.type["case"] === "lower" ? "text-transform:lowercase;" : "";
+    return { html: (c.f.backdrop ? backdrop(c) : "") + '<div class="m-body" style="position:absolute;left:16px;right:16px;top:64px;display:grid;gap:20px">' + out.join("") + '</div>' + head, style: cs, slides: c.slides };
   }
   function describe(spec) {
     var L0 = L[spec.layout];
@@ -824,7 +946,7 @@
     return { plan: pl, specs: build(photos, pl.map(function (p) { return [p.cat, p.lays, p.gen, p.first + p.hand]; })) };
   }
 
-  var API = { build: build, plan: plan, catalogue: catalogue, SECTIONS: SECTIONS, HAND: HAND, render: render, describe: describe, FAMS: FAMS, FACES: FACES, FEAT_KO: FEAT_KO, enName: enName, layouts: L };
+  var API = { icon: icon, renderMobile: renderMobile, build: build, plan: plan, catalogue: catalogue, SECTIONS: SECTIONS, HAND: HAND, render: render, describe: describe, FAMS: FAMS, FACES: FACES, FEAT_KO: FEAT_KO, enName: enName, layouts: L };
   if (typeof module !== "undefined" && module.exports) module.exports = API;
   root.TPLGEN = API;
 })(typeof window !== "undefined" ? window : globalThis);

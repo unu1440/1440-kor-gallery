@@ -702,10 +702,10 @@
     N: N, plain: site || "이름", esc: esc, src: src,
     photo: function (f) { var p = PH[f] || [f, f, "art"]; return { f: f, ko: p[1], g: p[2], en: GEN.enName(f) }; }
   };
-  var HAND = {};
-  Object.keys(F).forEach(function (k) { HAND[k] = F[k].length; });
-  if (window.console && JSON.stringify(HAND) !== JSON.stringify(GEN.HAND)) console.warn("tpl-gen.js HAND does not match templates.js", HAND);
-  var CATALOGUE = GEN.catalogue(window.PHOTOS || [], HAND);
+  var HANDMADE = {};
+  Object.keys(F).forEach(function (k) { HANDMADE[k] = F[k].length; });
+  if (window.console && JSON.stringify(HANDMADE) !== JSON.stringify(GEN.HAND)) console.warn("tpl-gen.js HAND does not match templates.js", HANDMADE);
+  var CATALOGUE = GEN.catalogue(window.PHOTOS || [], HANDMADE);
   var BASES = [], BYNO = {};
   CATALOGUE.plan.forEach(function (p) {
     F[p.fam].forEach(function (b, i) {
@@ -738,9 +738,22 @@
     next: '<svg viewBox="0 0 24 24"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg>',
     prev: '<svg viewBox="0 0 24 24"><path d="M19 12H5M10.5 6.5 5 12l5.5 5.5"/></svg>'
   };
-  function pageFor(b) {
-    var inner = b.html();
-    return '<div class="tp" style="--t-bg:' + b.bg + ';--t-ink:' + b.ink + (b.font ? ';--t-font:' + b.font + ';--t-stretch:' + b.stretch : "") + ';' + (b.style || "") + '">' + inner + '</div>';
+  /* on a phone: generated templates are drawn again for 390 wide; hand-made ones reflow into one column */
+  function pageFor(b, mob) {
+    var inner, cls = "tp";
+    if (mob && b.gen) { var r = GEN.renderMobile(b.gen, genEnv); inner = r.html; b.mstyle = r.style; }
+    else { inner = b.html(); if (mob) cls += " tp-reflow"; }
+    return '<div class="' + cls + '" style="--t-bg:' + b.bg + ';--t-ink:' + b.ink + (b.font ? ';--t-font:' + b.font + ';--t-stretch:' + b.stretch : "") + ';' + ((mob && b.gen ? b.mstyle : b.style) || "") + '">' + inner + '</div>';
+  }
+  /* big display type in a reflowed page is scaled down to fit 390 */
+  function reflowType(tp) {
+    [].forEach.call(tp.querySelectorAll("[style*='font-size']"), function (el) {
+      var fs = parseFloat(el.style.fontSize); if (fs > 34) el.style.fontSize = Math.max(26, Math.round(fs * .34)) + "px";
+    });
+  }
+  function phoneFor(b) {
+    return '<div class="mac phone" aria-hidden="true"><div class="mac-bar"><span class="m">9:41</span><div class="mac-url">' + ICON.lock + '<span>' + esc(host) + '</span></div><span></span></div>' +
+      '<div class="mac-view" data-w="390"><div class="canvas mob">' + pageFor(b, true) + '</div></div></div>';
   }
   function windowFor(b) {
     return '<div class="mac" aria-hidden="true"><div class="mac-bar">' +
@@ -771,7 +784,7 @@
   var ZOOM = CSS.supports && CSS.supports("zoom", "0.5");
   function scale(view) {
     var c = view.firstElementChild; if (!c || !view.clientWidth) return;
-    var k = view.clientWidth / 1440;
+    var k = view.clientWidth / (+view.dataset.w || 1440);
     if (ZOOM) { c.style.zoom = k; c.style.transform = ""; } else c.style.transform = "scale(" + k + ")";
   }
   function fill(slot, live) {
@@ -814,7 +827,7 @@
     es.forEach(function (e) { if (e.isIntersecting) addBatch(e.target.parentNode); });
   }, { rootMargin: "1200px 0px" }) : null;
   function addBatch(r) {
-    var list = famOf(r.dataset.family), from = +(r.dataset.shown || 0), to = Math.min(list.length, from + BATCH);
+    var list = r._list || famOf(r.dataset.family), from = +(r.dataset.shown || 0), to = Math.min(list.length, from + BATCH);
     var old = r.querySelector(".row-more"); if (old) { if (more) more.unobserve(old); old.remove(); }
     r.insertAdjacentHTML("beforeend", list.slice(from, to).map(function (b) { return card(b); }).join(""));
     r.dataset.shown = to;
@@ -832,6 +845,88 @@
   }
   document.getElementById("basicN").textContent = range(["feed", "grid", "slide"]);
   document.querySelectorAll("[data-count]").forEach(function (el) { el.textContent = range([el.dataset.count]); });
+
+  /* ---------- find: open by number, or narrow 1440 down by kind, menu position and feature ---------- */
+  var FIND = {
+    cat: [["basic", "기본"], ["grad", "졸업전시"], ["graphic", "그래픽"], ["blank", "빈 템플릿"], ["populated", "채워진 템플릿"]],
+    nav: [["top3", "위 3단"], ["top2", "위 양끝"], ["left", "왼쪽 세로"], ["right", "오른쪽 세로"], ["bottom", "아래 바"], ["center", "가운데 제목"], ["corners", "네 구석"], ["burger", "메뉴 버튼"]],
+    feat: [["slides", "슬라이드쇼"], ["shop", "상점·장바구니"], ["audio", "오디오"], ["filter", "분류 필터"], ["pages", "페이지 넘김"], ["sort", "표 정렬"], ["accordion", "펼침 목록"],
+      ["form", "문의 양식"], ["hours", "영업시간"], ["countdown", "남은 날"], ["lang", "한/영 전환"], ["search", "검색"], ["news", "뉴스레터"], ["clock", "시계"],
+      ["marquee", "흘러가는 글자"], ["backdrop", "배경 효과"], ["pin", "고정 메뉴"], ["grad3d", "3D 뷰어"]]
+  };
+  /* what each template carries, as the keys above */
+  function tagsOf(b) {
+    if (b._tags) return b._tags;
+    var t = {}, s = b.gen;
+    t["cat:" + ({ feed: "basic", grid: "basic", slide: "basic" }[b.fam] || b.fam)] = 1;
+    if (s) {
+      t["nav:" + s.nav] = 1;
+      s.feats.forEach(function (f) {
+        var k = /^slides/.test(f) ? "slides" : f === "products" || f === "tickets" ? "shop" : f === "model" ? "grad3d" : f;
+        t["feat:" + k] = 1;
+      });
+      if (s.pin) t["feat:pin"] = 1;
+    } else {
+      var h = b.html();
+      [["audio", /data-play/], ["filter", /data-filter/], ["sort", /data-sort/], ["accordion", /data-acc/], ["hours", /data-hours/], ["countdown", /data-until/], ["clock", /data-clock/],
+        ["shop", /Cart \(|장바구니 \(|data-add/], ["slides", /\d{2} \/ \d{2}|>←</], ["grad3d", /model-viewer/], ["form", /<form/]]
+        .forEach(function (x) { if (x[1].test(h)) t["feat:" + x[0]] = 1; });
+    }
+    return (b._tags = t);
+  }
+  var findOn = {}, favOnly = false;
+  var fGroups = document.getElementById("findGroups"), fRow = document.getElementById("findRow"), fN = document.getElementById("findN");
+  function findChip(k, label) { return '<button type="button" class="chip" data-k="' + k + '" aria-pressed="false">' + label + '</button>'; }
+  fGroups.innerHTML =
+    '<div class="find-g"><span class="find-l">즐겨찾기</span><div class="chips"><button type="button" class="chip" data-fav aria-pressed="false">★ 즐겨찾기만</button></div></div>' +
+    '<div class="find-g"><span class="find-l">분류</span><div class="chips">' + FIND.cat.map(function (x) { return findChip("cat:" + x[0], x[1]); }).join("") + '</div></div>' +
+    '<div class="find-g"><span class="find-l">메뉴 위치</span><div class="chips">' + FIND.nav.map(function (x) { return findChip("nav:" + x[0], x[1]); }).join("") + '</div></div>' +
+    '<div class="find-g"><span class="find-l">기능</span><div class="chips">' + FIND.feat.map(function (x) { return findChip("feat:" + x[0], x[1]); }).join("") + '</div></div>' +
+    '<div class="find-g find-end"><button type="button" class="chip chip-clear" data-clear hidden>조건 지우기</button></div>';
+  /* within a group any chosen chip may match; across groups all must */
+  function runFind() {
+    var keys = Object.keys(findOn), groups = {};
+    keys.forEach(function (k) { var g = k.split(":")[0]; (groups[g] = groups[g] || []).push(k); });
+    var any = keys.length || favOnly;
+    fGroups.querySelector("[data-clear]").hidden = !any;
+    if (!any) { fRow.hidden = true; fRow.innerHTML = ""; fN.textContent = ""; return; }
+    var list = BASES.filter(function (b) {
+      if (favOnly && !stars[b.first]) return false;
+      var t = tagsOf(b);
+      return Object.keys(groups).every(function (g) { return groups[g].some(function (k) { return t[k]; }); });
+    });
+    fN.textContent = list.length + "개";
+    fRow.hidden = false; fRow.innerHTML = list.length ? "" : '<p class="find-none">조건에 맞는 템플릿이 없습니다. 조건을 하나 빼 보세요.</p>';
+    fRow._list = list; fRow.dataset.shown = 0;
+    if (list.length) addBatch(fRow);
+  }
+  fGroups.addEventListener("click", function (e) {
+    var c = e.target.closest(".chip"); if (!c) return;
+    if (c.hasAttribute("data-clear")) { findOn = {}; favOnly = false; [].forEach.call(fGroups.querySelectorAll(".chip"), function (x) { x.setAttribute("aria-pressed", "false"); }); }
+    else if (c.hasAttribute("data-fav")) { favOnly = !favOnly; c.setAttribute("aria-pressed", favOnly); }
+    else { var k = c.dataset.k; if (findOn[k]) delete findOn[k]; else findOn[k] = 1; c.setAttribute("aria-pressed", !!findOn[k]); }
+    runFind();
+  });
+  document.getElementById("findNo").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var inp = document.getElementById("findNoIn"), n = parseInt(inp.value, 10);
+    if (n >= 1 && n <= TOTAL) { inp.setCustomValidity(""); openPreview(n); }
+    else { inp.setCustomValidity("1부터 1440 사이의 번호를 넣어 주세요"); inp.reportValidity(); }
+  });
+  document.getElementById("findNoIn").addEventListener("input", function (e) { e.target.setCustomValidity(""); e.target.value = e.target.value.replace(/\D/g, ""); });
+  /* the star count in the header opens the favourites */
+  function favCount() { document.getElementById("favN").textContent = Object.keys(stars).length; }
+  favCount();
+  document.getElementById("favLink").addEventListener("click", function (e) {
+    e.preventDefault();
+    favOnly = true; fGroups.querySelector("[data-fav]").setAttribute("aria-pressed", "true"); runFind();
+    document.getElementById("find").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  });
+  /* about 1440 */
+  var about = document.getElementById("about");
+  document.getElementById("aboutLink").addEventListener("click", function (e) { e.preventDefault(); about.hidden = false; document.body.style.overflow = "hidden"; about.querySelector(".pv-close").focus(); });
+  about.addEventListener("click", function (e) { if (e.target === about || e.target.closest(".pv-close")) { about.hidden = true; document.body.style.overflow = ""; document.getElementById("aboutLink").focus(); } });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !about.hidden) { about.hidden = true; document.body.style.overflow = ""; } });
 
   /* ---------- shuffle ---------- */
   var stage = document.getElementById("shuffleStage");
@@ -936,26 +1031,34 @@
     return files.slice(0, n).map(function (f) { return { src: src(f), cap: NAMES[f] || "" }; });
   }
 
+  /* a quick view keeps the index or project page under it; a side panel keeps a project page */
   function layer(tp, cls, html) {
-    var keepIndex = cls.indexOf("lv-lb") >= 0;
-    [].forEach.call(tp.querySelectorAll(".lv-layer"), function (l) { if (!(keepIndex && l.classList.contains("lv-index"))) l.remove(); });
-    var d = document.createElement("div");
+    var lb = cls.indexOf("lv-lb") >= 0, side = cls.indexOf("lv-side") >= 0;
+    [].forEach.call(tp.querySelectorAll(".lv-layer"), function (l) {
+      var keep = (lb && (l.classList.contains("lv-index") || l.classList.contains("lv-page"))) || (side && l.classList.contains("lv-page"));
+      if (!keep) l.remove();
+    });
+    var d = document.createElement("div"), g = geom(tp);
     d.className = "lv-layer " + cls;
     d.innerHTML = html;
+    d.style.top = g.top + "px"; d.style.bottom = "auto"; d.style.height = g.H + "px";
     tp.appendChild(d);
+    lock(tp);
     return d;
   }
   function closeTop(tp) {
     var ls = tp.querySelectorAll(".lv-layer");
     if (ls.length) ls[ls.length - 1].remove();
-    markOn(tp);
+    markOn(tp); lock(tp);
   }
+  function closeAll(tp) { [].forEach.call(tp.querySelectorAll(".lv-layer"), function (l) { l.remove(); }); markOn(tp); lock(tp); }
   function markOn(tp, kind) {
     [].forEach.call(tp.querySelectorAll(".lv-a"), function (a) { a.classList.toggle("on", !!kind && a.dataset.lv === kind && !!tp.querySelector(".lv-layer")); });
   }
   function toast(tp, msg) {
     var old = tp.querySelector(".lv-toast"); if (old) old.remove();
-    var d = document.createElement("div"); d.className = "lv-toast"; d.textContent = msg; tp.appendChild(d);
+    var d = document.createElement("div"), g = geom(tp); d.className = "lv-toast"; d.textContent = msg;
+    d.style.top = (g.top + g.H - 96) + "px"; d.style.bottom = "auto"; tp.appendChild(d);
     setTimeout(function () { d.remove(); }, 2200);
   }
   function mail() { return "hello@" + host; }
@@ -987,11 +1090,106 @@
     var cart = tp._lv.cart;
     layer(tp, "lv-side",
       '<div class="lv-top"><span>' + (ko ? "장바구니" : "Cart") + ' (' + cart.length + ')</span><button type="button" class="lv-x">' + (ko ? "닫기" : "Close") + ' ✕</button></div>' +
-      (cart.length ? '<div class="lv-cart">' + cart.map(function (c) { return '<div><img src="' + c.src + '" alt=""><span>' + (c.cap || "—") + '</span></div>'; }).join("") + '</div>' +
-        '<button type="button" class="lv-btn lv-pay" data-lv="pay">' + (ko ? "결제하기" : "Checkout") + ' →</button>'
-        : '<p style="opacity:.6">' + (ko ? "장바구니가 비어 있습니다. 사진을 눌러 담아 보세요." : "Your cart is empty. Open a picture to add it.") + '</p>'));
+      (cart.length ? '<div class="lv-cart">' + cart.map(function (c) { return '<div>' + (c.src ? '<img src="' + c.src + '" alt="">' : '<i class="lv-noimg"></i>') + '<span>' + (c.cap || "—") + (c.qty > 1 ? " × " + c.qty : "") + '</span><span class="m">' + (c.price || "") + '</span></div>'; }).join("") + '</div>' +
+        '<button type="button" class="lv-btn lv-pay" data-lv="pay">' + (ko ? "주문서 쓰기" : "Checkout") + ' →</button>'
+        : '<p style="opacity:.6">' + (ko ? "장바구니가 비어 있습니다." : "Your cart is empty.") + '</p>') +
+      '<div class="lv-links"><button type="button" class="lv-a" data-terms="ship">' + (ko ? "배송 안내" : "Shipping") + '</button><button type="button" class="lv-a" data-terms="return">' + (ko ? "교환·환불" : "Returns") + '</button></div>');
     markOn(tp, "cart");
   }
+  /* ---------- a page longer than the screen: it scrolls inside the window ----------
+     The window shows one screen (1440 × 900, or 390 × 844 on a phone); the page below it scrolls.
+     Layers and notices open where the reader is, and the page holds still while one is open. */
+  function geom(tp) {
+    var view = tp.closest(".mac-view"), W = tp._w || 1440, H = tp._h || 900, r = tp.getBoundingClientRect();
+    var k = r.width / W || 1;
+    return { view: view, k: k, top: view ? view.scrollTop / k : 0, H: H };
+  }
+  function lock(tp) {
+    var g = geom(tp); if (!g.view) return;
+    g.view.style.overflowY = tp.querySelector(".lv-layer") ? "hidden" : "";
+  }
+  /* how tall the page is: the lowest thing on it, and never less than one screen */
+  function fitHeight(view) {
+    var tp = view.querySelector(".tp"), cv = view.querySelector(".canvas"); if (!tp || !cv) return;
+    var g = geom(tp), R = tp.getBoundingClientRect(), more = tp.querySelector(".tp-more"), low = 0;
+    [].forEach.call(tp.querySelectorAll("*"), function (el) {
+      if (el.closest(".lv-layer, .tp-more, .tp-nav, .tp-foot, .mq, .bd")) return;
+      var r = el.getBoundingClientRect(); if (r.height) low = Math.max(low, (r.bottom - R.top) / g.k);
+    });
+    if (more) { more.style.top = Math.max(g.H, Math.ceil(low) + 40) + "px"; low = Math.max(low, (more.getBoundingClientRect().bottom - R.top) / g.k); }
+    cv.style.height = Math.max(g.H, Math.ceil(low + 8)) + "px";
+  }
+  /* pinned menu and marquee: they stay on screen while the page moves under them */
+  function pinOnScroll(view, b) {
+    var tp = view.querySelector(".tp"); if (!tp) return;
+    var pins = b.gen && b.gen.pin ? [].slice.call(tp.querySelectorAll(".tp-nav, .mq")) : [];
+    var bd = tp.querySelector(".bd");
+    view.addEventListener("scroll", function () {
+      var t = geom(tp).top;
+      pins.forEach(function (p) { p.style.transform = "translateY(" + t + "px)"; });
+      if (bd) bd.style.transform = "translateY(" + t + "px)";
+    }, { passive: true });
+  }
+
+  function words(ko) {
+    return ko ? {
+      back: "← 목록", next: "다음 프로젝트 →", about: "만든 과정", info: "정보", year: "연도", mat: "재료", place: "장소",
+      text: "작업실 창가에서 계절이 바뀌는 동안 만든 연작입니다. 같은 자리에서 같은 시간에 기록하고, 그날의 빛이 달라지는 만큼만 바꾸었습니다.",
+      text2: "전시와 책으로 함께 소개되었으며, 일부는 주문 제작으로 다시 만들 수 있습니다."
+    } : {
+      back: "← Index", next: "Next project →", about: "Process", info: "Details", year: "Year", mat: "Material", place: "Place",
+      text: "A series made at the studio window while the seasons changed. Recorded from the same place at the same hour, changing only as much as the light did.",
+      text2: "Shown as an exhibition and a small book; some pieces can be made again to order."
+    };
+  }
+  var PLACES = [["Seoul", "서울"], ["Busan", "부산"], ["Jeju", "제주"], ["Gangneung", "강릉"], ["Jeonju", "전주"]];
+  var MATS = [["Archival pigment print", "피그먼트 프린트"], ["Stoneware", "석기"], ["Oil on linen", "린넨에 유채"], ["Oak, linen", "참나무, 린넨"], ["Risograph", "리소그래프"]];
+
+  /* project page: what a thumbnail or a line of the index opens */
+  function openProject(tp, st, i, title) {
+    var items = st.items && st.items.length ? st.items : gallery(tp); if (!items.length) items = poolItems(4, null, tp);
+    var n = items.length, pick = [], w = words(st.ko), ko = st.ko;
+    for (var k = 0; k < Math.min(4, n); k++) pick.push(items[(i + k) % n]);
+    var name = title || (items[i % n] && items[i % n].cap) || (ko ? "무제" : "Untitled"), seed = (tp._no || 0) + i, kind = seed % 3;
+    var meta = '<dl class="lv-dl"><div><dt>' + w.year + '</dt><dd class="m">' + (2026 - i % 5) + '</dd></div><div><dt>' + w.mat + '</dt><dd>' + MATS[seed % 5][ko ? 1 : 0] + '</dd></div><div><dt>' + w.place + '</dt><dd>' + PLACES[seed % 5][ko ? 1 : 0] + '</dd></div></dl>';
+    var imgs = pick.map(function (it, k) { return it.src ? '<img src="' + it.src + '" alt="" data-pi="' + k + '">' : '<div class="wf in" style="--ar:4 / 3"></div>'; }).join("");
+    var head = '<div class="lv-top"><button type="button" class="lv-a lv-x">' + w.back + '</button><span class="m">' + pad2(i + 1) + ' / ' + pad2(Math.max(8, n)) + '</span></div>';
+    var text = '<b class="lv-h">' + esc(name) + '</b>' + meta + '<p>' + w.text + '</p><p style="opacity:.7">' + w.text2 + '</p>';
+    var foot = '<div class="pj-foot"><button type="button" class="lv-a" data-proj="' + ((i + 1) % Math.max(8, n)) + '">' + w.next + '</button></div>';
+    var d = layer(tp, "lv-page pj-" + kind, head + (kind === 1 ? '<div class="pj-text">' + text + '</div><div class="pj-imgs">' + imgs + '</div>' : kind === 2 ? '<div class="pj-text">' + text + '</div><div class="pj-imgs pj-grid">' + imgs + '</div>' : '<div class="pj-cols"><div class="pj-text">' + text + '</div><div class="pj-imgs">' + imgs + '</div></div>') + foot);
+    d._items = pick;
+    markOn(tp, "index");
+  }
+  /* product page: picture, price, options, quantity, and the shop's small print */
+  function priceOf(el) { var m = el && /₩\s?[\d,]+/.exec(el.textContent); return m ? m[0].replace(/\s/, "") : "₩48,000"; }
+  function openProduct(tp, st, i, price) {
+    var it = (st.items && st.items[i]) || { src: "", cap: "" }, ko = st.ko, opts = (i % 2) ? (ko ? ["작게", "보통", "크게"] : ["Small", "Medium", "Large"]) : (ko ? ["흰색", "먹색", "초록"] : ["White", "Ink", "Green"]);
+    var d = layer(tp, "lv-page pd", '<div class="lv-top"><button type="button" class="lv-a lv-x">' + (ko ? "← 상점" : "← Shop") + '</button><button type="button" class="lv-a" data-lv="cart">' + (ko ? "장바구니" : "Cart") + ' (' + st.cart.length + ')</button></div>' +
+      '<div class="pd-body"><div class="pd-img">' + (it.src ? '<img src="' + it.src + '" alt="" data-pi="0">' : '<div class="wf in" style="--ar:4 / 5"></div>') + '</div>' +
+      '<div class="pd-info"><b class="lv-h">' + esc(it.cap || (ko ? "상품" : "Product")) + '</b><span class="m pd-price">' + price + '</span>' +
+      '<p>' + (ko ? "작업실에서 하나씩 만들어 조금씩 다릅니다. 주문 후 5일 안에 보냅니다." : "Made one at a time in the studio, so each is a little different. Ships within 5 days.") + '</p>' +
+      '<div class="pd-opts" role="group">' + opts.map(function (o, k) { return '<button type="button" class="lv-btn pd-opt' + (k ? "" : " on") + '">' + o + '</button>'; }).join("") + '</div>' +
+      '<div class="pd-qty"><button type="button" class="lv-btn" data-q="-1" aria-label="하나 빼기">−</button><span class="m">1</span><button type="button" class="lv-btn" data-q="1" aria-label="하나 더하기">+</button></div>' +
+      '<button type="button" class="lv-btn lv-pay" data-padd="' + i + '">' + (ko ? "장바구니에 담기" : "Add to cart") + '</button>' +
+      '<div class="lv-links"><button type="button" class="lv-a" data-terms="ship">' + (ko ? "배송 안내" : "Shipping") + '</button><button type="button" class="lv-a" data-terms="return">' + (ko ? "교환·환불" : "Returns") + '</button></div></div></div>');
+    d._items = [it]; d._price = price;
+  }
+  function openTerms(tp, st, kind) {
+    var ko = st.ko, T = kind === "ship"
+      ? (ko ? ["배송 안내", ["주문 후 5일 안에 보냅니다.", "5만 원 이상 무료 배송, 그 아래는 3,000원입니다.", "제주와 섬 지역은 3,000원이 더 듭니다."]] : ["Shipping", ["Orders ship within 5 days.", "Free over ₩50,000, otherwise ₩3,000.", "Islands add ₩3,000."]])
+      : (ko ? ["교환·환불", ["받은 날부터 7일 안에 교환·환불할 수 있습니다.", "손으로 만든 물건의 작은 차이는 교환 사유가 아닙니다.", "주문 제작품은 환불되지 않습니다."]] : ["Returns", ["Exchange or refund within 7 days of delivery.", "Small differences in handmade pieces are not faults.", "Made-to-order pieces cannot be refunded."]]);
+    layer(tp, "lv-side", '<div class="lv-top"><span>' + T[0] + '</span><button type="button" class="lv-x">' + (ko ? "닫기" : "Close") + ' ✕</button></div><b class="lv-h">' + T[0] + '</b><ol class="lv-terms">' + T[1].map(function (x) { return '<li>' + x + '</li>'; }).join("") + '</ol>');
+  }
+  function openCheckout(tp, st) {
+    var ko = st.ko, inp = function (id, label, type) { return '<label class="lv-field"><span>' + label + '</span><input class="lv-in" id="' + id + '" type="' + (type || "text") + '"></label>'; };
+    layer(tp, "lv-side", '<div class="lv-top"><span>' + (ko ? "주문서" : "Checkout") + '</span><button type="button" class="lv-x">' + (ko ? "닫기" : "Close") + ' ✕</button></div>' +
+      '<b class="lv-h">' + (ko ? "주문하기" : "Order") + ' <span class="m" style="font-size:.5em;opacity:.6">(' + st.cart.length + ')</span></b>' +
+      '<form data-form="order" class="lv-form">' + inp("co-name", ko ? "이름" : "Name") + inp("co-tel", ko ? "연락처" : "Phone", "tel") + inp("co-addr", ko ? "주소" : "Address") +
+      '<div class="pd-opts" role="group">' + (ko ? ["카드", "계좌 이체", "간편 결제"] : ["Card", "Bank transfer", "Pay app"]).map(function (o, k) { return '<button type="button" class="lv-btn pd-opt' + (k ? "" : " on") + '">' + o + '</button>'; }).join("") + '</div>' +
+      '<button class="lv-btn lv-pay">' + (ko ? "주문하기" : "Place order") + ' →</button></form>' +
+      '<div class="lv-links"><button type="button" class="lv-a" data-terms="ship">' + (ko ? "배송 안내" : "Shipping") + '</button><button type="button" class="lv-a" data-terms="return">' + (ko ? "교환·환불" : "Returns") + '</button></div>');
+  }
+
   function openLightbox(tp, items, i) {
     var st = tp._lv, ko = st.ko;
     var d = layer(tp, "lv-lb",
@@ -1074,6 +1272,7 @@
     var first = tp.querySelector(".tp-nav .lv-a:not(.tp-name)") || tp.querySelector(".lv-a");
     var st = tp._lv = { cart: [], ko: b.gen ? b.gen.ko : isKo(first ? first.textContent : "작업"), own: !!b.gen || b.fam === "grad", items: b.items || null };
     st.shop = !!tp.querySelector('.lv-a[data-lv="cart"]');
+    st.pin = !!(b.gen && b.gen.pin);
     if (b.gen) genSlides(tp, st, b);
     else if (!st.own) {
       setupSlides(tp, st); setupLists(tp, st);
@@ -1105,6 +1304,7 @@
     tp.addEventListener("submit", function (e) {
       var f = e.target.closest("form[data-form]"); if (!f) return;
       e.preventDefault();
+      if (f.dataset.form === "order") { st.cart = []; updateCart(tp); closeAll(tp); toast(tp, st.ko ? "주문을 받았습니다 — 미리보기라 실제 주문은 되지 않습니다" : "Order placed — nothing is charged in the preview"); return; }
       toast(tp, f.dataset.form === "news" ? (st.ko ? "구독 신청을 받았습니다 (미리보기)" : "Subscribed (preview only)") : (st.ko ? "보냈습니다 — 미리보기에서는 실제로 보내지 않습니다" : "Sent — nothing is sent from the preview"));
       f.reset();
     });
@@ -1115,6 +1315,21 @@
       if (t.closest("input, textarea, form button")) return;
       var hit = t.closest("[data-hit]");
       if (hit) { openLightbox(tp, hit.closest(".lv-layer")._items, +hit.dataset.hit); return; }
+      /* shop pages: options, quantity, small print, add */
+      var opt = t.closest(".pd-opt"); if (opt) { [].forEach.call(opt.parentNode.children, function (o) { o.classList.toggle("on", o === opt); }); return; }
+      var q = t.closest("[data-q]"); if (q) { var qs = q.parentNode.querySelector("span"); qs.textContent = Math.max(1, +qs.textContent + +q.dataset.q); return; }
+      var terms = t.closest("[data-terms]"); if (terms) { openTerms(tp, st, terms.dataset.terms); return; }
+      var padd = t.closest("[data-padd]");
+      if (padd) {
+        var pg = padd.closest(".lv-layer"), pit = pg._items[0], qty = +pg.querySelector(".pd-qty span").textContent, o = pg.querySelector(".pd-opt.on");
+        st.cart.push({ src: pit.src, cap: (pit.cap || "") + (o ? " · " + o.textContent : ""), price: pg._price, qty: qty }); updateCart(tp);
+        [].forEach.call(pg.querySelectorAll('[data-lv="cart"]'), function (c) { c.textContent = c.textContent.replace(/\(\d+\)/, "(" + st.cart.length + ")"); });
+        toast(tp, (st.ko ? "장바구니에 담았습니다 (" : "Added to cart (") + st.cart.length + ")");
+        return;
+      }
+      var pj = t.closest("[data-proj]");
+      if (pj) { var tt = pj.children[1]; openProject(tp, st, +pj.dataset.proj, tt && !pj.closest(".lv-layer") ? tt.textContent : null); return; }
+      var pimg = t.closest(".lv-page img[data-pi]"); if (pimg) { openLightbox(tp, pimg.closest(".lv-layer")._items, +pimg.dataset.pi); return; }
       var a = t.closest(".lv-a, .lv-pay");
       if (a && a.dataset.add != null) { addToCart(tp, st, a.dataset.add, a.closest("[data-add]") !== a ? a : null); return; }
       if (a && a.dataset.filter != null) { filterBy(tp, a); return; }
@@ -1122,7 +1337,8 @@
       if (a && a.dataset.lv) {
         var k = a.dataset.lv;
         if (a.closest(".lv-layer") == null && !b.gen) st.ko = isKo(a.textContent);
-        if (k === "home") { [].forEach.call(tp.querySelectorAll(".lv-layer"), function (l) { l.remove(); }); markOn(tp); }
+        if (k === "home") closeAll(tp);
+        else if (k === "top") { var g = geom(tp); if (g.view) g.view.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" }); }
         else if (k === "info") openInfo(tp, st.ko);
         else if (k === "index") openIndex(tp, st.ko);
         else if (k === "cart") openCart(tp, st.ko);
@@ -1138,7 +1354,7 @@
           var it = lb._items[lb._i]; st.cart.push(it); updateCart(tp);
           toast(tp, (it.cap ? it.cap + " — " : "") + "장바구니에 담았습니다 (" + st.cart.length + ")");
         }
-        else if (k === "pay") toast(tp, "미리보기에서는 결제하지 않습니다");
+        else if (k === "pay") openCheckout(tp, st);
         else toast(tp, "미리보기에서는 외부 링크가 열리지 않습니다");
         return;
       }
@@ -1156,7 +1372,15 @@
       var srt = t.closest("[data-sort]"); if (srt) { sortBy(tp, srt); return; }
       var acc = t.closest("[data-acc]"); if (acc) { accToggle(acc); return; }
       var pl = t.closest("[data-play]"); if (pl) { st.audio.play(st.audio.rows.indexOf(pl)); return; }
-      if (t.closest(".tp-name")) { [].forEach.call(tp.querySelectorAll(".lv-layer"), function (l) { l.remove(); }); markOn(tp); return; }
+      if (t.closest(".tp-name")) { closeAll(tp); return; }
+      /* a thumbnail opens its project, or its product page in a shop */
+      var gi = t.closest(".gi");
+      if (gi && !t.closest("button")) {
+        var all = [].slice.call(tp.querySelectorAll(".gi")).filter(outside), gix = all.indexOf(gi);
+        if (gi.querySelector("[data-add]")) return openProduct(tp, st, +gi.querySelector("[data-add]").dataset.add, priceOf(gi));
+        var cap = gi.querySelector("span");
+        return openProject(tp, st, b.gen ? gix : gix, cap ? cap.textContent.replace(/^\s*\d+/, "").replace(/\d{4}\s*$/, "").trim() : null);
+      }
       if (st.gs) {
         var G = st.gs, th = t.closest("[data-st]"), sg = t.closest("[data-sg]"), sd = t.closest("[data-sd]"), sl = t.closest("[data-sl]");
         if (th) return G.thumb(th);
@@ -1411,6 +1635,11 @@
     [["canvas.rake", "빛 비추기"], ["model-viewer", "3D 뷰어"], [".ba", "전후 비교"], [".lp", "돋보기"], [".daylight", "낮밤 조명"], [".dc-play", "오디오 도슨트"], [".gb-form", "방명록"], [".sc-toggle", "실제 크기"], ["g.room", "전시장 평면도"], ["[data-rf]", "작가 명단"]]
       .forEach(function (x) { if (has(x[0])) f.push(x[1]); });
     if (has(".lv-edit")) f.push("서체 입력해 보기");
+    if (has("[data-proj]") || has(".gi")) f.push("프로젝트 페이지");
+    if (has(".gi [data-add]")) f.push("상품 페이지·주문서");
+    if (st.pin) f.push("고정 메뉴");
+    if (has("[data-marquee]")) f.push("흘러가는 글자");
+    if (has("[data-backdrop]")) f.push("배경 효과");
     if (tp.querySelector("img")) f.push("사진 크게 보기");
     return f;
   }
@@ -1420,12 +1649,17 @@
   var mNo = document.getElementById("pvNo"), mDesc = document.getElementById("pvDesc");
   var pvN = 1, lastFocus = null;
   var mHint = document.getElementById("pvHint");
+  var pvMode = "desk";
   function renderPreview() {
     clearTimers();
-    var b = find(pvN);
-    mStage.innerHTML = windowFor(b);
+    var b = find(pvN), mob = pvMode === "mob";
+    mStage.innerHTML = mob ? phoneFor(b) : windowFor(b);
     var view = mStage.querySelector(".mac-view");
     view.classList.add("live");
+    var tp0 = view.querySelector(".tp");
+    tp0._w = mob ? 390 : 1440; tp0._h = mob ? 844 : 900; tp0._no = b.first;
+    if (mob && !b.gen) reflowType(tp0);
+    [].forEach.call(modal.querySelectorAll("[data-mode]"), function (x) { x.setAttribute("aria-pressed", x.dataset.mode === pvMode); });
     scale(view); if (ro) ro.observe(view);
     INITS.forEach(function (f) { f(view, true); });
     liveText(view);
@@ -1437,6 +1671,10 @@
     var feats = liven(view, b);
     mHint.textContent = feats.length ? "기능: " + feats.join(" · ") : "";
     fitPreview();
+    fitHeight(view); pinOnScroll(view, b);
+    /* pictures arriving late can make the page taller */
+    setTimeout(function () { if (view.isConnected) fitHeight(view); }, 700);
+    setTimeout(function () { if (view.isConnected) fitHeight(view); }, 2000);
   }
   /* the whole window must fit the screen without scrolling: size it by the height left over */
   var pvBox = modal.querySelector(".pv-box");
@@ -1445,16 +1683,19 @@
     if (modal.hidden || !mac) return;
     pvBox.style.width = ""; mac.style.width = "";
     pvBox.style.maxHeight = "none"; /* measure the real height, not the clipped one */
+    pvBox.style.height = "auto";
     var cs = getComputedStyle(modal);
     var availH = modal.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - 2;
+    var mob = mac.classList.contains("phone"), full = modal.classList.contains("pv-full");
     for (var k = 0; k < 3; k++) {
       var extra = pvBox.offsetHeight - mac.offsetHeight, bar = mac.firstElementChild.offsetHeight;
-      var w = Math.floor(Math.min(mStage.clientWidth, Math.max(160, (availH - extra - bar) * 1.6)));
+      var w = Math.floor(Math.min(mStage.clientWidth, Math.max(160, (availH - extra - bar) * (mob ? 390 / 844 : 1.6))));
       var side = pvBox.offsetWidth - mStage.clientWidth;
       mac.style.width = w + "px";
-      pvBox.style.width = (w + side) + "px";
+      /* a phone is narrow: keep the window wide enough for its title and buttons */
+      pvBox.style.width = full ? "" : Math.max(w + side, mob ? Math.min(modal.clientWidth, pvBox.scrollWidth, 720) : 0) + "px";
     }
-    pvBox.style.maxHeight = "";
+    pvBox.style.maxHeight = ""; pvBox.style.height = "";
   }
   window.addEventListener("resize", fitPreview);
   function openPreview(n) {
@@ -1472,6 +1713,12 @@
     if (e.target.closest(".pv-prev")) { pvN = pvN > 1 ? pvN - 1 : TOTAL; renderPreview(); }
     if (e.target.closest(".pv-next")) { pvN = pvN < TOTAL ? pvN + 1 : 1; renderPreview(); }
     if (e.target.closest(".pv-use")) { choose(pvN); closePreview(); }
+    var md = e.target.closest("[data-mode]"); if (md && md.dataset.mode !== pvMode) { pvMode = md.dataset.mode; renderPreview(); }
+    if (e.target.closest(".pv-fullbtn")) {
+      var on = modal.classList.toggle("pv-full");
+      e.target.closest(".pv-fullbtn").setAttribute("aria-pressed", on);
+      fitPreview(); var v = mStage.querySelector(".mac-view"); if (v) { scale(v); fitHeight(v); }
+    }
   });
   document.addEventListener("keydown", function (e) {
     if (e.target.isContentEditable) { if (e.key === "Escape") e.target.blur(); e.stopPropagation(); return; }
@@ -1508,6 +1755,7 @@
       if (stars[n]) delete stars[n]; else stars[n] = 1;
       saveStars();
       document.querySelectorAll('.tpl[data-n="' + n + '"] .star').forEach(function (b) { b.setAttribute("aria-pressed", !!stars[n]); b.textContent = stars[n] ? "★" : "☆"; });
+      favCount();
       return;
     }
     var open = e.target.closest(".tpl-open");

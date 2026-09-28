@@ -8,10 +8,10 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23111'/%3E%3Ctext x='16' y='21' font-family='Arial' font-size='11' font-weight='700' fill='%23fff' text-anchor='middle'%3E1440%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&family=Archivo:wdth,wght@62..125,300..900&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,400&family=Nanum+Myeongjo:wght@400;700&family=UnifrakturMaguntia&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&family=Archivo:wdth,wght@62..125,300..900&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,400&family=Nanum+Myeongjo:wght@400;700&family=UnifrakturMaguntia&family=Instrument+Serif:ital@0;1&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Big+Shoulders+Display:wght@500..900&family=Fraunces:opsz,wght@9..144,400..800&family=Unbounded:wght@400..800&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="assets/site.css?v=12">
-  <link rel="stylesheet" href="assets/templates.css?v=18">
+  <link rel="stylesheet" href="assets/templates.css?v=19">
 </head>
 <body class="page-templates">
 
@@ -19,6 +19,7 @@
 <header class="bar bar-pick">
   <a class="home" href="./">1440</a>
   <nav class="cats-links" aria-label="템플릿 분류">
+    <a href="#find">찾기</a>
     <a href="#basic">기본</a>
     <a href="#grad">졸업전시</a>
     <a href="#graphic">그래픽</a>
@@ -28,7 +29,8 @@
   <div class="bar-right">
     <div class="cats-addr" id="catsAddr"></div>
     <nav class="menu" aria-label="주 메뉴">
-      <a href="#" title="준비 중">정보</a>
+      <a href="#" id="favLink" title="즐겨찾기한 템플릿만 보기">★ <span id="favN">0</span></a>
+      <a href="#" id="aboutLink">정보</a>
     </nav>
   </div>
 </header>
@@ -39,6 +41,19 @@
       <h2 class="sec-t" id="shuffleT">셔플 (<span class="m" id="shuffleNo">0000/1440</span>)</h2>
     </div>
     <div class="shuffle" id="shuffleStage"></div>
+  </section>
+
+  <section class="sec" id="find" aria-labelledby="findT">
+    <div class="sec-head"><h2 class="sec-t" id="findT">찾기</h2><span class="sec-n" id="findN"></span></div>
+    <div class="find">
+      <form class="find-no" id="findNo">
+        <label for="findNoIn">번호로 열기</label>
+        <input id="findNoIn" inputmode="numeric" autocomplete="off" placeholder="0001–1440" maxlength="4">
+        <button type="submit">열기</button>
+      </form>
+      <div class="find-groups" id="findGroups"></div>
+      <div class="find-row" id="findRow" hidden></div>
+    </div>
   </section>
 
   <section class="sec" id="basic" aria-labelledby="basicT">
@@ -78,7 +93,11 @@
   <div class="pv-box">
     <div class="pv-top">
       <div class="pv-title"><b class="m" id="pvNo">0001/1440</b><span id="pvDesc"></span><span class="pv-hint" id="pvHint"></span></div>
-      <button type="button" class="pv-close" aria-label="닫기">✕</button>
+      <div class="pv-tools">
+        <div class="pv-modes" role="group" aria-label="화면 크기"><button type="button" data-mode="desk" aria-pressed="true">데스크톱</button><button type="button" data-mode="mob" aria-pressed="false">모바일</button></div>
+        <button type="button" class="pv-fullbtn" aria-pressed="false">전체 화면</button>
+        <button type="button" class="pv-close" aria-label="닫기">✕</button>
+      </div>
     </div>
     <div class="pv-stage-wrap">
       <button type="button" class="shuffle-btn pv-prev" aria-label="이전 번호"><svg viewBox="0 0 24 24"><path d="M19 12H5M10.5 6.5 5 12l5.5 5.5"/></svg></button>
@@ -89,6 +108,20 @@
       <p class="pv-note">색과 서체는 템플릿을 고른 다음 편집기에서 정합니다.</p>
       <button type="button" class="pv-use">이 템플릿으로 시작 <span aria-hidden="true">→</span></button>
     </div>
+  </div>
+</div>
+
+<!-- about 1440 -->
+<div class="about" id="about" hidden role="dialog" aria-modal="true" aria-labelledby="aboutT">
+  <div class="about-box">
+    <div class="about-top"><h2 id="aboutT">1440 정보</h2><button type="button" class="pv-close" aria-label="닫기">✕</button></div>
+    <p>1440은 디자이너와 아티스트를 위한 사이트 빌더입니다. <b>이름.kor.gallery</b> 주소로 자기 사이트를 만듭니다.</p>
+    <ol class="about-steps">
+      <li><b>주소 정하기</b><span>첫 화면에서 쓸 이름을 입력합니다.</span></li>
+      <li><b>템플릿 고르기</b><span>서로 다른 1440개 가운데 하나를 고릅니다. 미리보기에서 데스크톱과 모바일 화면, 사이트 기능을 직접 써 볼 수 있습니다.</span></li>
+      <li><b>편집하기</b><span>색과 서체, 글과 사진을 편집기에서 바꿉니다. (준비 중)</span></li>
+    </ol>
+    <p class="about-contact">문의 <span class="m">1440unu@kor.gallery</span> · 사업자 정보는 페이지 맨 아래에 있습니다.</p>
   </div>
 </div>
 
@@ -109,7 +142,7 @@
 <script src="assets/common.js?v=1"></script>
 <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.3.1/dist/model-viewer.min.js"></script>
 <script src="assets/photos.js?v=1"></script>
-<script src="assets/tpl-gen.js?v=2"></script>
-<script src="assets/templates.js?v=24"></script>
+<script src="assets/tpl-gen.js?v=3"></script>
+<script src="assets/templates.js?v=25"></script>
 </body>
 </html>

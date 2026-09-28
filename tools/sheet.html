@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>1440: 생성 템플릿 한눈에 보기</title>
 <!-- Development only: every generated template on one page, small, to spot broken layouts.
-     ?from=1&to=1440 · ?cat=graphic · ?layout=grid-4 · ?nav=left · ?w=360 (card width) · ?one=1 (first of each layout) -->
+     ?from=1&to=1440 · ?cat=graphic · ?layout=grid-4 · ?nav=left · ?w=360 (card width) · ?one=1 (first of each layout) · ?feat=marquee -->
 <link rel="stylesheet" href="../assets/site.css">
 <link rel="stylesheet" href="../assets/templates.css">
 <style>
@@ -28,7 +28,7 @@
   var env = { N: "haneul", plain: "haneul", esc: function (s) { return String(s).replace(/[&<>"]/g, ""); }, src: function (f) { return "../assets/img/samples/" + f + ".jpg"; },
     photo: function (f) { var p = PH[f]; return { f: f, ko: p[1], g: p[2], en: G.enName(f) }; } };
   var seen = {}, w = +(q.get("w") || 360), specs = G.catalogue(PHOTOS).specs.filter(function (s) {
-    return s.no >= +(q.get("from") || 1) && s.no <= +(q.get("to") || 1440) && (!q.get("cat") || s.cat === q.get("cat")) && (!q.get("layout") || s.layout === q.get("layout")) && (!q.get("nav") || s.nav === q.get("nav")) &&
+    return s.no >= +(q.get("from") || 1) && s.no <= +(q.get("to") || 1440) && (!q.get("cat") || s.cat === q.get("cat")) && (!q.get("layout") || s.layout === q.get("layout")) && (!q.get("nav") || s.nav === q.get("nav")) && (!q.get("feat") || s.feats.indexOf(q.get("feat")) >= 0) &&
       (!q.get("one") || (!seen[s.layout + s.cat] && (seen[s.layout + s.cat] = 1)));
   });
   document.documentElement.style.setProperty("--w", w + "px");
