@@ -1,0 +1,25 @@
+name: 사이트 개시
+
+# The one button that puts the site on 1440.kor.gallery.
+# Runs only when pressed: GitHub → Actions → 사이트 개시 → Run workflow (branch: main).
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  launch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 템플릿 검사
+        run: node tools/check-templates.js
+      - name: 올릴 파일만 모으기 (research/ 등은 빠짐)
+        run: mkdir dist && cp -r index.html templates.html assets dist/
+      - name: 1440.kor.gallery 배포
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: deploy
