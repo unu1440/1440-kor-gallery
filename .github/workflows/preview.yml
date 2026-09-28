@@ -15,7 +15,7 @@ jobs:
   preview:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: 템플릿 검사
         run: node tools/check-templates.js
       - name: 올릴 파일만 모으기 (research/ 등은 빠짐)
@@ -30,5 +30,7 @@ jobs:
         if: steps.token.outputs.ok == 'true'
         uses: cloudflare/wrangler-action@v3
         with:
+          # the action defaults to Wrangler 3.90, which cannot read wrangler.jsonc
+          wranglerVersion: "4.142.0"
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           command: deploy --env preview
