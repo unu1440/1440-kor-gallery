@@ -861,7 +861,7 @@
       r.appendChild(s);
       if (more) more.observe(s); else addBatch(r);
     }
-    watch(r); markPicked();
+    watch(r);
   }
   /* the fold: two rows whole, the third about 70%, then a fade */
   function fold(r) {
@@ -921,7 +921,6 @@
       '<button type="button" class="shuffle-btn shuffle-next" aria-label="다른 템플릿">' + ICON.next + '</button>';
     fill(stage.querySelector(".tpl-slot"), true);
     document.getElementById("shuffleNo").textContent = tag(cur);
-    markPicked();
   }
   stage.addEventListener("click", function (e) {
     if (e.target.closest(".shuffle-next")) { cur = 1 + Math.floor(Math.random() * TOTAL); showShuffle(); }
@@ -1929,7 +1928,7 @@
     if (e.target === modal || e.target.closest(".pv-close")) return closePreview();
     if (e.target.closest(".pv-prev")) { pvN = pvN > 1 ? pvN - 1 : TOTAL; renderPreview(); }
     if (e.target.closest(".pv-next")) { pvN = pvN < TOTAL ? pvN + 1 : 1; renderPreview(); }
-    if (e.target.closest(".pv-use")) { choose(pvN); closePreview(); }
+    if (e.target.closest(".pv-use")) { location.href = "templates.html?edit=" + pvN + (site ? "&site=" + encodeURIComponent(site) : ""); return; }
     var md = e.target.closest("[data-mode]"); if (md && md.dataset.mode !== pvMode) { pvMode = md.dataset.mode; renderPreview(); }
     if (e.target.closest(".pv-open")) {
       var u = new URL(location.href); u.hash = "";
@@ -1956,16 +1955,7 @@
     if (e.key === "ArrowLeft") { pvN = pvN > 1 ? pvN - 1 : TOTAL; renderPreview(); }
   });
 
-  /* ---------- picking and stars ---------- */
-  var picked = null;
-  var bar = document.getElementById("pickbar"), barT = document.getElementById("pickbarT"), status = document.getElementById("pickStatus");
-  function markPicked() { document.querySelectorAll(".tpl").forEach(function (c) { c.classList.toggle("is-picked", +c.dataset.n === picked); }); }
-  function choose(n) {
-    picked = n; markPicked();
-    barT.innerHTML = esc(host) + ' · <b>' + tag(n) + '</b> ' + find(n).label;
-    bar.hidden = false;
-    status.textContent = host + ", " + tag(n) + " 템플릿을 골랐습니다.";
-  }
+  /* ---------- stars ---------- */
   document.addEventListener("click", function (e) {
     var sb = e.target.closest(".star");
     if (sb) {
@@ -1977,10 +1967,6 @@
     }
     var open = e.target.closest(".tpl-open");
     if (open) openPreview(+open.closest(".tpl").dataset.n);
-  });
-  document.getElementById("pickbarGo").addEventListener("click", function () {
-    barT.textContent = "가입 기능은 준비 중입니다.";
-    status.textContent = "가입 기능은 준비 중입니다.";
   });
 
   /* ---------- category links follow the section in view ---------- */
@@ -1999,8 +1985,17 @@
     });
   });
 
-  var soloN = +new URLSearchParams(location.search).get("view");
-  if (soloN && find(soloN)) openSolo(soloN, new URLSearchParams(location.search).get("m") === "mob");
+  var soloN = +new URLSearchParams(location.search).get("view"), editN = +new URLSearchParams(location.search).get("edit");
+  /* what the editor (assets/editor.js) needs from this page: it draws the same pages the previews draw */
+  window.T1440 = {
+    find: find, tag: tag, total: TOTAL, site: site, defName: DEF, get host() { return host; }, esc: esc, GEN: GEN, genEnv: genEnv, photoUrl: src,
+    pageFor: pageFor, windowFor: windowFor, phoneFor: phoneFor, bringToLife: bringToLife, scale: scale, fitHeight: fitHeight, geom: geom, closeAll: closeAll,
+    clearTimers: clearTimers, ICON: ICON, PHOTOS: PH,
+    handExtra: function (n, v) { if (v === undefined) return HAND_EXTRA[n]; if (v && v.length) HAND_EXTRA[n] = v; else delete HAND_EXTRA[n]; },
+    setHost: function (v) { host = v + ".kor.gallery"; }
+  };
+  if (editN && find(editN)) document.body.classList.add("editing"); /* editor.js takes over the page */
+  else if (soloN && find(soloN)) openSolo(soloN, new URLSearchParams(location.search).get("m") === "mob");
   else { showShuffle(); watch(); }
 
   /* development check: templates.html?check=overlap opens every template in the preview, on a desktop and on a phone,

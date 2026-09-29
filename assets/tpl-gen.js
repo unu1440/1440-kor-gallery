@@ -249,6 +249,7 @@
   /* a line of words that keeps moving, like a notice board */
   function marquee(c) {
     var ko = c.ko, t = c.s.seed, words = ko ? ["새 작업 공개", MONTHS[t % 12] + " " + (3 + t % 25) + "일 열린 작업실", "주문 제작 받습니다", CITIES_KO[t % 10] + "에서"] : ["New work online", "Open studio " + MONTHS[t % 12] + " " + (3 + t % 25), "Commissions open", "From " + CITIES[t % 10]];
+    if (c.s.marqueeText) words = c.s.marqueeText.split(String.fromCharCode(10)).filter(function (x) { return x.trim(); }).map(function (x) { return c.env.esc(x); });
     var line = words.join(" &nbsp;✦&nbsp; ") + " &nbsp;✦&nbsp; ";
     var top = c.s.nav === "bottom" ? 0 : 866;
     return '<div data-marquee class="mq" style="position:absolute;left:0;right:0;top:' + top + 'px;height:34px;background:var(--t-ink);color:var(--t-bg);font-size:16px;line-height:34px"><div class="mq-in">' + line + line + line + line + '</div></div>';
@@ -414,9 +415,10 @@
   /* small live line in the footer: opening hours or days left */
   function widget(c) {
     var f = c.f, ko = c.ko;
-    if (f.hours) { var o = 10 + c.s.seed % 3, cl = 18 + c.s.seed % 3; return '<span data-hours="' + o + ',' + cl + '" data-ko="' + (ko ? 1 : "") + '">' + (ko ? "영업시간 " : "Open ") + o + "–" + cl + '</span>'; }
+    if (f.hours) { var o = c.s.hours ? c.s.hours[0] : 10 + c.s.seed % 3, cl = c.s.hours ? c.s.hours[1] : 18 + c.s.seed % 3; return '<span data-hours="' + o + ',' + cl + '" data-ko="' + (ko ? 1 : "") + '">' + (ko ? "영업시간 " : "Open ") + o + "–" + cl + '</span>'; }
     if (f.countdown) {
-      var m = 10 + c.s.seed % 3, d = 1 + (c.s.seed * 7) % 27, iso = "2026-" + pad2(m) + "-" + pad2(d);
+      var m = 10 + c.s.seed % 3, d = 1 + (c.s.seed * 7) % 27, iso = c.s.until || "2026-" + pad2(m) + "-" + pad2(d);
+      if (c.s.until) { m = +iso.slice(5, 7); d = +iso.slice(8, 10); }
       return '<span data-until="' + iso + '" data-ko="' + (ko ? 1 : "") + '">' + (ko ? "개막 " : "Opening ") + MONTHS[m - 1] + " " + d + '</span>';
     }
     return "";
@@ -1126,6 +1128,25 @@
     var cs = spec.type["case"] === "upper" ? "text-transform:uppercase;" : spec.type["case"] === "lower" ? "text-transform:lowercase;" : "";
     return { html: (c.f.backdrop ? backdrop(c) : "") + '<div class="m-body" style="position:absolute;left:16px;right:16px;top:64px;display:grid;grid-template-columns:minmax(0,1fr);gap:20px">' + out.join("") + '</div>' + head, style: cs, slides: c.slides };
   }
+  /* what a person may switch on or off on this page, in groups (the editor turns these into plain switches).
+     A group is "switch" (each item on its own) or "radio" (at most one of them; `none` says the group may be empty). */
+  function featuresFor(spec) {
+    var L0 = L[spec.layout], lay = spec.layout, out = [], req = L0.req || [], top = ["top3", "top2", "center", "burger"].indexOf(spec.nav) >= 0;
+    function group(id, type, items, none) { items = items.filter(function (k) { return req.indexOf(k) < 0; }); if (items.length) out.push({ id: id, type: type, items: items, none: !!none }); }
+    group("menu", "switch", NAVFEATS.slice());
+    if (L0.slide) group("slides", "radio", (L0.modes || []).map(function (m) { return "slides-" + m; }), false);
+    else if (L0.modes) group("slides", "radio", L0.modes.map(function (m) { return "slides-" + m; }), true);
+    if (L0.grid) {
+      var g = ["filter"]; if (lay !== "rows" && lay.indexOf("masonry") < 0 && lay !== "sheet" && lay !== "p-journal") g.push("pages"); if (lay !== "p-journal") g.push("products");
+      g.push("view", "peek"); group("grid", "switch", g);
+    }
+    if (L0.hero) group("hero", "radio", ["rake", "model", "compare", "loupe", "daylight", "docent", "guestbook", "scale"].filter(function (k) { return k === "model" || spec.cat === "blank" || (spec.photos && spec.photos.length); }), false); /* a page with no picture can only show the 3D model */
+    if (L0.panel) group("panel", "radio", ["audio", "accordion", "form"], true);
+    if (top) group("when", "radio", ["hours", "countdown"], true);
+    var page = []; if (!L0.bleed) page.push("marquee", "backdrop", "autohide"); page.push("dark", "toc", "cv", "vcard"); if (lay === "feed-row") page.push("drag");
+    group("page", "switch", page);
+    return out;
+  }
   function describe(spec) {
     var L0 = L[spec.layout];
     return { label: NAV_KO[spec.nav] + " · " + L0.ko, feats: spec.feats.map(function (k) { return FEAT_KO[k] || k; }) };
@@ -1151,7 +1172,7 @@
     return { plan: pl, specs: build(photos, pl.map(function (p) { return [p.cat, p.lays, p.gen, p.first + p.hand]; })) };
   }
 
-  var API = { lookKey: lookKey, bigPic: bigPic, SHARED: SHARED, HAND_USED: HAND_USED, icon: icon, renderMobile: renderMobile, build: build, plan: plan, catalogue: catalogue, SECTIONS: SECTIONS, HAND: HAND, render: render, describe: describe, FAMS: FAMS, FACES: FACES, FEAT_KO: FEAT_KO, enName: enName, layouts: L };
+  var API = { MORE: { blocks: MORE_BLOCKS, foots: MORE_FOOTS, en: MORE_EN }, featuresFor: featuresFor, lookKey: lookKey, bigPic: bigPic, SHARED: SHARED, HAND_USED: HAND_USED, icon: icon, renderMobile: renderMobile, build: build, plan: plan, catalogue: catalogue, SECTIONS: SECTIONS, HAND: HAND, render: render, describe: describe, FAMS: FAMS, FACES: FACES, FEAT_KO: FEAT_KO, enName: enName, layouts: L };
   if (typeof module !== "undefined" && module.exports) module.exports = API;
   root.TPLGEN = API;
 })(typeof window !== "undefined" ? window : globalThis);

@@ -136,44 +136,6 @@
 .star[aria-pressed="true"] { color: var(--ink); }
 @media (hover: hover) { .star:hover { color: var(--ink); } }
 
-.tpl.is-picked .mac { box-shadow: 0 0 0 2px var(--accent), var(--mac-shadow); }
-.tpl.is-picked .tpl-cap .nm { font-weight: 500; }
-
-/* ---------- picked template: bar pinned to the bottom ---------- */
-.pickbar {
-  position: fixed;
-  left: 50%;
-  bottom: max(clamp(12px, 1.6vw, 24px), env(safe-area-inset-bottom, 0px));
-  z-index: 40;
-  display: flex;
-  align-items: center;
-  gap: clamp(10px, 1.4vw, 20px);
-  width: max-content;
-  max-width: calc(100% - 2 * var(--gutter));
-  padding: 0.45em 0.45em 0.45em 1.2em;
-  border-radius: 99px;
-  background: var(--ink);
-  color: var(--bg);
-  font-size: var(--fs-body);
-  box-shadow: 0 12px 30px -12px rgba(0, 0, 0, 0.45);
-  transform: translateX(-50%);
-  animation: barIn .35s cubic-bezier(.2, .7, .2, 1);
-}
-.pickbar[hidden] { display: none; }
-@keyframes barIn { from { opacity: 0; transform: translate(-50%, 0.8em); } }
-.pickbar-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: rgba(255, 255, 255, 0.62); }
-.pickbar-t b { color: #fff; font-weight: 500; }
-.pickbar-go {
-  flex: 0 0 auto;
-  font: inherit;
-  padding: 0.45em 1.1em;
-  border: 0;
-  border-radius: 99px;
-  background: var(--bg);
-  color: var(--ink);
-  cursor: pointer;
-  white-space: nowrap;
-}
 
 /* ---------- desktop browser window ---------- */
 .mac {
@@ -579,7 +541,6 @@ body.solo > :not(.solo-page) { display: none !important; }
 .shot-empty .mac-view { background: var(--ink-4); opacity: 0.35; }
 @media (hover: hover) { .tpl-open:hover .shot { opacity: 0.86; } }
 .shot { transition: opacity .2s; }
-.tpl.is-picked .shot { outline: 2px solid var(--accent); outline-offset: 3px; }
 .tpl-open { border-radius: 0; }
 
 /* folded: two rows whole, the third about 70%, fading out */
