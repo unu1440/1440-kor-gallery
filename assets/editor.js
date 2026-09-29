@@ -80,6 +80,8 @@
     images: SVG('<rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><circle cx="9" cy="10" r="1.6"/><path d="m4 17.5 5-5 4 4 3-3 4 4"/>'),
     feat: SVG('<rect x="3" y="8" width="18" height="8" rx="4"/><circle cx="8" cy="12" r="2.4"/>'),
     site: SVG('<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>'),
+    bg: SVG('<path d="M5 12 12 5l7 7-7 7z"/><path d="M19 15c1 1.5 1.5 2.5 1.5 3.3a1.5 1.5 0 0 1-3 0c0-.8.5-1.8 1.5-3.3z"/>'),
+    motion: SVG('<rect x="8" y="3.5" width="8" height="13" rx="4"/><path d="M12 7v3"/><path d="m8.5 19.5 3.5 2 3.5-2"/>'),
     x: SVG('<path d="M6 6l12 12M18 6 6 18"/>'),
     up: SVG('<path d="m6 14 6-6 6 6"/>'),
     down: SVG('<path d="m6 10 6 6 6-6"/>'),
@@ -90,7 +92,7 @@
 
   /* ---------- what was there in the template, and what the person changed ---------- */
   var KEY, orig, S, DATA = {}; /* DATA: pictures added by the person: key → data URL */
-  function fresh() { return { texts: {}, tstyle: {}, slots: {}, photos: {}, fit: {}, lib: [], libN: 0, bg: null, ink: null, face: null, feats: null, more: null, hours: null, until: null, marquee: null, extra: null, title: "", desc: "" }; }
+  function fresh() { return { texts: {}, tstyle: {}, slots: {}, photos: {}, fit: {}, lib: [], libN: 0, bg: null, bgImg: null, bgFit: "cover", bgDim: 0, motion: null, fav: null, ink: null, face: null, feats: null, more: null, hours: null, until: null, marquee: null, extra: null, title: "", desc: "" }; }
   /* the template being changed (the check at the end changes it again and again) */
   function use(n) {
     N = n; b = T.find(n); gen = b.gen; KEY = "1440-edit-" + n + "-" + (T.site || T.defName);
@@ -127,8 +129,7 @@
   root.innerHTML =
     '<header class="ed-top">' +
       '<div class="ed-l"><button type="button" class="ed-home" id="edBack" aria-label="템플릿 다시 고르기">← 1440</button><span class="ed-no">' + T.tag(N) + '</span>' +
-        '<div class="ed-menu"><button type="button" class="ed-mbtn" id="edAddBtn" aria-expanded="false" aria-haspopup="true">추가 ▾</button>' +
-          '<div class="ed-drop" id="edAdd" hidden><button type="button" data-add="blocks">페이지에 블록 추가<small>구성</small></button><button type="button" data-add="images">사진 올리기<small>내 사진</small></button><button type="button" data-add="feat">기능 켜기<small>기능</small></button></div></div></div>' +
+      '<img class="ed-fav" id="edFav" alt="" hidden></div>' +
       '<div class="ed-r"><button type="button" class="ed-ic" id="edUndo" aria-label="되돌리기 ' + CMD + 'Z" title="되돌리기 ' + CMD + 'Z">' + IC.undo + '</button><button type="button" class="ed-ic" id="edRedo" aria-label="다시 하기" title="다시 하기 ' + CMD + '⇧Z">' + IC.redo + '</button><span class="ed-sep"></span>' +
         '<button type="button" class="ed-ic" id="edPreview" aria-pressed="false" aria-label="미리보기 ' + CMD + '\\" title="미리보기 ' + CMD + '\\">' + IC.point + '</button>' +
         '<button type="button" class="ed-ic ed-dev-desk" id="edDevice" aria-pressed="false" aria-label="폰 화면으로 보기" title="폰 화면 ' + CMD + '⇧X">' + IC.mob + '</button>' +
@@ -136,19 +137,21 @@
     '</header>' +
     '<div class="ed-canvas ed-edit" id="edCanvas"></div>' +
     '<nav class="ed-rail" id="edRail" aria-label="편집 도구">' +
-      '<button type="button" data-p="blocks" data-tip="페이지 구성" aria-label="페이지 구성" aria-pressed="false">' + IC.blocks + '</button>' +
-      '<button type="button" data-p="texts" data-tip="글 · 사진 목록" aria-label="글과 사진 목록" aria-pressed="false">' + IC.texts + '</button>' +
-      '<button type="button" data-p="images" data-tip="내 사진" aria-label="내 사진" aria-pressed="false">' + IC.images + '</button>' +
-      '<button type="button" data-p="type" data-tip="글꼴 · 색" aria-label="글꼴과 색" aria-pressed="false"><b>Aa</b></button>' +
-      '<button type="button" data-p="feat" data-tip="기능" aria-label="기능" aria-pressed="false">' + IC.feat + '</button>' +
-      '<button type="button" data-p="site" data-tip="사이트 설정" aria-label="사이트 설정" aria-pressed="false">' + IC.site + '</button>' +
+      '<button type="button" data-p="blocks" data-tip="페이지 구성" aria-label="페이지 구성" aria-pressed="false"><i class="ico" style="--a:#5ac8fa;--b:#0a84ff">' + IC.blocks + '</i></button>' +
+      '<button type="button" data-p="texts" data-tip="글 · 사진 목록" aria-label="글 · 사진 목록" aria-pressed="false"><i class="ico" style="--a:#ffb340;--b:#ff7a00">' + IC.texts + '</i></button>' +
+      '<button type="button" data-p="images" data-tip="내 사진" aria-label="내 사진" aria-pressed="false"><i class="ico" style="--a:#6be08a;--b:#1f9d45">' + IC.images + '</i></button>' +
+      '<button type="button" data-p="bg" data-tip="배경" aria-label="배경" aria-pressed="false"><i class="ico" style="--a:#ff8fa3;--b:#e5386d">' + IC.bg + '</i></button>' +
+      '<button type="button" data-p="type" data-tip="글꼴 · 색" aria-label="글꼴 · 색" aria-pressed="false"><i class="ico" style="--a:#c987f7;--b:#7a3bd6">' + '<b>Aa</b>' + '</i></button>' +
+      '<button type="button" data-p="motion" data-tip="스크롤 효과" aria-label="스크롤 효과" aria-pressed="false"><i class="ico" style="--a:#64d2c8;--b:#16897f">' + IC.motion + '</i></button>' +
+      '<button type="button" data-p="feat" data-tip="기능" aria-label="기능" aria-pressed="false"><i class="ico" style="--a:#ff7a70;--b:#d92f2f">' + IC.feat + '</i></button>' +
+      '<button type="button" data-p="site" data-tip="사이트 설정" aria-label="사이트 설정" aria-pressed="false"><i class="ico" style="--a:#a4a4ad;--b:#5b5b66">' + IC.site + '</i></button>' +
     '</nav>' +
     '<aside class="ed-pop" id="edPop" hidden></aside><aside class="ed-tip" id="edTip" hidden></aside>' +
     '<div class="ed-dlg" id="edDlg" hidden role="dialog" aria-modal="true" aria-labelledby="edDlgT"><div class="ed-dlg-box"></div></div>';
   document.body.appendChild(root);
   document.title = "편집 · " + T.tag(N);
   var canvas = $("#edCanvas"), state = $("#edState"), pop = $("#edPop"), tip = $("#edTip");
-  var mode = "edit", dev = phone.matches ? "mob" : "desk", panel = null, sel = null, bypass = false;
+  var mode = "edit", dev = phone.matches ? "mob" : "desk", panel = null, sel = null, bypass = false, bgTip = false, bgPt = { x: 0, y: 0 };
 
   /* ---------- keeping and undoing ---------- */
   var hist = [JSON.stringify(S)], hp = 0, saveT = 0;
@@ -191,7 +194,7 @@
     var view = viewOf();
     T.bringToLife(view, b, mob);
     if (mode === "edit") T.clearTimers(); /* nothing moves while it is being changed */
-    decorate(view); applyEdits(view);
+    decorate(view); applyEdits(view); applyBg(view); applyMotion(view); applyFav(); measureBind(view);
     view.addEventListener("click", onClick, true);
     view.addEventListener("scroll", function () { if (sel) placeTip(); }, { passive: true });
     view.addEventListener("dragover", function (e) { if (mode === "edit" && e.dataTransfer && /Files|text\/plain/.test([].join.call(e.dataTransfer.types || [], ","))) e.preventDefault(); });
@@ -205,7 +208,7 @@
     if (scroll) view.scrollTop = scroll * (parseFloat(view.firstElementChild.style.zoom) || 1);
     if (mode === "edit") $$("form", view).forEach(function (f) { f.addEventListener("submit", function (e) { e.preventDefault(); }); });
     if (mode === "try") canvas.insertAdjacentHTML("beforeend", '<div class="ed-flag">미리보기 중 · 눌러서 써 보세요 (' + CMD + '\\ 로 돌아가기)</div>');
-    refreshPanel(); if (sel) select(null);
+    refreshPanel(); if (sel || bgTip) select(null);
   }
   window.addEventListener("resize", function () { var v = viewOf(); if (v) { T.scale(v); T.fitHeight(v); } placeTip(); });
 
@@ -276,9 +279,12 @@
     if (mode !== "edit" || bypass) return;
     var el = e.target.closest(".ed-t, .ed-p, .ed-mq");
     e.preventDefault(); e.stopPropagation();
-    if (el) select(el); else select(null);
+    if (el) return select(el);
+    select(null);
+    if (!phone.matches && !e.target.closest("a, button, input, select, textarea, label, .lv-layer, " + SELF)) openBgTip({ x: e.clientX, y: e.clientY });
   }
   function select(el) {
+    bgTip = false;
     $$(".ed-sel", canvas).forEach(function (x) { x.classList.remove("ed-sel", "ed-sel-wf"); });
     sel = el && el.isConnected ? el : null;
     if (sel) { sel.classList.add("ed-sel"); if (sel.classList.contains("wf")) sel.classList.add("ed-sel-wf"); }
@@ -288,14 +294,14 @@
   function tipHead(t) { return '<div class="ed-ph"><b>' + t + '</b><button type="button" class="ed-x" id="edTipX" aria-label="닫기">' + IC.x + '</button></div>'; }
   function tipOpen(title, html) { tip.innerHTML = tipHead(title) + '<div class="ed-pb" id="edTipB">' + html + '</div>'; tip.hidden = false; $("#edTipX").addEventListener("click", function () { select(null); }); placeTip(); }
   function placeTip() {
-    if (!sel || tip.hidden || phone.matches) return;
-    var r = sel.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight, vw = window.innerWidth, vh = window.innerHeight, rail = $(".ed-rail").offsetWidth, top = $(".ed-top").offsetHeight;
-    var y = r.bottom + 10; if (y + h > vh - 10) y = r.top - h - 10; if (y < top + 8) y = Math.min(vh - h - 10, top + 12);
+    if ((!sel && !bgTip) || tip.hidden || phone.matches) return;
+    var r = sel ? sel.getBoundingClientRect() : { left: bgPt.x, right: bgPt.x, top: bgPt.y, bottom: bgPt.y }, w = tip.offsetWidth, h = tip.offsetHeight, vw = window.innerWidth, vh = window.innerHeight, rail = 24, top = $(".ed-top").offsetHeight;
+    var lim = vh - $(".ed-rail").offsetHeight - 22, y = r.bottom + 10; if (y + h > lim) y = r.top - h - 10; if (y < top + 8) y = Math.max(top + 8, Math.min(lim - h, top + 12));
     var x = Math.min(Math.max(8, r.left), vw - rail - w - 10);
     tip.style.left = x + "px"; tip.style.top = y + "px"; tip.style.right = "auto";
   }
   function drawTip() {
-    if (!sel) { tip.hidden = true; tip.innerHTML = ""; return; }
+    if (!sel) { if (bgTip) return; tip.hidden = true; tip.innerHTML = ""; return; }
     if (sel.classList.contains("ed-mq")) return tipMarquee();
     if (sel.classList.contains("ed-slot")) return tipSlot();
     if (sel.classList.contains("ed-t")) return tipText();
@@ -431,8 +437,8 @@
   }
 
   /* ---------- panels from the rail ---------- */
-  var TITLE = { blocks: "페이지 구성", texts: "글 · 사진 목록", images: "내 사진", type: "글꼴 · 색", feat: "기능", site: "사이트 설정" };
-  var DESK_ONLY = { blocks: 1, type: 1, feat: 1 };
+  var TITLE = { blocks: "페이지 구성", texts: "글 · 사진 목록", images: "내 사진", bg: "배경", type: "글꼴 · 색", motion: "스크롤 효과", feat: "기능", site: "사이트 설정" };
+  var DESK_ONLY = { blocks: 1, bg: 1, type: 1, motion: 1, feat: 1 };
   function openPanel(id) {
     if (panel === id && !pop.hidden) return closePanel();
     panel = id; pop.hidden = false; select(null);
@@ -445,8 +451,8 @@
   function refreshPanel() {
     if (!panel || pop.hidden) return;
     var pb = $("#edPb"); if (!pb) return;
-    if (phone.matches && DESK_ONLY[panel]) { pb.innerHTML = '<div class="ed-box"><h3 class="ed-h">컴퓨터에서 바꿀 수 있어요</h3><p class="ed-p2">폰에서는 글과 사진을 고치고 공개할 수 있어요. 페이지 구성, 글꼴과 색, 기능 켜고 끄기는 컴퓨터로 들어와서 해 주세요.</p></div>'; return; }
-    ({ blocks: panelBlocks, texts: panelTexts, images: panelImages, type: panelType, feat: panelFeat, site: panelSite })[panel](pb);
+    if (phone.matches && DESK_ONLY[panel]) { pb.innerHTML = '<div class="ed-box"><h3 class="ed-h">컴퓨터에서 바꿀 수 있어요</h3><p class="ed-p2">폰에서는 글과 사진을 고치고 공개할 수 있어요. 페이지 구성, 배경, 글꼴과 색, 스크롤 효과, 기능 켜고 끄기는 컴퓨터로 들어와서 해 주세요.</p></div>'; return; }
+    ({ blocks: panelBlocks, texts: panelTexts, images: panelImages, bg: panelBg, type: panelType, motion: panelMotion, feat: panelFeat, site: panelSite })[panel](pb);
   }
   $$("#edRail button").forEach(function (x) { x.addEventListener("click", function () { openPanel(x.dataset.p); }); });
 
@@ -524,7 +530,7 @@
       x.addEventListener("click", function () { if (pic && pic.isConnected) putPhoto(pic.dataset.pk, x.dataset.u); else $("#edLibMsg", pb).textContent = "먼저 페이지에서 바꿀 사진을 눌러 주세요."; });
       x.addEventListener("dragstart", function (e) { try { e.dataTransfer.setData("text/plain", x.dataset.u); } catch (z) {} });
     });
-    $$("[data-del]", pb).forEach(function (x) { x.addEventListener("click", function () { var id = x.dataset.del; S.lib = S.lib.filter(function (i) { return i.id !== id; }); Object.keys(S.photos).forEach(function (k) { if (S.photos[k] === id) delete S.photos[k]; }); delete DATA[id]; dbPut(id, null); commit(true); render(); }); });
+    $$("[data-del]", pb).forEach(function (x) { x.addEventListener("click", function () { var id = x.dataset.del; S.lib = S.lib.filter(function (i) { return i.id !== id; }); Object.keys(S.photos).forEach(function (k) { if (S.photos[k] === id) delete S.photos[k]; }); if (S.bgImg === id) S.bgImg = null; delete DATA[id]; dbPut(id, null); commit(true); render(); }); });
   }
 
   /* -- typeface and colours -- */
@@ -588,6 +594,7 @@
     var name = T.site || T.defName, cur = S.texts[name] !== undefined ? S.texts[name] : name, host = T.host;
     pb.innerHTML = '<div class="ed-box"><h3 class="ed-h">사이트 이름</h3><label class="ed-sr" for="edName">사이트 이름</label><input class="ed-in" id="edName" type="text" maxlength="40"><p class="ed-p2">페이지 곳곳에 나오는 이름이 한 번에 바뀌어요.</p></div>' +
       '<div class="ed-box"><h3 class="ed-h">사이트 주소</h3><p class="ed-p2"><b style="color:#000">' + esc(host) + '</b></p><button type="button" class="ed-btn ghost" id="edAddr">주소 정하기</button></div>' +
+      '<div class="ed-box"><h3 class="ed-h">파비콘 (탭에 보이는 작은 아이콘)</h3><div class="ed-tabmock"><img id="edFavPrev" alt="" ' + (S.fav ? 'src="' + esc(S.fav) + '"' : 'hidden') + '><span class="ed-favdef"' + (S.fav ? ' hidden' : '') + '>1440</span><span class="t">' + esc(S.title || cur) + '</span></div><input type="file" accept="image/*,.ico,.svg" id="edFavFile" class="ed-sr"><button type="button" class="ed-btn ghost" id="edFavPick">' + (S.fav ? "다른 아이콘으로 바꾸기" : "아이콘 올리기") + '</button>' + (S.fav ? '<button type="button" class="ed-link" id="edFavOff">기본 아이콘으로 되돌리기</button>' : '') + '<p class="ed-p2" id="edFavMsg">정사각형 이미지가 좋아요. 자동으로 64×64로 맞춰요.</p></div>' +
       '<div class="ed-box"><h3 class="ed-h">검색에 나올 제목과 설명</h3><label class="ed-sr" for="edTitle">제목</label><input class="ed-in" id="edTitle" type="text" maxlength="60" placeholder="사이트 제목"><label class="ed-sr" for="edDesc">설명</label><textarea class="ed-ta" id="edDesc" rows="3" maxlength="160" placeholder="이 사이트를 한두 문장으로 소개해 보세요"></textarea><p class="ed-p2">공개한 뒤 검색 결과와 링크 미리보기에 쓰여요.</p></div>' +
       (phone.matches ? "" : '<div class="ed-box"><h3 class="ed-h">단축키</h3><ul class="ed-rows"><li><span class="t">되돌리기</span><span class="k ed-kbd">' + CMD + 'Z</span></li><li><span class="t">다시 하기</span><span class="k ed-kbd">' + CMD + '⇧Z</span></li><li><span class="t">미리보기 켜고 끄기</span><span class="k ed-kbd">' + CMD + '\</span></li><li><span class="t">폰 · 컴퓨터 화면 바꾸기</span><span class="k ed-kbd">' + CMD + '⇧X</span></li><li><span class="t">공개하기</span><span class="k ed-kbd">' + CMD + 'P</span></li><li><span class="t">고르기 풀기 · 창 닫기</span><span class="k ed-kbd">Esc</span></li></ul></div>') +
       '<div class="ed-box"><h3 class="ed-h">저장</h3><p class="ed-p2">고친 내용은 자동으로 이 브라우저에 초안으로 저장돼요. 공개하기 전에는 다른 사람에게 보이지 않아요.</p><button type="button" class="ed-link" id="edReset">모두 처음 상태로 되돌리기</button></div>';
@@ -596,20 +603,165 @@
       var v = nm.value; $$(".ed-t:not(.ed-slot)", canvas).forEach(function (el) { if (el.dataset.orig === name) el.textContent = v; });
       if (!v.trim() || v === name) delete S.texts[name]; else S.texts[name] = v; commit();
     });
+    var ff = $("#edFavFile", pb); $("#edFavPick", pb).addEventListener("click", function () { ff.click(); });
+    ff.addEventListener("change", function () { var file = ff.files && ff.files[0]; if (!file) return; makeIcon(file, function (u) { if (!u) { $("#edFavMsg", pb).textContent = "이 파일은 열 수 없어요. PNG나 JPG, SVG 이미지를 골라 주세요."; return; } S.fav = u; commit(true); applyFav(); refreshPanel(); }); });
+    var fo = $("#edFavOff", pb); if (fo) fo.addEventListener("click", function () { S.fav = null; commit(true); applyFav(); refreshPanel(); });
     tt.addEventListener("input", function () { S.title = tt.value; commit(); });
     ds.addEventListener("input", function () { S.desc = ds.value; commit(); });
     $("#edAddr", pb).addEventListener("click", publish);
     $("#edReset", pb).addEventListener("click", function () { if (!confirm("지금까지 고친 내용을 모두 지우고 처음 템플릿으로 되돌릴까요?")) return; Object.keys(DATA).forEach(function (k) { dbPut(k, null); delete DATA[k]; }); S = fresh(); commit(true); select(null); render(); });
   }
 
+  /* -- the page's background: a colour and/or a picture (opened from the dock, or by pressing an empty place on the page) -- */
+  function swHtml(list, cur, kind) { return '<div class="ed-sws">' + list.map(function (c) { return '<button type="button" class="ed-c" style="background:' + c + '" aria-label="' + c + '" aria-pressed="' + (c.toLowerCase() === String(cur).toLowerCase()) + '" data-c="' + c + '" data-kind="' + kind + '"></button>'; }).join("") + '<input type="color" class="ed-cin" value="' + (/^#[0-9a-f]{6}$/i.test(cur) ? cur : "#ffffff") + '" data-kind="' + kind + '" aria-label="직접 고르기"></div>'; }
+  function applyBg(view) {
+    var tp = $(".tp", view), url = S.bgImg && DATA[S.bgImg]; if (!tp) return;
+    if (!url) { tp.style.backgroundImage = ""; return; }
+    var d = Math.max(0, Math.min(0.8, +S.bgDim || 0)), fit = S.bgFit || "cover", img = 'url("' + url + '")', sz = fit === "tile" ? "34%" : fit;
+    tp.style.backgroundImage = d ? "linear-gradient(rgba(0,0,0," + d + "), rgba(0,0,0," + d + "))," + img : img;
+    tp.style.backgroundSize = d ? "100% 100%," + sz : sz;
+    tp.style.backgroundRepeat = fit === "tile" ? (d ? "no-repeat,repeat" : "repeat") : "no-repeat";
+    tp.style.backgroundPosition = "center top";
+  }
+  function bgHtml() {
+    var bg = S.bg || orig.bg, url = S.bgImg && DATA[S.bgImg], fit = S.bgFit || "cover";
+    return '<div class="ed-box"><h3 class="ed-h">바탕색</h3>' + swHtml(BGS, bg, "bg") + '</div>' +
+      '<div class="ed-box"><h3 class="ed-h">배경 사진</h3>' +
+      (url ? '<img class="ed-thumb" src="' + esc(url) + '" alt="">' : '<p class="ed-p2">사진을 올리면 페이지 뒤에 깔려요. 글이 잘 안 보이면 사진을 어둡게 하거나 글자색을 바꿔 보세요.</p>') +
+      '<input type="file" accept="image/*" id="edBgFile" class="ed-sr"><button type="button" class="ed-btn" id="edBgPick">' + (url ? "다른 사진으로 바꾸기" : "배경 사진 올리기") + '</button>' +
+      (S.lib.length ? '<button type="button" class="ed-btn ghost" id="edBgLib">올려 둔 사진에서 고르기</button><div class="ed-pics" id="edBgPics" hidden>' + S.lib.map(function (it) { return DATA[it.id] ? '<button type="button" data-u="' + it.id + '" aria-label="' + esc(it.name) + '"><img src="' + esc(DATA[it.id]) + '" alt=""></button>' : ""; }).join("") + '</div>' : "") +
+      (url ? '<div class="ed-tools" role="group" aria-label="배경 사진 놓는 방식"><button type="button" data-bf="cover" aria-pressed="' + (fit === "cover") + '">꽉 채우기</button><button type="button" data-bf="contain" aria-pressed="' + (fit === "contain") + '">통째로</button><button type="button" data-bf="tile" aria-pressed="' + (fit === "tile") + '">타일처럼 반복</button></div>' +
+        '<label class="ed-rng"><span>사진 어둡게</span><input type="range" id="edBgDim" min="0" max="80" step="5" value="' + Math.round((+S.bgDim || 0) * 100) + '"></label>' +
+        '<button type="button" class="ed-link" id="edBgOff">배경 사진 빼기</button>' : "") +
+      '<p class="ed-p2" id="edBgMsg">폰에서도 사진을 고를 수 있어요. 큰 사진은 알맞은 크기로 줄여서 저장해요.</p></div>';
+  }
+  function bgBind(root, inTip) {
+    function redo() { render(); if (inTip) openBgTip(); }
+    $$(".ed-c", root).forEach(function (x) { x.addEventListener("click", function () { S.bg = x.dataset.c === orig.bg ? null : x.dataset.c; commit(true); redo(); }); });
+    $$(".ed-cin", root).forEach(function (x) { x.addEventListener("change", function () { S.bg = x.value; commit(true); redo(); }); });
+    var f = $("#edBgFile", root); $("#edBgPick", root).addEventListener("click", function () { f.click(); });
+    f.addEventListener("change", function () {
+      var file = f.files && f.files[0]; if (!file) return; var msg = $("#edBgMsg", root); msg.textContent = "사진을 준비하고 있어요…";
+      addPhoto(file, function (id) { if (!id) { msg.textContent = "이 사진은 열 수 없어요. JPG나 PNG 사진을 골라 주세요."; return; } S.bgImg = id; commit(true); redo(); });
+    });
+    var lb = $("#edBgLib", root); if (lb) lb.addEventListener("click", function () { var g = $("#edBgPics", root); g.hidden = !g.hidden; });
+    $$("[data-u]", root).forEach(function (x) { x.addEventListener("click", function () { S.bgImg = x.dataset.u; commit(true); redo(); }); });
+    $$("[data-bf]", root).forEach(function (x) { x.addEventListener("click", function () { S.bgFit = x.dataset.bf; commit(true); redo(); }); });
+    var dm = $("#edBgDim", root); if (dm) dm.addEventListener("input", function () { S.bgDim = +dm.value / 100; applyBg(viewOf()); commit(); });
+    var off = $("#edBgOff", root); if (off) off.addEventListener("click", function () { S.bgImg = null; commit(true); redo(); });
+  }
+  function panelBg(pb) { pb.innerHTML = bgHtml() + '<p class="ed-p2">페이지의 빈 곳을 눌러도 이 창이 열려요.</p>'; bgBind(pb, false); }
+  function openBgTip(pt) {
+    if (pt) { select(null); bgPt = pt; } else if (!bgTip) return;
+    bgTip = true; tipOpen("배경", bgHtml()); bgBind(tip, true);
+  }
+
+  /* -- what happens as the page is scrolled (seen in the preview): things appear softly, a bar shows how far, a button goes back to the top -- */
+  var REVEAL = { fade: "서서히", rise: "아래에서 올라오며", zoom: "살짝 커지며", slide: "옆에서" };
+  function mo() { return S.motion || {}; }
+  function setMo(k, v) { var m = Object.assign({}, S.motion || {}); if (v === "" || v === false || v === undefined) delete m[k]; else m[k] = v; S.motion = Object.keys(m).length ? m : null; commit(true); render(); }
+  function panelMotion(pb) {
+    var m = mo(), r = m.r || "", t = m.t || "all", sp = m.sp || "mid";
+    function chips(id, cur, list) { return '<div class="ed-chips" data-k="' + id + '">' + list.map(function (x) { return '<button type="button" class="ed-chip" data-v="' + x[0] + '" aria-pressed="' + (cur === x[0]) + '">' + x[1] + '</button>'; }).join("") + '</div>'; }
+    function sw(k, on, n, h) { return '<div class="ed-row"><span class="n">' + n + '</span><button type="button" class="ed-sw" role="switch" aria-checked="' + on + '" data-mk="' + k + '" aria-label="' + n + '"></button><span class="h">' + h + '</span></div>'; }
+    pb.innerHTML = '<div class="ed-box"><p class="ed-p2">화면 아래로 스크롤할 때 나타나는 방식이에요. 고른 뒤 아래 버튼이나 위의 화살표 버튼(' + CMD + '\\)으로 미리보기에서 확인하세요.</p><button type="button" class="ed-btn ghost" id="edMoTry">미리보기로 보기</button></div>' +
+      '<div class="ed-box"><h3 class="ed-h">나타나는 방식</h3>' + chips("r", r, [["", "없음"]].concat(Object.keys(REVEAL).map(function (k) { return [k, REVEAL[k]]; }))) + '</div>' +
+      (r ? '<div class="ed-box"><h3 class="ed-h">나타나게 할 것</h3>' + chips("t", t, [["all", "사진과 글"], ["photo", "사진만"], ["text", "글만"]]) + '</div>' +
+        '<div class="ed-box"><h3 class="ed-h">속도</h3>' + chips("sp", sp, [["fast", "빠르게"], ["mid", "보통"], ["slow", "천천히"]]) + '</div>' : "") +
+      '<div class="ed-grp"><h3 class="ed-h">함께 쓸 수 있는 것</h3>' +
+      sw("bar", !!m.bar, "읽은 만큼 보이는 선", "화면 맨 위에 얼마나 내려왔는지 가는 선으로 보여 줘요.") +
+      sw("par", !!m.par, "사진이 살짝 늦게 따라오기", "스크롤할 때 사진이 글보다 조금 천천히 움직여 깊이감이 생겨요.") +
+      sw("top", !!m.top, "맨 위로 가는 버튼", "아래로 내려가면 왼쪽 아래에 나타나요.") + '</div>';
+    $$(".ed-chips", pb).forEach(function (c) { $$("button", c).forEach(function (x) { x.addEventListener("click", function () { setMo(c.dataset.k, x.dataset.v); }); }); });
+    $$(".ed-sw", pb).forEach(function (x) { x.addEventListener("click", function () { setMo(x.dataset.mk, x.getAttribute("aria-checked") !== "true"); }); });
+    $("#edMoTry", pb).addEventListener("click", function () { if (mode !== "try") setMode("try"); });
+  }
+  function applyMotion(view) {
+    var m = S.motion; if (!m || mode !== "try") return;
+    var vr = view.getBoundingClientRect(), vh = view.clientHeight, bar = null, top = null;
+    if (m.r) {
+      var pick = m.t === "photo" ? ".ed-p" : m.t === "text" ? ".ed-t, .ed-mq" : ".ed-t, .ed-p, .ed-mq", dur = { fast: 0.45, mid: 0.8, slow: 1.3 }[m.sp || "mid"] || 0.8;
+      var all = $$(pick, view).filter(function (x) { return !x.closest(".lv-layer") && x.offsetParent !== null && x.getBoundingClientRect().top - vr.top > vh * 0.9; });
+      all = all.filter(function (x) { return !all.some(function (y) { return y !== x && y.contains(x); }); });
+      view.style.setProperty("--rv-d", dur + "s");
+      all.forEach(function (x, i) { x.classList.add("ed-rv", "ed-rv-" + m.r); x.dataset.rvd = i % 2; });
+      var io = new IntersectionObserver(function (es) {
+        es.filter(function (e) { return e.isIntersecting; }).sort(function (a, z) { return a.boundingClientRect.top - z.boundingClientRect.top; }).forEach(function (e, i) {
+          var el = e.target; io.unobserve(el); el.style.transitionDelay = Math.min(i, 5) * 90 + "ms"; el.classList.add("ed-rv-in");
+          setTimeout(function () { el.classList.remove("ed-rv", "ed-rv-" + m.r, "ed-rv-in"); el.style.transitionDelay = ""; }, dur * 1000 + Math.min(i, 5) * 90 + 120);
+        });
+      }, { root: view, threshold: 0.12 });
+      all.forEach(function (x) { io.observe(x); });
+    }
+    if (m.bar) { bar = document.createElement("div"); bar.className = "ed-prog"; canvas.appendChild(bar); }
+    if (m.top) { top = document.createElement("button"); top.type = "button"; top.className = "ed-totop"; top.textContent = "↑ 맨 위로"; top.hidden = true; canvas.appendChild(top); top.addEventListener("click", function () { view.scrollTo({ top: 0, behavior: "smooth" }); }); }
+    var pars = m.par ? $$(".ed-p img, img.ed-p", view).filter(function (im) { return getComputedStyle(im).objectFit === "cover"; }) : [], raf = 0;
+    pars.forEach(function (im) { im.style.scale = "1.12"; });
+    function tick() {
+      raf = 0; var max = view.scrollHeight - view.clientHeight;
+      if (bar) bar.style.transform = "scaleX(" + (max > 0 ? view.scrollTop / max : 0) + ")";
+      if (top) top.hidden = view.scrollTop < vh * 0.6;
+      pars.forEach(function (im) { var r = im.getBoundingClientRect(), k = ((r.top + r.height / 2) - (vr.top + vh / 2)) / vh; k = Math.max(-1, Math.min(1, k)); im.style.translate = "0 " + (k * -5).toFixed(2) + "%"; });
+    }
+    view.addEventListener("scroll", function () { if (!raf) raf = requestAnimationFrame(tick); }, { passive: true }); tick();
+  }
+
+  /* -- the tab icon (favicon) -- */
+  function makeIcon(file, cb) {
+    var url = URL.createObjectURL(file), im = new Image();
+    im.onload = function () {
+      var w = im.naturalWidth || 64, h = im.naturalHeight || 64, k = Math.min(w, h), c = document.createElement("canvas"); c.width = c.height = 64;
+      try { c.getContext("2d").drawImage(im, (w - k) / 2, (h - k) / 2, k, k, 0, 0, 64, 64); URL.revokeObjectURL(url); cb(c.toDataURL("image/png")); } catch (e) { URL.revokeObjectURL(url); cb(null); }
+    };
+    im.onerror = function () { URL.revokeObjectURL(url); cb(null); };
+    im.src = url;
+  }
+  function applyFav() {
+    var l = document.querySelector('link[rel~="icon"]');
+    if (!l) { l = document.createElement("link"); l.rel = "icon"; document.head.appendChild(l); }
+    if (l.dataset.orig === undefined) l.dataset.orig = l.getAttribute("href") || "";
+    if (S.fav) { l.setAttribute("href", S.fav); l.type = "image/png"; } else { if (l.dataset.orig) l.setAttribute("href", l.dataset.orig); l.removeAttribute("type"); }
+    var f = $("#edFav"); if (f) { if (S.fav) { f.src = S.fav; f.hidden = false; } else f.hidden = true; }
+  }
+
+  /* -- the size of whatever the pointer is over (in the page's own pixels) -- */
+  var meas = document.createElement("div"); meas.className = "ed-meas"; meas.hidden = true; meas.innerHTML = "<i></i><b></b>"; root.appendChild(meas);
+  var mEl = null, mRaf = 0, mView = null;
+  function zoomOf(view) { return parseFloat(view.firstElementChild && view.firstElementChild.style.zoom) || 1; }
+  function measShow() {
+    mRaf = 0; if (!mEl || !mEl.isConnected || mode !== "edit" || !mView) { meas.hidden = true; return; }
+    var r = mEl.getBoundingClientRect(), z = zoomOf(mView), w = Math.round(r.width / z), h = Math.round(r.height / z);
+    if (r.width < 1 || r.height < 1) { meas.hidden = true; return; }
+    var i = meas.firstChild, b = meas.lastChild, txt = w + " × " + h;
+    if (mEl.tagName === "IMG" && mEl.naturalWidth) txt += "  ·  원본 " + mEl.naturalWidth + " × " + mEl.naturalHeight;
+    b.textContent = txt; meas.hidden = false;
+    i.style.cssText = "left:" + r.left + "px;top:" + r.top + "px;width:" + r.width + "px;height:" + r.height + "px";
+    var bw = b.offsetWidth, bh = b.offsetHeight, top = $(".ed-top").offsetHeight, y = r.top - bh - 5; if (y < top + 4) y = Math.min(r.top + 5, window.innerHeight - bh - 4);
+    b.style.left = Math.max(4, Math.min(r.left, window.innerWidth - bw - 4)) + "px"; b.style.top = y + "px";
+  }
+  function measureBind(view) {
+    mView = view; mEl = null; meas.hidden = true;
+    if (!window.matchMedia("(hover: hover)").matches) return;
+    view.addEventListener("mousemove", function (e) { var t = e.target; mEl = t === view ? null : t; if (!mRaf) mRaf = requestAnimationFrame(measShow); });
+    view.addEventListener("mouseleave", function () { mEl = null; meas.hidden = true; });
+    view.addEventListener("scroll", function () { if (mEl && !mRaf) mRaf = requestAnimationFrame(measShow); }, { passive: true });
+  }
+
+  /* -- the dock: a name appears over the icon under the pointer; pressing one makes it hop once, as in the Mac's Dock -- */
+  (function () {
+    var dock = $("#edRail"), dt = document.createElement("div");
+    dt.className = "ed-dtip"; dt.hidden = true; root.appendChild(dt);
+    $$("button", dock).forEach(function (x) {
+      x.addEventListener("pointerenter", function (e) { if (e.pointerType === "touch") return; var r = x.getBoundingClientRect(); dt.textContent = x.dataset.tip; dt.style.left = r.left + r.width / 2 + "px"; dt.style.top = r.top - 10 + "px"; dt.hidden = false; });
+      x.addEventListener("pointerleave", function () { dt.hidden = true; });
+      x.addEventListener("click", function () { dt.hidden = true; x.classList.remove("hop"); void x.offsetWidth; x.classList.add("hop"); });
+      x.addEventListener("animationend", function () { x.classList.remove("hop"); });
+    });
+  })();
+
   /* a short line at the bottom that goes away by itself */
   function hint(t) { var f = document.createElement("div"); f.className = "ed-flag"; f.textContent = t; canvas.appendChild(f); setTimeout(function () { f.remove(); }, 4500); }
   /* ---------- top bar ---------- */
-  var addBtn = $("#edAddBtn"), addMenu = $("#edAdd");
-  function closeMenu() { addMenu.hidden = true; addBtn.setAttribute("aria-expanded", "false"); }
-  addBtn.addEventListener("click", function (e) { e.stopPropagation(); var open = addMenu.hidden; addMenu.hidden = !open; addBtn.setAttribute("aria-expanded", String(open)); });
-  document.addEventListener("click", function (e) { if (!addMenu.hidden && !e.target.closest(".ed-menu")) closeMenu(); });
-  $$("[data-add]", addMenu).forEach(function (x) { x.addEventListener("click", function () { closeMenu(); openPanel(x.dataset.add); if (x.dataset.add === "images") setTimeout(function () { var f = $("#edLibFile"); if (f) f.click(); }, 60); }); });
   function setMode(m) { mode = m; select(null); $("#edPreview").setAttribute("aria-pressed", String(m === "try")); render(); }
   function setDev(d) { dev = d; select(null); $("#edDevice").setAttribute("aria-pressed", String(d === "mob")); $("#edDevice").innerHTML = d === "mob" ? IC.desk : IC.mob; $("#edDevice").setAttribute("aria-label", d === "mob" ? "컴퓨터 화면으로 보기" : "폰 화면으로 보기"); render(); }
   $("#edPreview").addEventListener("click", function () { setMode(mode === "edit" ? "try" : "edit"); });
@@ -642,7 +794,7 @@
   /* ---------- keys, as in the tools people already know ---------- */
   document.addEventListener("keydown", function (e) {
     var meta = e.metaKey || e.ctrlKey, key = (e.key || "").toLowerCase(), typing = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target.tagName || ""));
-    if (e.key === "Escape") { if (!dlg.hidden) closeDlg(); else if (!addMenu.hidden) closeMenu(); else if (sel) select(null); else if (panel) closePanel(); return; }
+    if (e.key === "Escape") { if (!dlg.hidden) closeDlg(); else if (sel || bgTip) select(null); else if (panel) closePanel(); return; }
     if (!meta) return;
     if (key === "z" && !typing) { e.preventDefault(); travel(e.shiftKey ? 1 : -1); }
     else if (key === "\\") { e.preventDefault(); setMode(mode === "edit" ? "try" : "edit"); }
@@ -683,7 +835,7 @@
         if (mqe) { select(mqe); var t3 = $("#edTa"); if (!t3) cNote(n, d + " no text box for the moving line"); else { t3.value = "가" + NL + "나"; t3.dispatchEvent(new Event("input")); if (($(".mq-in", mqe).textContent || "").indexOf("가") < 0) cNote(n, d + " the moving line does not change"); S.marquee = null; } }
         if (ps.length) { select($$(".ed-p", canvas)[0]); if (!$("#edFile")) cNote(n, d + " no picture button"); }
         select(null);
-        ["blocks", "texts", "images", "type", "feat", "site"].forEach(function (id) { try { panel = null; openPanel(id); if (!$("#edPb").children.length) cNote(n, d + " panel " + id + " is empty"); } catch (e) { cNote(n, d + " panel " + id + " failed: " + e.message); } });
+        ["blocks", "texts", "images", "bg", "type", "motion", "feat", "site"].forEach(function (id) { try { panel = null; openPanel(id); if (!$("#edPb").children.length) cNote(n, d + " panel " + id + " is empty"); } catch (e) { cNote(n, d + " panel " + id + " failed: " + e.message); } });
         closePanel();
         if (d === "desk") {
           if (gen) {
@@ -714,6 +866,16 @@
           } else { S.extra = ["search", "news"]; try { render(); } catch (e) { cNote(n, "switching menu items failed: " + e.message); } S.extra = null; }
           S.bg = "#ffcc00"; S.ink = "#222222"; S.face = "serif";
           try { render(); var st = $(".tp", canvas).getAttribute("style") || ""; if (st.indexOf("#ffcc00") < 0) cNote(n, "the background colour does not show"); } catch (e) { cNote(n, "colours failed: " + e.message); }
+          /* the page's background picture, the scrolling effects, the tab icon and the size under the pointer */
+          try {
+            DATA["t-bg"] = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="; S.lib.push({ id: "t-bg", name: "t" }); S.bgImg = "t-bg"; S.bgDim = 0.3; render();
+            if (($(".tp", canvas).style.backgroundImage || "").indexOf("url(") < 0) cNote(n, "the background picture does not show");
+            openBgTip({ x: 200, y: 200 }); if (!$("#edBgPick", tip) || tip.hidden) cNote(n, "the background window does not open"); select(null);
+            S.motion = { r: "rise", t: "all", bar: 1, par: 1, top: 1 }; mode = "try"; render(); mode = "edit";
+            S.fav = DATA["t-bg"]; applyFav(); var lk = document.querySelector('link[rel~="icon"]'); if (!lk || lk.getAttribute("href") !== S.fav) cNote(n, "the tab icon does not change"); S.fav = null; applyFav();
+            S.motion = null; render(); var t1 = $$(".ed-t:not(.ed-slot)", canvas).filter(function (x) { var q = x.getBoundingClientRect(); return q.width > 1 && q.height > 1; })[0];
+            if (t1) { mView = viewOf(); mEl = t1; measShow(); if (meas.hidden || !/\d+ × \d+/.test(meas.lastChild.textContent)) cNote(n, "the size under the pointer is not shown"); mEl = null; meas.hidden = true; }
+          } catch (e) { cNote(n, "background, scrolling effects or tab icon failed: " + e.message); }
           S = fresh();
         }
       });
