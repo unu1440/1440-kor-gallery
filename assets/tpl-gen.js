@@ -171,7 +171,10 @@
     }
     var hasFoot = ["top3", "top2", "center", "burger"].indexOf(s.nav) >= 0;
     if (c.f.marquee) { if (s.nav === "bottom") B.y += 40; B.h -= 40; }
-    return { html: h, box: B, foot: hasFoot };
+    /* a bottom menu bar or bottom corners fills the last line, so the hours / countdown line sits above it */
+    var lift = (s.nav === "bottom" || s.nav === "corners") && !!widget(c);
+    if (lift) B.h -= 30;
+    return { html: h, box: B, foot: hasFoot, lift: lift };
   }
 
   /* ---------- a rendering context: photographs, words, wireframe mode ---------- */
@@ -368,7 +371,7 @@
       },
       "f-name": function () {
         return '<div style="' + line + ';padding-top:14px;display:grid;gap:10px"><div style="display:flex;justify-content:space-between;font-size:14px;opacity:.6"><span>© 2026</span>' + up + '</div>' +
-          '<div style="font-size:' + (flow ? 64 : 180) + 'px;font-weight:700;letter-spacing:-.06em;line-height:.85;overflow:hidden;white-space:nowrap">' + c.N + '</div></div>';
+          '<div data-fit="' + (flow ? 64 : 180) + '" style="font-size:' + (flow ? 64 : 180) + 'px;font-weight:700;letter-spacing:-.06em;line-height:.85;overflow:hidden;white-space:nowrap">' + c.N + '</div></div>';
       }
     };
     var blocks = m.filter(function (k) { return B2[k]; });
@@ -503,7 +506,7 @@
   function slidesN(s) { return s.feats.some(function (f) { return /^slides/.test(f); }) ? 8 : 1; }
   L["hero-center"] = { fam: "feed", ko: "가운데 사진 한 장", modes: ["click", "arrows", "auto", "dots"], need: slidesN, render: function (c, B) {
     var w = Math.min([600, 480, 720, 540][c.v], B.w * .5), h = B.h - 80 - [0, 80, 0, 40][c.v], x = [B.x + (B.w - w) / 2, B.x, B.x + (B.w - w) / 2, B.x + B.w - w][c.v], n = c.f.slides ? 8 : 1;
-    return slideMain(c, 0, px(x, B.y, w, h), n) + c.one(0, n, "left:" + B.x + "px;right:" + (1440 - B.x - B.w) + "px;top:" + (B.y + h + 22) + "px;text-align:" + c.al) + slideCtl(c, n, "left:" + (x + w + 30) + "px;top:" + (B.y + h - 30) + "px");
+    return slideMain(c, 0, px(x, B.y, w, h), n) + c.one(0, n, "left:" + B.x + "px;right:" + (1440 - B.x - B.w) + "px;top:" + (B.y + h + 22) + "px;text-align:" + c.al) + slideCtl(c, n, "left:" + (x + w + 30 > B.x + B.w - 170 ? B.x : x + w + 30) + "px;top:" + (B.y + h - 30) + "px"); /* beside the picture, or at the left when the picture is at the right edge */
   } };
   L["hero-wide"] = { fam: "feed", ko: "넓은 사진 한 장", modes: ["click", "arrows", "auto", "dots"], need: slidesN, render: function (c, B) {
     var h = B.h - [70, 160, 110, 70][c.v], n = c.f.slides ? 8 : 1;
@@ -630,7 +633,7 @@
   } };
   P["studio"] = { ko: "건축·공간 스튜디오", feats: ["slides-list"], need: function () { return 6; }, render: function (c, B) {
     var rows = "", w = B.w * .5;
-    for (var k = 0; k < 6; k++) rows += '<div data-sl="' + k + '" style="display:grid;grid-template-columns:1fr 130px 70px;padding:8px 0;border-bottom:1px solid color-mix(in srgb,currentColor 18%,transparent);' + (k ? "opacity:.4" : "") + '">' + (c.wire ? c.lines(["60%"], "", 11) : '<span>' + c.title(k) + '</span>') + '<span>' + c.t(CITIES[(k + c.s.seed) % 10], CITIES_KO[(k + c.s.seed) % 10]) + '</span><span class="m" style="text-align:right">' + c.year(k) + '</span></div>';
+    for (var k = 0; k < 6; k++) rows += '<div data-sl="' + k + '" style="display:grid;grid-template-columns:minmax(0,1fr) max-content max-content;column-gap:1.2em;padding:8px 0;border-bottom:1px solid color-mix(in srgb,currentColor 18%,transparent);' + (k ? "opacity:.4" : "") + '">' + (c.wire ? c.lines(["60%"], "", 11) : '<span>' + c.title(k) + '</span>') + '<span>' + c.t(CITIES[(k + c.s.seed) % 10], CITIES_KO[(k + c.s.seed) % 10]) + '</span><span class="m" style="text-align:right">' + c.year(k) + '</span></div>';
     return '<div style="position:absolute;' + px(B.x, B.y, w - 30, B.h) + ';font-size:' + Math.round(19 * Math.min(c.sc, 1.6)) + 'px;display:flex;flex-direction:column;gap:30px"><div>' + rows + '</div>' + panel(c, w - 30) + '</div>' + slideMain(c, 0, px(B.x + w, B.y, B.w - w, B.h), 6);
   } };
   P["publisher"] = { ko: "출판사·서점", feats: ["products"], need: function () { return 6; }, render: function (c, B) {
@@ -665,9 +668,9 @@
   } };
   P["gallery"] = { ko: "전시 공간", need: function () { return 4; }, render: function (c, B) {
     var fs = Math.round(56 * Math.min(c.sc, 2)), now = c.wire ? c.lines(["80%", "50%"], "", 24) : '<span class="m" style="font-size:13px;opacity:.6">' + c.t("Now showing", "지금 전시") + '</span><b style="display:block;font-size:' + fs + 'px;font-weight:600;letter-spacing:-.04em;line-height:1">' + c.title(0) + '</b><span>' + PEOPLE[c.s.seed % PEOPLE.length] + '</span>';
-    var next = [1, 2, 3].map(function (k) { return '<div style="display:grid;gap:8px">' + c.img(k, "position:relative;height:190px") + '<span style="font-size:15px">' + c.title(k) + '</span><span class="m" style="font-size:13px;opacity:.6">' + MONTHS[(c.s.seed + k * 2) % 12] + ' 2026</span></div>'; }).join("");
+    var next = [1, 2, 3].map(function (k) { return '<div style="display:grid;gap:8px">' + c.img(k, "position:relative;height:" + Math.round(B.h * .34 - 26 - 66) + "px") + '<span style="font-size:15px">' + c.title(k) + '</span><span class="m" style="font-size:13px;opacity:.6">' + MONTHS[(c.s.seed + k * 2) % 12] + ' 2026</span></div>'; }).join("");
     return c.img(0, px(B.x, B.y, B.w * .6, B.h * .66)) + '<div style="position:absolute;' + px(B.x + B.w * .6 + 36, B.y, B.w * .4 - 36, B.h * .66) + ';display:flex;flex-direction:column;gap:14px">' + now + panel(c, B.w * .4 - 36) + '</div>' +
-      '<div class="gg" style="' + px(B.x, B.y + B.h * .66 + 26, B.w, B.h * .34) + ';grid-template-columns:repeat(3,1fr);gap:20px">' + next + '</div>';
+      '<div class="gg" style="' + px(B.x, B.y + B.h * .66 + 26, B.w, B.h * .34 - 26) + ';grid-template-columns:repeat(3,1fr);gap:20px">' + next + '</div>';
   } };
   Object.keys(P).forEach(function (k) { var p = P[k]; L["p-" + k] = { fam: "populated", ko: p.ko, panel: true, grid: k === "shop" || k === "journal", need: p.need, render: p.render, req: p.feats || [] }; });
 
@@ -1059,7 +1062,7 @@
     var nav = navHtml(c), body = L0.render(c, nav.box);
     var foot = "", mq = c.f.marquee;
     if (nav.foot && !L0.bleed) foot = '<div class="tp-foot"' + (mq ? ' style="bottom:48px"' : "") + '><span>' + c.foot + '</span><span>' + widget(c) + '</span></div>';
-    else if (widget(c)) foot = '<div class="tp-foot" style="' + (L0.bleed ? "color:#fff;opacity:.85" : "") + '"><span></span><span>' + widget(c) + '</span></div>';
+    else if (widget(c)) foot = '<div class="tp-foot" style="' + (L0.bleed ? "color:#fff;opacity:.85;" : "") + (nav.lift ? "bottom:52px" : "") + '"><span></span><span>' + widget(c) + '</span></div>';
     var cs = spec.type["case"] === "upper" ? "text-transform:uppercase;" : spec.type["case"] === "lower" ? "text-transform:lowercase;" : "";
     var more = below(c, { x: nav.box.x, w: nav.box.w });
     return { html: (c.f.backdrop ? backdrop(c) : "") + body + (mq ? marquee(c) : "") + foot + more + nav.html, style: cs, slides: c.slides, pin: spec.pin };

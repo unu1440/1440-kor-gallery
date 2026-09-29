@@ -766,24 +766,24 @@
       var fs = parseFloat(el.style.fontSize); if (fs > 34) el.style.fontSize = Math.max(26, Math.round(fs * .34)) + "px";
     });
   }
-  /* a phone in Safari: status bar on top, the address bar and toolbar at the bottom */
-  var SAFARI = {
+  /* a generic phone browser: status bar on top, the address bar and toolbar at the bottom */
+  var PHONE_UI = {
     sig: '<svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx=".6"/><rect x="5" y="5.5" width="3" height="6.5" rx=".6"/><rect x="10" y="3" width="3" height="9" rx=".6"/><rect x="15" y="0" width="3" height="12" rx=".6"/></svg>',
     wifi: '<svg viewBox="0 0 16 12"><path d="M8 11.5 5.6 9a3.4 3.4 0 0 1 4.8 0zM3.4 6.8a6.5 6.5 0 0 1 9.2 0l-1.1 1.1a5 5 0 0 0-7 0zM1.1 4.5a9.8 9.8 0 0 1 13.8 0l-1.1 1.1a8.2 8.2 0 0 0-11.6 0z"/></svg>',
     bat: '<svg viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" opacity=".4"/><rect x="2.5" y="2.5" width="19" height="8" rx="2"/><path d="M25 4.5v4a2 2 0 0 0 0-4z" opacity=".4"/></svg>',
     reload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></svg>',
     back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
     fwd: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity=".35"><path d="M9 5l7 7-7 7"/></svg>',
-    share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4M6 11H5v10h14V11h-1"/></svg>',
-    book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 6c-2-1.5-5-2-8-1.5v14c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-14C17 4 14 4.5 12 6zM12 6v14"/></svg>',
-    tabs: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="7" width="13" height="13" rx="2.5"/><path d="M8 4h9.5A2.5 2.5 0 0 1 20 6.5V16"/></svg>'
+    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+    tabs: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="4" y="5" width="16" height="14" rx="3"/><path d="M11 9.6h1.4v5"/></svg>',
+    dots: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5.5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18.5" cy="12" r="1.7"/></svg>'
   };
   function phoneFor(b) {
     return '<div class="mac phone" aria-hidden="true">' +
-      '<div class="ph-status"><span>9:41</span><span class="ph-sys">' + SAFARI.sig + SAFARI.wifi + SAFARI.bat + '</span></div>' +
+      '<div class="ph-status"><span>14:40</span><span class="ph-sys">' + PHONE_UI.sig + PHONE_UI.wifi + PHONE_UI.bat + '</span></div>' +
       '<div class="mac-view" data-w="390"><div class="canvas mob">' + pageFor(b, true) + '</div></div>' +
-      '<div class="ph-bar"><div class="ph-url"><span class="ph-aa">가<small>가</small></span><span class="ph-host">' + ICON.lock + esc(host) + '</span>' + SAFARI.reload + '</div>' +
-      '<div class="ph-tools">' + SAFARI.back + SAFARI.fwd + SAFARI.share + SAFARI.book + SAFARI.tabs + '</div><i class="ph-home"></i></div></div>';
+      '<div class="ph-bar"><div class="ph-url"><span></span><span class="ph-host">' + ICON.lock + esc(host) + '</span>' + PHONE_UI.reload + '</div>' +
+      '<div class="ph-tools">' + PHONE_UI.back + PHONE_UI.fwd + PHONE_UI.plus + PHONE_UI.tabs + PHONE_UI.dots + '</div><i class="ph-home"></i></div></div>';
   }
   function windowFor(b) {
     return '<div class="mac" aria-hidden="true"><div class="mac-bar">' +
@@ -1092,7 +1092,7 @@
     markOn(tp, "cart");
   }
   /* ---------- a page longer than the screen: it scrolls inside the window ----------
-     The window shows one screen (1440 × 900, or 390 × 697 inside Safari on a phone); the page below it scrolls.
+     The window shows one screen (1440 × 900, or 390 × 697 inside a phone browser); the page below it scrolls.
      Layers and notices open where the reader is, and the page holds still while one is open. */
   function geom(tp) {
     var view = tp.closest(".mac-view"), W = tp._w || 1440, H = tp._h || 900, r = tp.getBoundingClientRect();
@@ -1107,6 +1107,11 @@
   function fitHeight(view) {
     var tp = view.querySelector(".tp"), cv = view.querySelector(".canvas"); if (!tp || !cv) return;
     var g = geom(tp), more = tp.querySelector(".tp-more"), low = 0;
+    /* a big name that is set to fit its line (the footer): smaller until all of it shows */
+    [].forEach.call(tp.querySelectorAll("[data-fit]"), function (el) {
+      var fs = +el.dataset.fit; el.style.fontSize = fs + "px";
+      while (el.scrollWidth > el.clientWidth + 1 && fs > 12) { fs -= 2; el.style.fontSize = fs + "px"; }
+    });
     var st = view.scrollTop; /* the page shrinks for a moment while it is measured: keep the reader where they are */
     /* measure from one screen every time: things set against the bottom would otherwise follow the grown page down,
        and each later call (pictures arriving late) would make the page longer again */
@@ -1116,8 +1121,9 @@
     var R = tp.getBoundingClientRect();
     /* things set against the bottom of the first screen (a bottom menu bar, corner links, the first screen's footer)
        stay at the bottom of the first screen: pinned to its top edge before the page grows */
-    [].forEach.call(tp.children, function (el) {
-      if (el === more || el.style.top || getComputedStyle(el).position !== "absolute" || getComputedStyle(el).bottom === "auto") return;
+    [].forEach.call(tp.querySelectorAll("*"), function (el) {
+      if (el === more || el.style.top || el.closest(".tp-more, .lv-layer, .bd") || el.offsetParent !== tp) return; /* only what is placed against the page itself */
+      if (getComputedStyle(el).position !== "absolute") return;
       el.style.top = Math.round((el.getBoundingClientRect().top - R.top) / g.k) + "px"; el.style.bottom = "auto";
     });
     [].forEach.call(tp.querySelectorAll("*"), function (el) {
@@ -1306,7 +1312,7 @@
     605: ["search"], 607: ["news"], 608: ["clock"], 609: ["search"], 611: ["news"], 612: ["news"], 613: ["contact"], 615: ["search"],
     616: ["search", "news"], 618: ["news"], 619: ["clock"], 620: ["search", "news"], 621: ["search", "clock"], 622: ["search"],
     623: ["news", "clock"], 626: ["search", "clock"], 961: ["news"], 965: ["search"], 966: ["search", "news"], 967: ["search", "news"], 970: ["news"],
-    971: ["search"], 972: ["clock"], 1203: ["news"], 1204: ["search", "news"], 1205: ["news", "clock"], 1206: ["search", "contact"],
+    971: ["clock"], 972: ["search", "news"], 1203: ["news"], 1204: ["search", "news"], 1205: ["news", "clock"], 1206: ["search", "contact"],
     1207: ["search", "clock"], 1208: ["news"], 1209: ["clock", "contact"], 1211: ["search", "news", "clock"]
   };
 
@@ -1315,15 +1321,23 @@
     contact: '<button type="button" class="lv-a" data-lv="contact">Email</button>', clock: CLOCK };
   function addExtras(tp, ex) {
     /* next to the right-most link of the top menu; if the top has none on the right, in the top-right corner */
-    var cr = tp.getBoundingClientRect(), k = cr.width / 1440 || 1, link = null, best = -1;
+    var cr = tp.getBoundingClientRect(), k = cr.width / 1440 || 1, link = null, best = -1, word = null, wbest = -1;
     $$(tp, ".lv-a").forEach(function (a) {
       var r = a.getBoundingClientRect(), x = (r.left - cr.left) / k, y = (r.top - cr.top) / k;
       if (y < 80 && x > 640 && x > best) { best = x; link = a; }
+    });
+    /* no link at the right, but plain words there (a counter like "1 / 4"): the extras go in front of them, not on top of them */
+    if (!link) $$(tp, "span, div").forEach(function (e) {
+      if (!e.children.length && e.textContent.trim() && !e.closest(".lv-layer")) {
+        var r = e.getBoundingClientRect(), x = (r.left - cr.left) / k, y = (r.top - cr.top) / k;
+        if (y < 80 && r.right - cr.left > 1300 * k && x + r.width / k > wbest) { wbest = x + r.width / k; word = e; }
+      }
     });
     var near = link ? link.parentElement.textContent : "";
     var sep = /·/.test(near) ? " · " : /,/.test(near) ? ", " : SP; /* the menu's own separator */
     var html = ex.map(function (k) { return EXTRA[k]; }).join(sep);
     if (link) link.insertAdjacentHTML("afterend", sep + html);
+    else if (word) word.insertAdjacentHTML("afterbegin", html + sep);
     else tp.insertAdjacentHTML("beforeend", '<div class="tp-extra" style="position:absolute;right:28px;top:22px;font-size:15px">' + html + '</div>');
   }
   function liven(view, b) {
@@ -1848,6 +1862,7 @@
     var feats = bringToLife(mStage.querySelector(".mac-view"), b, mob, fitPreview);
     mHint.textContent = feats.length ? "기능: " + feats.join(" · ") : "";
     fitPreview();
+    scale(mStage.querySelector(".mac-view")); /* the hint may have wrapped and changed the window's size */
   }
   /* a page that works like the real site: shared by the preview and the page opened in its own window */
   function bringToLife(view, b, mob, fit) {
@@ -1987,6 +2002,82 @@
   var soloN = +new URLSearchParams(location.search).get("view");
   if (soloN && find(soloN)) openSolo(soloN, new URLSearchParams(location.search).get("m") === "mob");
   else { showShuffle(); watch(); }
+
+  /* development check: templates.html?check=overlap opens every template in the preview, on a desktop and on a phone,
+     at the top, in the middle and at the end, and writes into <body data-overlap> the ones where words run over other
+     words, stick out of the page, or are cut off by their own box (a footer name that does not fit) */
+  if (/[?&]check=overlap/.test(location.search)) {
+    var oBad = [], oDone = 0;
+    var oNote = function (b, mob, why) { var x = tag(b.first) + (mob ? " phone" : "") + ": " + why; if (oBad.indexOf(x) < 0) oBad.push(x); };
+    var oOne = function (b, mob) {
+      pvN = b.first; pvMode = mob ? "mob" : "desk"; modal.hidden = false; renderPreview();
+      var view = mStage.querySelector(".mac-view"), tp = view.querySelector(".tp"), max = view.scrollHeight - view.clientHeight;
+      var R = tp.getBoundingClientRect(), k = R.width / (tp._w || 1440), seen = [];
+      $$(tp, "*").forEach(function (el) {
+        if (el.closest(".lv-layer, .mq, [data-drag], .bd") || !el.getClientRects().length) return;
+        var own = [].some.call(el.childNodes, function (n) { return n.nodeType === 3 && n.textContent.trim(); });
+        var r = el.getBoundingClientRect(); if (!r.width || !r.height) return;
+        var cs = getComputedStyle(el), t = el.textContent.trim().slice(0, 18);
+        if (own) {
+          seen.push({ el: el, r: r, t: t });
+          if (r.right > R.right + 3 || r.left < R.left - 3) oNote(b, mob, "sticks out " + Math.round((r.right - R.right) / k) + 'px "' + t + '"');
+        }
+        /* any box (a wireframe picture, a table column) that runs past the page's edge and is not clipped by a box that stays inside it */
+        var dim = 1; for (var q = el; q && q !== tp; q = q.parentElement) dim = Math.min(dim, parseFloat(getComputedStyle(q).opacity)); /* the neighbouring slides that peek in at the edges are dimmed on purpose */
+        if (!own && dim > 0.9 && r.right > R.right + 3 && !el.closest(".tp-nav, .tp-foot")) {
+          for (var up = el.parentElement, clipped = false; up && up !== tp; up = up.parentElement) if (getComputedStyle(up).overflowX !== "visible" && up.getBoundingClientRect().right <= R.right + 2) { clipped = true; break; }
+          if (!clipped) oNote(b, mob, "a box sticks out " + Math.round((r.right - R.right) / k) + "px (" + (el.className || el.tagName).toString().slice(0, 20) + ")");
+        }
+        if (own && cs.overflowX !== "visible" && cs.textOverflow !== "ellipsis" && el.scrollWidth > el.clientWidth + 3) oNote(b, mob, "cut off by its box " + (el.scrollWidth - el.clientWidth) + 'px "' + t + '"');
+      });
+      for (var i = 0; i < seen.length; i++) for (var j = i + 1; j < seen.length; j++) {
+        var a = seen[i], z = seen[j]; if (a.el.contains(z.el) || z.el.contains(a.el)) continue;
+        var w = Math.min(a.r.right, z.r.right) - Math.max(a.r.left, z.r.left), h = Math.min(a.r.bottom, z.r.bottom) - Math.max(a.r.top, z.r.top);
+        if (w > 2 && h > 2 && w * h > 0.2 * Math.min(a.r.width * a.r.height, z.r.width * z.r.height)) oNote(b, mob, 'words overlap "' + a.t + '" and "' + z.t + '"');
+      }
+    };
+    var oStep = function (i) {
+      if (i >= BASES.length) { closePreview(); document.body.dataset.overlap = JSON.stringify({ checked: oDone, bad: oBad }); return; }
+      [false, true].forEach(function (mob) { try { oOne(BASES[i], mob); } catch (err) { oNote(BASES[i], mob, "error " + err.message); } oDone++; });
+      setTimeout(function () { oStep(i + 1); }, 0);
+    };
+    oStep(0);
+  }
+
+  /* development check: templates.html?check=layers opens every template in the preview, on a desktop and on a phone,
+     opens what a click opens (a photograph, the menu, the info / search / newsletter / contact links), at the top and
+     scrolled down, and writes into <body data-layers> those that do not cover the window as they should
+     (a layer that ends up below the page, is cut off, or is not where the reader is) */
+  if (/[?&]check=layers/.test(location.search)) {
+    var lBad = [], lDone = 0, lOpened = 0;
+    var lNote = function (b, mob, why) { lBad.push(tag(b.first) + (mob ? " phone" : "") + ": " + why); };
+    var layerOne = function (b, mob) {
+      pvN = b.first; pvMode = mob ? "mob" : "desk"; modal.hidden = false; renderPreview();
+      var view = mStage.querySelector(".mac-view"), tp = view.querySelector(".tp");
+      var max = view.scrollHeight - view.clientHeight;
+      [0, 0.5].forEach(function (at) {
+        if (at && max < 200) return;
+        view.scrollTop = at * max; view.dispatchEvent(new Event("scroll"));
+        var picks = [["photo", $$(tp, "img").filter(function (i) { return !i.closest(".lv-layer, .tp-more") && i.getBoundingClientRect().width > 40; })[0]]];
+        ["menu", "info", "search", "news", "contact"].forEach(function (k) { picks.push([k, tp.querySelector('[data-lv="' + k + '"]')]); });
+        picks.forEach(function (pk) {
+          if (!pk[1]) return;
+          pk[1].click();
+          var l = tp.querySelector(".lv-layer"); if (!l) return;
+          lOpened++;
+          var lr = l.getBoundingClientRect(), vr = view.getBoundingClientRect();
+          if (Math.abs(lr.top - vr.top) > 3 || Math.abs(lr.height - vr.height) > 3) lNote(b, mob, pk[0] + (at ? " (scrolled)" : "") + " layer at " + Math.round(lr.top - vr.top) + " height " + Math.round(lr.height) + " of " + Math.round(vr.height));
+          closeAll(tp);
+        });
+      });
+    };
+    var lStep = function (i) {
+      if (i >= BASES.length) { closePreview(); document.body.dataset.layers = JSON.stringify({ checked: lDone, opened: lOpened, bad: lBad }); return; }
+      [false, true].forEach(function (mob) { try { layerOne(BASES[i], mob); } catch (err) { lNote(BASES[i], mob, "error " + err.message); } lDone++; });
+      setTimeout(function () { lStep(i + 1); }, 0);
+    };
+    lStep(0);
+  }
 
   /* development check: templates.html?check=scroll opens every template in the preview, on a desktop and on a phone,
      scrolls it and writes into <body data-scroll> the pages whose length changes when measured again, whose end

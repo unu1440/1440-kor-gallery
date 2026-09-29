@@ -175,7 +175,7 @@
   white-space: nowrap;
 }
 
-/* ---------- macOS Safari window ---------- */
+/* ---------- desktop browser window ---------- */
 .mac {
   --mac-shadow: 0 0 #0000;
   position: relative;
@@ -452,21 +452,21 @@ body.solo > :not(.solo-page) { display: none !important; }
 .mac-view.live::-webkit-scrollbar { display: none; }
 
 /* phone frame */
-.mac.phone { border-radius: calc(var(--mac-r) * 3.2); box-shadow: 0 0 0 clamp(4px, 0.5vw, 8px) #151515, 0 0 0 calc(clamp(4px, 0.5vw, 8px) + 1px) var(--ink-4); margin-block: clamp(4px, 0.5vw, 8px); }
-/* Safari on a phone: sizes follow the phone's width (container units), 390 × 844 in all */
-.mac.phone { container-type: inline-size; background: #f2f2f4; color: #111; font-family: -apple-system, "SF Pro Text", var(--sans); }
+/* no black frame around the phone: the screen (status bar, page, browser bar) stands alone */
+.mac.phone { border-radius: clamp(10px, 1.4vw, 22px); overflow: hidden; box-shadow: 0 20px 60px -30px rgba(0, 0, 0, 0.35); }
+/* a generic phone browser (no brand marks): sizes follow the phone's width (container units), 390 × 844 in all */
+.mac.phone { container-type: inline-size; background: #f2f2f4; color: #111; font-family: var(--sans); }
 .ph-status { display: flex; justify-content: space-between; align-items: center; height: 12cqw; padding: 1.5cqw 7.5cqw 0 8.5cqw; font-size: 4.1cqw; font-weight: 600; letter-spacing: 0; background: #fff; }
 .ph-sys { display: flex; gap: 1.4cqw; align-items: center; }
 .ph-sys svg { height: 3cqw; width: auto; fill: currentColor; }
 .ph-sys svg:last-child { height: 3.3cqw; }
 .mac.phone .mac-view { aspect-ratio: 390 / 697; }
 .ph-bar { height: 25.6cqw; padding: 2.2cqw 4cqw 0; display: grid; grid-template-rows: auto auto 1fr; gap: 2cqw; background: #f2f2f4; border-top: 1px solid rgba(0, 0, 0, 0.08); }
-.ph-url { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 2cqw; height: 11cqw; padding: 0 3.6cqw; border-radius: 3.2cqw; background: #fff; box-shadow: 0 0.4cqw 2cqw rgba(0, 0, 0, 0.08); font-size: 3.9cqw; }
-.ph-aa { font-weight: 600; } .ph-aa small { font-size: 0.7em; }
+.ph-url { display: grid; grid-template-columns: 4.4cqw minmax(0, 1fr) auto; align-items: center; gap: 2cqw; height: 11cqw; padding: 0 3.6cqw; border-radius: 3.2cqw; background: #fff; box-shadow: 0 0.4cqw 2cqw rgba(0, 0, 0, 0.08); font-size: 3.9cqw; }
 .ph-host { display: flex; justify-content: center; align-items: center; gap: 1cqw; min-width: 0; overflow: hidden; white-space: nowrap; }
 .ph-host svg { width: 2.8cqw; height: 2.8cqw; fill: currentColor; opacity: 0.6; flex: 0 0 auto; }
 .ph-url > svg { width: 4.4cqw; height: 4.4cqw; }
-.ph-tools { display: flex; justify-content: space-between; padding: 0 3cqw; color: #0a84ff; }
+.ph-tools { display: flex; justify-content: space-between; padding: 0 3cqw; color: #4a4a4f; }
 .ph-tools svg { width: 6.4cqw; height: 6.4cqw; }
 .ph-home { justify-self: center; align-self: end; width: 35%; height: 1.3cqw; margin-bottom: 2cqw; border-radius: 99px; background: #111; }
 .canvas.mob { width: 390px; height: 697px; font-size: 16px; }
@@ -517,8 +517,15 @@ body.solo > :not(.solo-page) { display: none !important; }
 
 /* ---------- a hand-made page reflowed for a phone ---------- */
 .tp.tp-reflow { position: relative; min-height: 697px; display: flex; flex-direction: column; gap: 16px; padding: 18px 16px 48px; overflow: hidden; }
-.tp-reflow > *, .tp-reflow > * > .ph, .tp-reflow [data-rimg] > .ph { position: relative !important; inset: auto !important; left: auto !important; right: auto !important; top: auto !important; bottom: auto !important; width: auto !important; height: auto !important; max-width: 100%; transform: none !important; columns: auto !important; margin: 0 !important; }
+/* (not the layers and notices opened over the page: they keep their own place, or they end up in the flow below it) */
+.tp-reflow > *:not(.lv-layer):not(.lv-toast), .tp-reflow > *:not(.lv-layer):not(.lv-toast) > .ph, .tp-reflow [data-rimg] > .ph { position: relative !important; inset: auto !important; left: auto !important; right: auto !important; top: auto !important; bottom: auto !important; width: auto !important; height: auto !important; max-width: 100%; transform: none !important; columns: auto !important; margin: 0 !important; }
 .tp-reflow .ph { aspect-ratio: 4 / 3; }
+/* an empty wireframe picture would collapse to nothing in the flow: it keeps a picture's shape */
+.tp-reflow .wf:empty { aspect-ratio: 4 / 3; min-height: 0; }
+/* the top row of a page (name, menu, clock): on a phone its parts wrap as whole units instead of being squeezed and cut off */
+.tp-reflow > .tp-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; }
+.tp-reflow > .tp-row > span { min-width: 0; }
+.tp-reflow > .wf:empty:first-child, .tp-reflow > .wf:empty:nth-child(2) { aspect-ratio: 4 / 5; }
 .tp-reflow > .ph:first-child { aspect-ratio: 4 / 5; }
 .tp-reflow [style*="grid-template-columns"] { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 .tp-reflow [style*="white-space:nowrap"] { white-space: normal !important; }
