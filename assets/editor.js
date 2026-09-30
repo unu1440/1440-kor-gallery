@@ -10,7 +10,7 @@
    A phone is for content (words, pictures, checking, publishing); structure and design are for a computer. */
 (function () {
   "use strict";
-  var T = window.T1440, qs = new URLSearchParams(location.search), N = +qs.get("edit");
+  var T = window.T1440, qs = new URLSearchParams(location.search), N = +qs.get("edit"), C = (qs.get("c") || "").replace(/[^a-z0-9]/gi, "").slice(0, 12);
   if (!T || !N || !T.find(N)) return;
   var CHECK = /[?&]check=editor/.test(location.search); /* development check: see the end of this file */
   var b, gen, GEN = T.GEN, NL = String.fromCharCode(10);
@@ -95,7 +95,7 @@
   function fresh() { return { texts: {}, tstyle: {}, slots: {}, photos: {}, fit: {}, lib: [], libN: 0, pages: [{ id: "home", type: "page", name: "홈" }], models: {}, rooms: {}, bg: null, bgImg: null, bgFit: "cover", bgDim: 0, motion: null, fav: null, ink: null, face: null, feats: null, more: null, hours: null, until: null, marquee: null, extra: null, title: "", desc: "" }; }
   /* the template being changed (the check at the end changes it again and again) */
   function use(n) {
-    N = n; b = T.find(n); gen = b.gen; KEY = "1440-edit-" + n + "-" + (T.site || T.defName);
+    N = n; b = T.find(n); gen = b.gen; KEY = "1440-edit-" + n + "-" + (T.site || T.defName) + (n === N && C ? "~" + C : "");
     orig = { feats: gen ? gen.feats.slice() : null, more: gen && gen.more ? gen.more.slice() : null, bg: b.bg, ink: b.ink, font: b.font, stretch: b.stretch, extra: (T.handExtra(n) || []).slice(), face: gen ? gen.face : null };
     S = fresh();
     if (!CHECK) try { var saved = JSON.parse(localStorage.getItem(KEY) || "null"); if (saved) for (var k0 in S) if (saved[k0] !== undefined) S[k0] = saved[k0]; } catch (e) {}
@@ -163,6 +163,7 @@
     if (CHECK) return;
     drawFiles();
     try { localStorage.setItem(KEY, JSON.stringify(S)); state.textContent = "초안 · 저장됨"; } catch (e) { state.textContent = "저장하지 못했어요"; }
+    if (window.ACCOUNT && Date.now() - touchedAt > 60000) { touchedAt = Date.now(); ACCOUNT.touch(N, T.site || "", C); }
   }
   function commit(now) {
     if (CHECK) return;
@@ -818,15 +819,21 @@
     view.addEventListener("scroll", function () { if (mEl && !mRaf) mRaf = requestAnimationFrame(measShow); }, { passive: true });
   }
 
-  /* -- the left panel, as in Cargo's editor: the site's pages and sets (folders). Make pages and sets, rename (double-click),
-        drag to put in order or into a set, and a menu (right-click or "⋯") to duplicate, hide or delete. The default folder,
-        "기본", also holds the starred templates. A new page is one screen: a title and some words. -- */
-  var FILES_KEY = "1440-edit-files-open", filesOpen = false, openF = { base: true, fav: true }, renaming = null, dragId = null, curPage = "home";
+  /* -- 폴더: a small file system, as in a code editor's explorer (and Cargo's Pages panel for what it holds).
+        The top line is the person: their nickname once logged in, else the site name they typed on the first page.
+        Under it 홈 holds the forms they work on (the one being edited is open, with its pages and sets, which can sit
+        one inside another), and 즐겨찾기 the starred templates. A click chooses a row (a page opens at once; another
+        form opens with a double click or its ↗). The arrow keys walk the tree, Enter opens, F2 renames, Delete deletes,
+        Ctrl+C / X / V copy, cut and paste — pages between sets and into another form of 홈, forms into 홈 (a copy with
+        its own draft) or into 즐겨찾기 — and Ctrl+D duplicates. Rows are dragged to move them: before a row, into a
+        set, onto another form; Alt or Ctrl while dropping copies. The clipboard is kept across forms and tabs. -- */
+  var FILES_KEY = "1440-edit-files-open", filesOpen = false, openF = { base: true, fav: true }, renaming = null, drag = null, curPage = "home", selK = null, treeFocus = false;
   function starsNow() { try { return JSON.parse(localStorage.getItem("1440-stars") || "{}"); } catch (e) { return {}; } }
   function saveStarsNow(o) { try { localStorage.setItem("1440-stars", JSON.stringify(o)); } catch (e) {} }
   function siteQ() { return T.site ? "&site=" + encodeURIComponent(T.site) : ""; }
   function pgById(id) { return (S.pages || []).filter(function (p) { return p.id === id; })[0]; }
   function pgNew() { return "p-" + Date.now().toString(36) + Math.floor(Math.random() * 46656).toString(36); }
+  function note(m) { state.textContent = m; }
   function setFiles(on) {
     filesOpen = on; root.classList.toggle("files-open", on);
     var b = $("#edFilesBtn"); if (b) b.setAttribute("aria-pressed", String(on));
@@ -834,62 +841,207 @@
     drawFiles(); setTimeout(function () { window.dispatchEvent(new Event("resize")); }, 40);
   }
   function gotoPage(id) { if (!pgById(id)) id = "home"; curPage = id; select(null); render(); drawFiles(); }
+
+  /* -- forms: the one being edited (ME) and the others kept in 홈; each has its own draft -- */
+  var ME = { n: N, site: T.site || "", c: C };
+  function fId(f) { return f.n + "|" + (f.site || "") + "|" + (f.c || ""); }
+  function fKey(f) { return "1440-edit-" + f.n + "-" + (f.site || T.defName) + (f.c ? "~" + f.c : ""); }
+  function sameF(a, b) { return !!a && !!b && fId(a) === fId(b); }
+  function isMe(f) { return sameF(f, ME); }
+  function fName(f) { return f.name || T.tag(f.n); }
+  function fUrl(f) { return "templates.html?edit=" + f.n + (f.site ? "&site=" + encodeURIComponent(f.site) : "") + (f.c ? "&c=" + encodeURIComponent(f.c) : ""); }
+  function homeForms() { var h = window.ACCOUNT ? ACCOUNT.state().home.slice() : []; if (!h.some(isMe)) h.unshift({ n: ME.n, site: ME.site, c: ME.c }); return h; }
+  function saveHome(h) { if (!window.ACCOUNT) return; var s = ACCOUNT.state(); s.home = h.map(function (f) { var o = { n: +f.n, site: f.site || "", c: f.c || "" }; if (f.name) o.name = f.name; return o; }); ACCOUNT.saveState(s); }
+  function formByK(k) { var id = k.slice(2); return homeForms().filter(function (f) { return fId(f) === id; })[0]; }
+  function draftOf(f) { if (isMe(f)) return S; try { return JSON.parse(localStorage.getItem(fKey(f)) || "null"); } catch (e) { return null; } }
+  function writeDraft(f, d) { try { localStorage.setItem(fKey(f), JSON.stringify(d)); return true; } catch (e) { note("저장하지 못했어요"); return false; } }
+  /* pictures of a draft live in IndexedDB under the draft's key: a copied form takes copies of them */
+  function copyPics(from, to, done) {
+    if (!DB) return done();
+    try {
+      var t = DB.transaction("photos", "readwrite"), st = t.objectStore("photos"), rq = st.openCursor(IDBKeyRange.bound(from + "|", from + "|￿"));
+      rq.onsuccess = function () { var c = rq.result; if (c) { st.put(c.value, to + String(c.key).slice(from.length)); c.continue(); } };
+      t.oncomplete = function () { done(); }; t.onerror = function () { done(); };
+    } catch (e) { done(); }
+  }
+  function dropPics(key) { if (!DB) return; try { var t = DB.transaction("photos", "readwrite"); t.objectStore("photos").delete(IDBKeyRange.bound(key + "|", key + "|￿")); } catch (e) {} }
+  /* a form put into 홈: a starred template is simply added; a form that already has a draft (or is already in 홈) is copied with its draft */
+  function formToHome(f, after) {
+    var h = homeForms(), has = isMe(f) || !!localStorage.getItem(fKey(f)) || h.some(function (x) { return sameF(x, f); });
+    var nf = { n: +f.n, site: f.site || "", c: "" };
+    if (has) {
+      nf.c = Date.now().toString(36).slice(-5); nf.name = fName(f) + " 복사";
+      var d = isMe(f) ? JSON.parse(JSON.stringify(S)) : draftOf(f);
+      if (d) writeDraft(nf, d);
+      copyPics(fKey(f), fKey(nf), function () {});
+    }
+    var i = after ? h.findIndex(function (x) { return sameF(x, after); }) : -1;
+    if (i >= 0) h.splice(i + 1, 0, nf); else h.push(nf);
+    openF.home = true; selK = "f:" + fId(nf); saveHome(h); drawFiles();
+    note(has ? "'" + fName(f) + "'을 복사해 홈에 두었어요" : T.tag(f.n) + "을 홈에 두었어요");
+  }
+  function rmForm(f) {
+    if (isMe(f)) { note("지금 편집 중인 폼은 지울 수 없어요"); return; }
+    if (!confirm("'" + fName(f) + "'을 홈에서 지울까요? 이 폼의 초안도 함께 지워져요.")) return;
+    try { localStorage.removeItem(fKey(f)); } catch (e) {}
+    dropPics(fKey(f));
+    saveHome(homeForms().filter(function (x) { return !sameF(x, f); })); selK = null; drawFiles();
+  }
+  function star(n, on) { var o = starsNow(); if (on) o[n] = 1; else delete o[n]; saveStarsNow(o); openF.fav = true; drawFiles(); }
+
+  /* -- pages and sets of a draft: a set can hold pages and other sets -- */
+  function treeOf(pages, id) {
+    var inn = {}; inn[id] = 1;
+    for (var grew = true; grew;) { grew = false; pages.forEach(function (p) { if (!inn[p.id] && p.parent && inn[p.parent]) { inn[p.id] = 1; grew = true; } }); }
+    var all = pages.filter(function (p) { return inn[p.id]; }), top = all.filter(function (p) { return p.id === id; });
+    return top.concat(all.filter(function (p) { return p.id !== id; }));
+  }
+  function insertAt(pages, items, after) {
+    var i = pages.length;
+    if (after) { var sub = treeOf(pages, after); if (sub.length) i = Math.max.apply(null, sub.map(function (p) { return pages.indexOf(p); })) + 1; }
+    pages.splice.apply(pages, [i, 0].concat(items));
+  }
   function addPg(type) {
-    var p = { id: pgNew(), type: type, name: type === "set" ? "새 세트" : "새 페이지", body: "" };
-    S.pages.push(p); renaming = p.id; commit(true); if (type === "page") { curPage = p.id; select(null); render(); } drawFiles();
+    var p = { id: pgNew(), type: type, name: type === "set" ? "새 세트" : "새 페이지", body: "" }, s = selK && selK.indexOf("p:") === 0 ? pgById(selK.slice(2)) : null;
+    if (s && s.type === "set") { p.parent = s.id; openF[s.id] = true; } else if (s && s.parent) p.parent = s.parent;
+    insertAt(S.pages, [p], s && s.type !== "set" ? s.id : null);
+    openF.base = true; renaming = p.id; selK = "p:" + p.id; commit(true); if (type === "page") { curPage = p.id; select(null); render(); } drawFiles();
   }
   function movePg(id, targetId, into) {
-    var it = pgById(id), tg = pgById(targetId); if (!it || !tg || it === tg || it.id === "home" && tg.type === "set" && into) return;
-    if (it.type === "set" && (into || tg.parent)) return; /* a set stays at the top level */
-    S.pages = S.pages.filter(function (p) { return p !== it; });
-    if (into && tg.type === "set") { it.parent = tg.id; S.pages.push(it); }
-    else { if (tg.parent) it.parent = tg.parent; else delete it.parent; S.pages.splice(S.pages.indexOf(tg), 0, it); }
+    var it = pgById(id), tg = pgById(targetId); if (!it || !tg || it === tg || it.id === "home") return;
+    var items = treeOf(S.pages, id), ids = items.map(function (p) { return p.id; });
+    if (ids.indexOf(targetId) >= 0) { note("세트를 자기 안으로 옮길 수 없어요"); return; }
+    S.pages = S.pages.filter(function (p) { return ids.indexOf(p.id) < 0; });
+    if (into && tg.type === "set") { it.parent = tg.id; openF[tg.id] = true; S.pages = S.pages.concat(items); }
+    else { if (tg.parent) it.parent = tg.parent; else delete it.parent; S.pages.splice.apply(S.pages, [S.pages.indexOf(tg), 0].concat(items)); }
     commit(true); drawFiles();
   }
+  function toTop(id) { var it = pgById(id); if (!it || it.id === "home") return; var items = treeOf(S.pages, id), ids = items.map(function (p) { return p.id; }); S.pages = S.pages.filter(function (p) { return ids.indexOf(p.id) < 0; }); delete it.parent; S.pages = S.pages.concat(items); commit(true); drawFiles(); }
   function delPg(id) {
     var p = pgById(id); if (!p || p.id === "home") return;
     var kids = S.pages.filter(function (x) { return x.parent === id; });
-    if (p.type === "set" && kids.length && !confirm("이 세트 안의 페이지 " + kids.length + "개는 '기본' 폴더로 옮겨요. 세트를 지울까요?")) return;
+    if (p.type === "set" && kids.length && !confirm("이 세트 안의 " + kids.length + "개는 한 단계 위로 옮겨요. 세트를 지울까요?")) return;
     if (p.type === "page" && ((p.body || "").trim() || p.name !== "새 페이지") && !confirm("'" + p.name + "' 페이지를 지울까요?")) return;
-    kids.forEach(function (k) { delete k.parent; });
+    kids.forEach(function (k) { if (p.parent) k.parent = p.parent; else delete k.parent; });
     S.pages = S.pages.filter(function (x) { return x !== p; });
     if (curPage === id) curPage = "home";
-    commit(true); render(); drawFiles();
+    selK = null; commit(true); render(); drawFiles();
   }
-  function dupPg(id) {
-    var p = pgById(id); if (!p || p.type !== "page" || p.id === "home") return;
-    var c = { id: pgNew(), type: "page", name: p.name + " 복사", body: p.body || "" }; if (p.parent) c.parent = p.parent; if (p.hidden) c.hidden = 1;
-    S.pages.splice(S.pages.indexOf(p) + 1, 0, c); commit(true); drawFiles();
-  }
+  function dupPg(id) { var p = pgById(id); if (!p || p.id === "home") return; pastePages({ op: "copy", kind: "pages", from: ME, items: treeOf(S.pages, id) }, ME, p.parent || null, p.id); }
   function hidePg(id) { var p = pgById(id); if (!p || p.id === "home" || p.type !== "page") return; if (p.hidden) delete p.hidden; else p.hidden = 1; commit(true); if (curPage !== "home") render(); drawFiles(); }
-  /* the small menu of one row */
-  var pgMenu = document.createElement("div"); pgMenu.className = "ed-cm"; pgMenu.hidden = true; root.appendChild(pgMenu);
-  function closeMenu() { pgMenu.hidden = true; }
   function sibs(p) { return S.pages.filter(function (x) { return x.id !== "home" && x.parent === p.parent; }); }
   function stepOk(p, d) { var a = sibs(p), i = a.indexOf(p); return i + d >= 0 && i + d < a.length; }
   function stepPg(id, d) {
-    var p = pgById(id); if (!p || !stepOk(p, d)) return; var a = sibs(p), q = a[a.indexOf(p) + d], i = S.pages.indexOf(p), j = S.pages.indexOf(q);
-    S.pages[i] = q; S.pages[j] = p; commit(true); drawFiles();
+    var p = pgById(id); if (!p || !stepOk(p, d)) return; var a = sibs(p), q = a[a.indexOf(p) + d];
+    var mine = treeOf(S.pages, p.id), other = treeOf(S.pages, q.id), rest = S.pages.filter(function (x) { return mine.indexOf(x) < 0 && other.indexOf(x) < 0; });
+    var at = S.pages.indexOf(d < 0 ? q : p), first = d < 0 ? mine : other, second = d < 0 ? other : mine;
+    var before = S.pages.slice(0, at).filter(function (x) { return rest.indexOf(x) >= 0; });
+    S.pages = before.concat(first, second, rest.filter(function (x) { return before.indexOf(x) < 0; })); commit(true); drawFiles();
   }
-  function outPg(id) { var p = pgById(id); if (!p || !p.parent) return; S.pages = S.pages.filter(function (x) { return x !== p; }); delete p.parent; S.pages.push(p); commit(true); drawFiles(); }
-  function openMenu(id, x, y) {
-    var p = pgById(id); if (!p) return; var home = p.id === "home";
-    var items = [["ren", "이름 바꾸기", home]];
-    if (p.type === "page") { items.push(["dup", "복제", home]); items.push(["hide", p.hidden ? "보이기" : "숨기기 (초안)", home]); }
-    items.push(["up", "위로 옮기기", home || !stepOk(p, -1)], ["down", "아래로 옮기기", home || !stepOk(p, 1)]);
-    if (p.parent) items.push(["out", "세트 밖으로 꺼내기", false]);
-    items.push(["del", "지우기", home]);
-    pgMenu.innerHTML = items.map(function (i) { return '<button type="button" data-m="' + i[0] + '"' + (i[2] ? " disabled" : "") + '>' + i[1] + '</button>'; }).join("");
+  function outPg(id) { var p = pgById(id); if (!p || !p.parent) return; var up = pgById(p.parent); if (up && up.parent) { movePg(id, up.id, false); } else toTop(id); }
+
+  /* -- the clipboard: pages (with what a set holds) or a form; kept in this browser so it works across forms and tabs -- */
+  var CLIPK = "1440-clip";
+  function clipGet() { try { return JSON.parse(localStorage.getItem(CLIPK) || "null"); } catch (e) { return null; } }
+  function clipSet(c) { try { if (c) localStorage.setItem(CLIPK, JSON.stringify(c)); else localStorage.removeItem(CLIPK); } catch (e) {} drawFiles(); }
+  function copyK(k, cut) {
+    if (!k) return;
+    if (k.indexOf("p:") === 0) { var p = pgById(k.slice(2)); if (!p || p.id === "home") return; clipSet({ op: cut ? "cut" : "copy", kind: "pages", from: ME, items: JSON.parse(JSON.stringify(treeOf(S.pages, p.id))) }); note((cut ? "잘라 냈어요: " : "복사했어요: ") + p.name); return; }
+    if (cut) return;
+    var f = k.indexOf("f:") === 0 ? formByK(k) : k.indexOf("v:") === 0 ? { n: +k.slice(2), site: T.site || "", c: "" } : null;
+    if (f) { clipSet({ op: "copy", kind: "form", form: f }); note("복사했어요: " + fName(f)); }
+  }
+  function pastePages(c, f, parent, after) {
+    var mine = isMe(f), d = mine ? S : (draftOf(f) || fresh()); if (!d.pages || !d.pages.length) d.pages = [{ id: "home", type: "page", name: "홈" }];
+    var items = c.items || [], ids = items.map(function (p) { return p.id; }); if (!items.length) return;
+    if (c.op === "cut" && mine && sameF(c.from, ME) && pgById(ids[0])) { /* moving within this form */
+      if (parent && ids.indexOf(parent) >= 0) { note("세트를 자기 안으로 옮길 수 없어요"); return; }
+      if (after && ids.indexOf(after) >= 0) after = null;
+      var moved = treeOf(S.pages, ids[0]), mids = moved.map(function (p) { return p.id; });
+      S.pages = S.pages.filter(function (p) { return mids.indexOf(p.id) < 0; });
+      if (parent) moved[0].parent = parent; else delete moved[0].parent;
+      insertAt(S.pages, moved, after); clipSet(null); if (parent) openF[parent] = true; selK = "p:" + moved[0].id; commit(true); drawFiles(); return;
+    }
+    var map = {}; items.forEach(function (p) { map[p.id] = pgNew(); });
+    var fresh0 = items.map(function (p, i) { var q = JSON.parse(JSON.stringify(p)); q.id = map[p.id]; if (i === 0) { if (parent) q.parent = parent; else delete q.parent; } else q.parent = map[p.parent] || q.parent; return q; });
+    var nm0 = fresh0[0].name, nm = nm0, tries = 1, taken = function (x) { return d.pages.some(function (p) { return p.name === x && (p.parent || null) === (parent || null); }); };
+    while (taken(nm)) { nm = nm0 + " 복사" + (tries > 1 ? " " + tries : ""); tries++; }
+    fresh0[0].name = nm;
+    insertAt(d.pages, fresh0, after);
+    if (c.op === "cut") { /* take it away where it was cut */
+      if (sameF(c.from, ME)) { S.pages = S.pages.filter(function (p) { return ids.indexOf(p.id) < 0; }); if (ids.indexOf(curPage) >= 0) curPage = "home"; }
+      else { var src = draftOf(c.from); if (src && src.pages) { src.pages = src.pages.filter(function (p) { return ids.indexOf(p.id) < 0; }); writeDraft(c.from, src); } }
+      clipSet(null);
+    }
+    if (mine) { if (parent) openF[parent] = true; selK = "p:" + fresh0[0].id; commit(true); if (c.op === "cut") render(); drawFiles(); }
+    else { writeDraft(f, d); if (c.op === "cut" && sameF(c.from, ME)) { commit(true); render(); } note("'" + fName(f) + "'에 넣었어요"); drawFiles(); }
+  }
+  function pasteK(k) {
+    var c = clipGet(); if (!c) { note("붙여 넣을 것이 없어요"); return; }
+    k = k || "f:" + fId(ME);
+    if (c.kind === "form") { if (k === "favs" || k.indexOf("v:") === 0) star(c.form.n, true); else formToHome(c.form, k.indexOf("f:") === 0 ? formByK(k) : null); return; }
+    if (k === "favs" || k.indexOf("v:") === 0) { note("즐겨찾기에는 폼만 넣을 수 있어요"); return; }
+    if (k.indexOf("p:") === 0) { var p = pgById(k.slice(2)); if (!p) return; if (p.type === "set") pastePages(c, ME, p.id, null); else pastePages(c, ME, p.parent || null, p.id === "home" ? null : p.id); return; }
+    var f = k.indexOf("f:") === 0 ? formByK(k) : ME; pastePages(c, f || ME, null, null);
+  }
+  function delK(k) {
+    if (!k) return;
+    if (k.indexOf("p:") === 0) delPg(k.slice(2));
+    else if (k.indexOf("f:") === 0) { var f = formByK(k); if (f) rmForm(f); }
+    else if (k.indexOf("v:") === 0) star(+k.slice(2), false);
+  }
+  function renK(k) {
+    if (!k) return;
+    if (k.indexOf("p:") === 0 && k !== "p:home") renaming = k.slice(2);
+    else if (k.indexOf("f:") === 0) renaming = k;
+    else return;
+    drawFiles();
+  }
+  function openK(k, strong) {
+    if (!k) return;
+    var kind = k.slice(0, 2);
+    if (kind === "p:") { var p = pgById(k.slice(2)); if (!p) return; if (p.type === "set") { openF[p.id] = openF[p.id] === false; drawFiles(); } else if (p.id !== curPage) gotoPage(p.id); return; }
+    if (kind === "f:") { var f = formByK(k); if (!f) return; if (isMe(f)) { if (curPage !== "home") gotoPage("home"); } else if (strong) location.href = fUrl(f); return; }
+    if (kind === "v:") { var n = +k.slice(2); if (strong && n !== N) location.href = "templates.html?edit=" + n + siteQ(); return; }
+    var o = { root: "root", home: "home", favs: "fav" }[k]; if (o) { openF[o] = openF[o] === false; drawFiles(); }
+  }
+
+  /* -- the menu of a row (right click or ⋯), with the keys that do the same -- */
+  var pgMenu = document.createElement("div"); pgMenu.className = "ed-cm"; pgMenu.hidden = true; root.appendChild(pgMenu);
+  function closeMenu() { pgMenu.hidden = true; }
+  function rowMenu(k, x, y) {
+    var clip = !!clipGet(), items = [], kind = k.slice(0, 2), K = CMD;
+    if (kind === "p:") {
+      var p = pgById(k.slice(2)); if (!p) return; var home = p.id === "home", set = p.type === "set";
+      if (set) items.push(["newp", "새 페이지 (이 세트 안에)"], ["news", "새 세트 (이 세트 안에)"], "-");
+      else items.push(["open", "열기", "", home]);
+      items.push(["ren", "이름 바꾸기", "F2", home], ["dup", "복제", K + "D", home], "-", ["cut", "잘라내기", K + "X", home], ["copy", "복사", K + "C", home], ["paste", set ? "붙여넣기 (이 세트 안에)" : "붙여넣기", K + "V", !clip], "-");
+      if (!set) items.push(["hide", p.hidden ? "보이기" : "숨기기 (초안)", "", home]);
+      items.push(["up", "위로 옮기기", "", home || !stepOk(p, -1)], ["down", "아래로 옮기기", "", home || !stepOk(p, 1)]);
+      if (p.parent) items.push(["out", "세트 밖으로 꺼내기"]);
+      items.push("-", ["del", "지우기", "Delete", home]);
+    } else if (kind === "f:") {
+      var f = formByK(k); if (!f) return; var me = isMe(f), st = !!starsNow()[f.n];
+      items.push(["open", me ? "첫 페이지 열기" : "열기", "Enter"], ["ren", "이름 바꾸기", "F2"], "-", ["copy", "복사", K + "C"], ["paste", "붙여넣기", K + "V", !clip], ["newp", "새 페이지", "", !me], "-", [st ? "unstar" : "star", st ? "즐겨찾기에서 빼기" : "즐겨찾기에 넣기"], "-", ["del", "홈에서 지우기", "Delete", me]);
+    } else if (kind === "v:") {
+      items.push(["open", "열기", "Enter", +k.slice(2) === N], ["copy", "복사", K + "C"], ["tohome", "홈에 넣기"], "-", ["del", "즐겨찾기에서 빼기", "Delete"]);
+    } else if (k === "home" || k === "root") items.push(["newp", "새 페이지"], ["news", "새 세트"], ["paste", "붙여넣기", K + "V", !clip]);
+    else if (k === "favs") items.push(["starme", starsNow()[N] ? "이 폼을 즐겨찾기에서 빼기" : "이 폼을 즐겨찾기에 넣기"], ["paste", "붙여넣기", K + "V", !clip]);
+    pgMenu.innerHTML = items.map(function (i) { return i === "-" ? '<hr>' : '<button type="button" data-m="' + i[0] + '"' + (i[3] ? " disabled" : "") + '><span>' + i[1] + '</span>' + (i[2] ? '<span class="k">' + i[2] + '</span>' : "") + '</button>'; }).join("");
     pgMenu.hidden = false; var w = pgMenu.offsetWidth, h = pgMenu.offsetHeight;
     pgMenu.style.left = Math.max(6, Math.min(x, window.innerWidth - w - 6)) + "px"; pgMenu.style.top = Math.max(6, Math.min(y, window.innerHeight - h - 6)) + "px";
     $$("[data-m]", pgMenu).forEach(function (b) {
       b.addEventListener("click", function () {
-        var m = b.dataset.m; closeMenu();
-        if (m === "ren") { renaming = id; drawFiles(); } else if (m === "dup") dupPg(id); else if (m === "hide") hidePg(id); else if (m === "up") stepPg(id, -1); else if (m === "down") stepPg(id, 1); else if (m === "out") outPg(id); else if (m === "del") delPg(id);
+        var m = b.dataset.m, id = k.slice(2); closeMenu();
+        if (m === "open") openK(k, true); else if (m === "ren") renK(k); else if (m === "dup") dupPg(id); else if (m === "cut") copyK(k, true); else if (m === "copy") copyK(k);
+        else if (m === "paste") pasteK(k); else if (m === "hide") hidePg(id); else if (m === "up") stepPg(id, -1); else if (m === "down") stepPg(id, 1); else if (m === "out") outPg(id);
+        else if (m === "del") delK(k); else if (m === "newp" || m === "news") { if (kind === "p:") selK = k; else selK = null; addPg(m === "newp" ? "page" : "set"); }
+        else if (m === "star" || m === "unstar") star(formByK(k).n, m === "star"); else if (m === "tohome") formToHome({ n: +id, site: T.site || "", c: "" });
+        else if (m === "starme") star(N, !starsNow()[N]);
       });
     });
   }
-  document.addEventListener("click", function (e) { if (!pgMenu.hidden && !e.target.closest(".ed-cm") && !e.target.closest("[data-dots]")) closeMenu(); });
+  document.addEventListener("click", function (e) { if (!pgMenu.hidden && !e.target.closest(".ed-cm") && !e.target.closest("[data-dotk]")) closeMenu(); });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeMenu(); });
   /* small line icons, the kind a code editor's explorer uses */
   var XI = {
@@ -900,6 +1052,9 @@
     dirOpen: '<svg viewBox="0 0 16 16"><path d="M1.8 4.2h4.2l1.4 1.6h5.4v1.6"/><path d="M1.8 13h10.6l1.8-5.6H3.6z"/></svg>',
     star: '<svg viewBox="0 0 16 16"><path d="m8 2 1.8 3.8 4.1.5-3 2.8.8 4.1L8 11.2l-3.7 2 .8-4.1-3-2.8 4.1-.5z"/></svg>',
     tpl: '<svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M2 6h12"/></svg>',
+    user: '<svg viewBox="0 0 16 16"><circle cx="8" cy="5.6" r="2.7"/><path d="M2.8 14c.6-2.9 2.7-4.4 5.2-4.4s4.6 1.5 5.2 4.4"/></svg>',
+    globe: '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.2"/><path d="M1.8 8h12.4M8 1.8c1.8 1.9 2.6 4 2.6 6.2S9.8 12.3 8 14.2C6.2 12.3 5.4 10.2 5.4 8S6.2 3.7 8 1.8z"/></svg>',
+    out: '<svg viewBox="0 0 16 16"><path d="M9.5 2.5h4v4M13.5 2.5 7.5 8.5"/><path d="M12 9.5v4H2.5V4h4"/></svg>',
     newPage: '<svg viewBox="0 0 16 16"><path d="M4 1.8h5l3 3v9.4H4z"/><path d="M9 1.8v3h3M8 8v3.6M6.2 9.8h3.6"/></svg>',
     newDir: '<svg viewBox="0 0 16 16"><path d="M1.8 4.2h4.2l1.4 1.6h6.8v7.2H1.8z"/><path d="M8 7.6v3.6M6.2 9.4h3.6"/></svg>',
     fold: '<svg viewBox="0 0 16 16"><path d="M2.5 3.5h11M2.5 8h11M5 12.5h6"/></svg>',
@@ -907,16 +1062,148 @@
     eyeOff: '<svg viewBox="0 0 16 16"><path d="M1.5 8s2.4-4.2 6.5-4.2S14.5 8 14.5 8s-2.4 4.2-6.5 4.2S1.5 8 1.5 8z"/><path d="M2.5 13.5 13.5 2.5"/></svg>',
     cube: '<svg viewBox="0 0 16 16"><path d="M8 1.8 13.8 5v6L8 14.2 2.2 11V5z"/><path d="M2.2 5 8 8.2 13.8 5M8 8.2v6"/></svg>'
   };
-  function pgRow(p, depth) {
-    var on = p.id === curPage, ren = renaming === p.id, set = p.type === "set", kids = set ? S.pages.filter(function (x) { return x.parent === p.id; }) : [], open = openF[p.id] !== false;
-    var home = p.id === "home";
-    var h = '<div class="ed-pr' + (on ? " on" : "") + (p.hidden ? " dim" : "") + '" draggable="' + (ren ? "false" : "true") + '" data-id="' + p.id + '" data-type="' + p.type + '" style="--d:' + depth + '">' +
-      (set ? '<button type="button" class="tg' + (open ? " o" : "") + '" data-tg="' + p.id + '" aria-expanded="' + open + '" aria-label="펼치기">' + XI.chev + '</button>' : '<span class="tg"></span>') +
-      '<span class="ic">' + (set ? (open ? XI.dirOpen : XI.dir) : (home ? XI.home : XI.file)) + '</span>' +
-      (ren ? '<input class="rn" type="text" maxlength="40" value="' + esc(p.name) + '" aria-label="이름">' : '<span class="nm" role="button" tabindex="0" data-open="' + p.id + '" title="' + esc(p.name) + '"><span>' + esc(p.name) + '</span>' + (p.hidden ? '<em>초안</em>' : "") + (set ? '<em>' + kids.length + '</em>' : "") + '</span>') +
-      (home ? "" : '<button type="button" class="dots" data-dots="' + p.id + '" aria-label="' + esc(p.name) + ' 메뉴">⋯</button>') + '</div>';
-    if (set && open) h += kids.map(function (k) { return pgRow(k, depth + 1); }).join("") + (kids.length ? "" : '<p class="ed-fe" style="--d:' + (depth + 1) + '">비어 있음</p>');
+  /* one row of the tree */
+  function row(o) {
+    var h = '<div class="ed-pr ' + (o.cls || "") + (selK === o.k ? " sel" : "") + (o.cut ? " cut" : "") + '" role="treeitem" aria-selected="' + (selK === o.k) + '" data-k="' + esc(o.k) + '" style="--d:' + o.d + '"' + (o.drag && !o.ren ? ' draggable="true"' : "") + (o.tg != null ? ' aria-expanded="' + o.tg + '"' : "") + (o.title ? ' title="' + esc(o.title) + '"' : "") + '>';
+    h += o.tg != null ? '<button type="button" class="tg' + (o.tg ? " o" : "") + '" data-tgk="' + esc(o.k) + '" tabindex="-1" aria-label="' + (o.tg ? "접기" : "펼치기") + '">' + XI.chev + '</button>' : '<span class="tg"></span>';
+    h += '<span class="ic">' + o.ic + '</span>';
+    h += o.ren ? '<input class="rn" type="text" maxlength="40" value="' + esc(o.name) + '" aria-label="이름">' : '<span class="nm"><span>' + esc(o.name) + '</span>' + (o.em !== undefined && o.em !== "" ? '<em>' + esc(String(o.em)) + '</em>' : "") + '</span>';
+    return h + (o.extra || "") + (o.dots ? '<button type="button" class="dots" data-dotk="' + esc(o.k) + '" tabindex="-1" aria-label="' + esc(o.name) + ' 메뉴">⋯</button>' : "") + '</div>';
+  }
+  function pgRow(p, depth, cut) {
+    var set = p.type === "set", kids = set ? S.pages.filter(function (x) { return x.parent === p.id; }) : [], open = openF[p.id] !== false;
+    var h = row({ k: "p:" + p.id, d: depth, tg: set ? open : null, ic: set ? (open ? XI.dirOpen : XI.dir) : XI.file, name: p.name, em: p.hidden ? "초안" : set ? kids.length : "", cls: (p.id === curPage ? " on" : "") + (p.hidden ? " dim" : ""), drag: true, ren: renaming === p.id, dots: true, cut: cut[p.id] });
+    if (set && open) h += kids.map(function (k) { return pgRow(k, depth + 1, cut); }).join("") + (kids.length ? "" : '<p class="ed-fe" style="--d:' + (depth + 1) + '">비어 있음</p>');
     return h;
+  }
+  function treeHtml() {
+    var me = window.ACCOUNT && ACCOUNT.user, st = starsNow(), fav = Object.keys(st).map(Number).filter(function (n) { return n >= 1 && n <= T.total; }).sort(function (a, z) { return a - z; });
+    var hf = homeForms(), clip = clipGet(), cut = {};
+    if (clip && clip.op === "cut" && clip.kind === "pages" && sameF(clip.from, ME)) clip.items.forEach(function (p) { cut[p.id] = 1; });
+    var h = '<div class="ed-tree" role="tree" tabindex="0" aria-label="폴더">';
+    h += row({ k: "root", d: 0, tg: openF.root !== false, ic: me ? XI.user : XI.globe, name: me ? me.nick : (T.site || T.defName), em: me ? "" : "로그인 전", cls: "root", title: me ? "로그인한 계정" : "처음에 적은 사이트 이름" });
+    if (openF.root !== false) {
+      h += row({ k: "home", d: 1, tg: openF.home !== false, ic: XI.home, name: "홈", em: hf.length, cls: "homeh" });
+      if (openF.home !== false) hf.forEach(function (f) {
+        var mine = isMe(f), open = mine && openF.base !== false, k = "f:" + fId(f);
+        h += row({ k: k, d: 2, tg: mine ? open : null, ic: XI.tpl, name: fName(f), em: mine ? "편집 중" : (f.name ? T.tag(f.n) : ""), cls: "site" + (mine && curPage === "home" ? " on" : ""), drag: true, ren: renaming === k, dots: true, title: mine ? "지금 편집 중인 폼" : "두 번 눌러 열기",
+          extra: mine ? "" : '<button type="button" class="dots go" data-gok="' + esc(k) + '" tabindex="-1" aria-label="열기" title="열기">' + XI.out + '</button>' });
+        if (open) { var roots = S.pages.filter(function (p) { return !p.parent && p.id !== "home"; }); h += roots.map(function (p) { return pgRow(p, 3, cut); }).join("") || '<p class="ed-fe" style="--d:3">위의 + 로 페이지와 세트를 더해요</p>'; }
+      });
+      h += row({ k: "favs", d: 1, tg: openF.fav !== false, ic: XI.star, name: "즐겨찾기", em: fav.length, cls: "favh", extra: '<button type="button" class="dots" id="edStarMe" tabindex="-1" aria-pressed="' + !!st[N] + '" title="이 폼을 즐겨찾기에 ' + (st[N] ? "서 빼기" : "넣기") + '">' + (st[N] ? "★" : "☆") + '</button>' });
+      if (openF.fav !== false) h += fav.length ? fav.map(function (n) {
+        var b0 = T.find(n) || {}, k = "v:" + n;
+        return row({ k: k, d: 2, ic: XI.tpl, name: T.tag(n), em: b0.label || "", cls: "fvrow" + (n === N ? " on" : ""), drag: true, dots: true, title: "두 번 눌러 열기", extra: n === N ? "" : '<button type="button" class="dots go" data-gok="' + k + '" tabindex="-1" aria-label="열기" title="열기">' + XI.out + '</button>' });
+      }).join("") : '<p class="ed-fe" style="--d:2">☆를 누른 템플릿이 여기에 모여요</p>';
+    }
+    return h + '</div>';
+  }
+  /* what a dragged row may land on, and what happens */
+  function dropMode(src, k, e) {
+    if (!src || src === k) return "";
+    var sk = src.slice(0, 2), tk = k.slice(0, 2), copy = e.altKey || e.ctrlKey || e.metaKey;
+    if (sk === "p:") {
+      if (tk === "p:") { var t = pgById(k.slice(2)); if (!t || treeOf(S.pages, src.slice(2)).some(function (p) { return p.id === t.id; })) return ""; return t.type === "set" ? (copy ? "copyin" : "into") : (copy ? "copybefore" : "before"); }
+      if (tk === "f:") { var f = formByK(k); return f ? (isMe(f) ? (copy ? "copyin" : "into") : (copy ? "copyin" : "into")) : ""; }
+      if (k === "home" || k === "root") return copy ? "copyin" : "into";
+      return "";
+    }
+    if (sk === "f:") { if (tk === "f:") return "before"; if (k === "favs" || tk === "v:") return "into"; if (k === "home") return copy ? "into" : ""; return ""; }
+    if (sk === "v:") { if (k === "home" || k === "root" || tk === "f:") return "into"; return ""; }
+    return "";
+  }
+  function doDrop(src, k, mode) {
+    var sk = src.slice(0, 2), tk = k.slice(0, 2), copy = mode.indexOf("copy") === 0;
+    if (sk === "p:") {
+      var id = src.slice(2), items = treeOf(S.pages, id);
+      if (tk === "p:") { var t = pgById(k.slice(2)); if (copy) pastePages({ op: "copy", items: items, from: ME }, ME, t.type === "set" ? t.id : (t.parent || null), t.type === "set" ? null : t.id); else movePg(id, t.id, t.type === "set"); return; }
+      var f = tk === "f:" ? formByK(k) : ME;
+      if (!f || isMe(f)) { if (copy) pastePages({ op: "copy", items: items, from: ME }, ME, null, null); else toTop(id); return; }
+      pastePages({ op: copy ? "copy" : "cut", items: items, from: ME }, f, null, null); return;
+    }
+    if (sk === "f:") {
+      var sf = formByK(src); if (!sf) return;
+      if (tk === "f:") { var h = homeForms().filter(function (x) { return !sameF(x, sf); }), i = h.findIndex(function (x) { return fId(x) === k.slice(2); }); h.splice(i < 0 ? h.length : i, 0, sf); saveHome(h); drawFiles(); return; }
+      if (k === "favs" || tk === "v:") { star(sf.n, true); return; }
+      if (k === "home") formToHome(sf); return;
+    }
+    if (sk === "v:") formToHome({ n: +src.slice(2), site: T.site || "", c: "" }, tk === "f:" ? formByK(k) : null);
+  }
+  /* the tree keeps the keys only while the person is working in it (drawing it again must not take them from the page) */
+  document.addEventListener("pointerdown", function (e) { treeFocus = !!(e.target.closest && e.target.closest(".ed-tree")); }, true);
+  document.addEventListener("focusin", function (e) { treeFocus = !!(e.target.closest && e.target.closest(".ed-tree")); });
+  function bindTree(el) {
+    var tree = $(".ed-tree", el); if (!tree) return;
+    tree.addEventListener("focus", function () { if (!selK) { selK = "f:" + fId(ME); mark(); } });
+    function rows() { return $$(".ed-pr[data-k]", tree); }
+    function mark() { rows().forEach(function (r) { var on = r.dataset.k === selK; r.classList.toggle("sel", on); r.setAttribute("aria-selected", String(on)); if (on) try { r.scrollIntoView({ block: "nearest" }); } catch (e) {} }); }
+    function toggleK(k, open) {
+      var map = { root: "root", home: "home", favs: "fav" }, key = map[k] || (k.indexOf("f:") === 0 ? (isMe(formByK(k) || {}) ? "base" : null) : k.slice(2));
+      if (!key) return false; var now = openF[key] !== false; if (open === now) return false; openF[key] = open; drawFiles(); return true;
+    }
+    tree.addEventListener("click", function (e) {
+      var tg = e.target.closest("[data-tgk]"); if (tg) { e.stopPropagation(); var k0 = tg.dataset.tgk, r0 = tg.closest(".ed-pr"); selK = k0; toggleK(k0, r0.getAttribute("aria-expanded") !== "true"); return; }
+      var dk = e.target.closest("[data-dotk]"); if (dk) { e.stopPropagation(); selK = dk.dataset.dotk; mark(); var r = dk.getBoundingClientRect(); rowMenu(dk.dataset.dotk, r.left, r.bottom + 4); return; }
+      var gk = e.target.closest("[data-gok]"); if (gk) { e.stopPropagation(); openK(gk.dataset.gok, true); return; }
+      if (e.target.closest("#edStarMe")) { e.stopPropagation(); star(N, !starsNow()[N]); return; }
+      var row0 = e.target.closest(".ed-pr[data-k]"); if (!row0 || e.target.closest(".rn")) return;
+      selK = row0.dataset.k; tree.focus({ preventScroll: true }); mark();
+      openK(selK, false);
+    });
+    tree.addEventListener("dblclick", function (e) {
+      var row0 = e.target.closest(".ed-pr[data-k]"); if (!row0 || e.target.closest(".rn, button")) return; var k = row0.dataset.k;
+      if (k.indexOf("p:") === 0) { if (pgById(k.slice(2)) && pgById(k.slice(2)).type === "page") renK(k); } else if (k.indexOf("f:") === 0 || k.indexOf("v:") === 0) openK(k, true);
+    });
+    tree.addEventListener("contextmenu", function (e) { var row0 = e.target.closest(".ed-pr[data-k]"); if (!row0) return; e.preventDefault(); selK = row0.dataset.k; mark(); rowMenu(selK, e.clientX, e.clientY); });
+    tree.addEventListener("keydown", function (e) {
+      if (e.target.classList.contains("rn")) return;
+      var rs = rows(), i = rs.findIndex(function (r) { return r.dataset.k === selK; }), meta = e.metaKey || e.ctrlKey, key = (e.key || "").toLowerCase(), cur = rs[i];
+      var go = function (j) { j = Math.max(0, Math.min(rs.length - 1, j)); selK = rs[j].dataset.k; mark(); };
+      if (e.key === "ArrowDown") { e.preventDefault(); go(i + 1); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); go(i < 0 ? 0 : i - 1); }
+      else if (e.key === "Home") { e.preventDefault(); go(0); } else if (e.key === "End") { e.preventDefault(); go(rs.length - 1); }
+      else if (e.key === "ArrowRight" && cur) { e.preventDefault(); if (cur.getAttribute("aria-expanded") === "false") toggleK(selK, true); else if (cur.getAttribute("aria-expanded") === "true") go(i + 1); }
+      else if (e.key === "ArrowLeft" && cur) {
+        e.preventDefault();
+        if (cur.getAttribute("aria-expanded") === "true") toggleK(selK, false);
+        else { var d0 = parseFloat(cur.style.getPropertyValue("--d")); for (var j = i - 1; j >= 0; j--) if (parseFloat(rs[j].style.getPropertyValue("--d")) < d0) { go(j); break; } }
+      }
+      else if (e.key === "Enter") { e.preventDefault(); openK(selK, true); }
+      else if (e.key === "F2") { e.preventDefault(); renK(selK); }
+      else if (e.key === "Delete" || (e.key === "Backspace" && MAC && meta)) { e.preventDefault(); delK(selK); }
+      else if (meta && key === "c") { e.preventDefault(); copyK(selK); }
+      else if (meta && key === "x" && !e.shiftKey) { e.preventDefault(); copyK(selK, true); }
+      else if (meta && key === "v") { e.preventDefault(); pasteK(selK); }
+      else if (meta && key === "d") { e.preventDefault(); if (selK && selK.indexOf("p:") === 0) dupPg(selK.slice(2)); else if (selK && selK.indexOf("f:") === 0) formToHome(formByK(selK), formByK(selK)); }
+    });
+    /* dragging rows */
+    rows().forEach(function (r) {
+      r.addEventListener("dragstart", function (e) { if (r.getAttribute("draggable") !== "true") return; drag = r.dataset.k; selK = drag; try { e.dataTransfer.setData("text/plain", drag); e.dataTransfer.effectAllowed = "copyMove"; } catch (z) {} r.classList.add("drag"); });
+      r.addEventListener("dragend", function () { drag = null; $$(".ed-pr.drag, .ed-pr.over, .ed-pr.into", tree).forEach(function (x) { x.classList.remove("drag", "over", "into"); }); });
+      r.addEventListener("dragover", function (e) {
+        var m = dropMode(drag, r.dataset.k, e); if (!m) return; e.preventDefault();
+        try { e.dataTransfer.dropEffect = m.indexOf("copy") === 0 ? "copy" : "move"; } catch (z) {}
+        var into = /in$/.test(m) || m === "into"; r.classList.toggle("into", into); r.classList.toggle("over", !into);
+      });
+      r.addEventListener("dragleave", function () { r.classList.remove("over", "into"); });
+      r.addEventListener("drop", function (e) { e.preventDefault(); r.classList.remove("over", "into"); var m = dropMode(drag, r.dataset.k, e), src = drag; drag = null; if (m && src) doDrop(src, r.dataset.k, m); });
+    });
+    /* renaming in place */
+    var rn = $(".rn", tree);
+    if (rn) {
+      rn.focus(); rn.select();
+      var done = false, id0 = renaming;
+      var fin = function (ok) {
+        if (done) return; done = true; renaming = null;
+        var v = rn.value.trim();
+        if (id0.indexOf("f:") === 0) { var f = formByK(id0); if (ok && v && f) { var h = homeForms().map(function (x) { if (sameF(x, f)) { x = Object.assign({}, x); if (v === T.tag(x.n)) delete x.name; else x.name = v; } return x; }); saveHome(h); } }
+        else { var p = pgById(id0); if (ok && v && p && v !== p.name) { p.name = v; commit(true); if (curPage !== "home" && viewOf()) render(); } }
+        drawFiles(); var t = $(".ed-tree"); if (t) t.focus({ preventScroll: true });
+      };
+      rn.addEventListener("keydown", function (e) { if (e.key === "Enter") fin(true); else if (e.key === "Escape") { e.stopPropagation(); fin(false); } });
+      rn.addEventListener("blur", function () { fin(true); });
+    }
+    if (treeFocus && !rn) tree.focus({ preventScroll: true });
   }
   /* -- layers, as in Photoshop's Layers panel: the page as three layers (front, middle, back), with an eye for each; and a 3D view, opened only from
         here, that shows the three layers one behind the other and can be turned -- */
@@ -983,7 +1270,7 @@
     LYS = layersNow(); if (!LYS.length) return;
     var pw = tp.offsetWidth, ph = tp.offsetHeight, pbg = LYS[0].bg || "#fff";
     var planes = [0, 1, 2].map(function (k) {
-      var walls = ""; for (var w = 1; w <= 14; w++) walls += '<div class="d3-f" style="width:' + pw + 'px;height:' + ph + 'px;--z:' + (k - 1) + ';--t:' + (w * 2) + '"></div>'; /* the thickness of the sheet: frames one behind the other */
+      var walls = ""; for (var w = 1; w <= 14; w++) walls += '<div class="d3-f k' + k + '" style="width:' + pw + 'px;height:' + ph + 'px;--z:' + (k - 1) + ';--t:' + (w * 2) + '"></div>'; /* the thickness of the sheet: frames one behind the other */
       return '<div class="d3-p k' + k + '" style="width:' + pw + 'px;height:' + ph + 'px;--z:' + (k - 1) + (k === 0 ? ";background:" + pbg : "") + '" data-k="' + k + '"><span class="d3-l">' + LNAME[k][0] + '<small>' + LNAME[k][1] + '</small></span></div>' + walls;
     }).join("");
     var cards = LYS.map(function (l, i) {
@@ -1023,6 +1310,13 @@
     $(".d3-reset", ov).addEventListener("click", function () { d3s.rx = -10; d3s.ry = 38; d3s.zm = 1; d3s.gap = 240; $(".d3-gap", ov).value = 240; apply(); });
     $(".d3-close", ov).addEventListener("click", close3d);
     var bt = $("#ed3d3"); if (bt) bt.setAttribute("aria-pressed", "true");
+    vis3d();
+  }
+  /* the eye of a layer hides that sheet in the 3D view too: its sheet, its thickness and everything drawn on it */
+  function vis3d() {
+    var ov = $("#ed3d"); if (!ov || !d3on) return;
+    [0, 1, 2].forEach(function (k) { $$(".d3-p.k" + k + ", .d3-f.k" + k, ov).forEach(function (e) { e.style.display = hidL[k] ? "none" : ""; }); });
+    $$(".d3-c", ov).forEach(function (c) { var l = LYS[+c.dataset.i]; c.style.display = l && hidL[l.layer] ? "none" : ""; });
   }
   function close3d() { var ov = $("#ed3d"); if (ov) { ov.hidden = true; ov.innerHTML = ""; } d3on = false; var bt = $("#ed3d3"); if (bt) bt.setAttribute("aria-pressed", "false"); }
 
@@ -1032,22 +1326,7 @@
     if (!filesOpen) { el.innerHTML = ""; return; }
     if (renaming && $(".rn", el)) return;
     if (!pgById(curPage)) curPage = "home";
-    var st = starsNow(), fav = Object.keys(st).map(Number).filter(function (n) { return n >= 1 && n <= T.total; }).sort(function (a, z) { return a - z; }), mine = !!st[N];
-    var roots = S.pages.filter(function (p) { return !p.parent; });
-    var h = '<div class="ed-fh"><button type="button" class="sh' + (openS.pages === false ? '' : ' o') + '" data-sec="pages">' + XI.chev + '폴더</button><span class="ed-fa"><button type="button" id="edAddPg" title="새 페이지" aria-label="새 페이지">' + XI.newPage + '</button><button type="button" id="edAddSet" title="새 세트(폴더)" aria-label="새 세트">' + XI.newDir + '</button></span></div>' +
-      '<div class="ed-pr root" style="--d:0"><button type="button" class="tg' + (openF.home !== false ? " o" : "") + '" data-tg="home" aria-expanded="' + (openF.home !== false) + '" aria-label="펼치기">' + XI.chev + '</button><span class="nm"><span>홈</span></span></div>';
-    /* under 홈: the site being made now, with its pages */
-    if (openF.home !== false) {
-      h += '<div class="ed-pr site' + (curPage === "home" ? " on" : "") + '" data-id="base" data-type="base" style="--d:1"><button type="button" class="tg' + (openF.base !== false ? " o" : "") + '" data-tg="base" aria-expanded="' + (openF.base !== false) + '" aria-label="펼치기">' + XI.chev + '</button><span class="ic">' + XI.tpl + '</span><button type="button" class="nm" data-open="home" title="첫 페이지"><span>' + T.tag(N) + '</span><em>편집 중</em></button></div>';
-      if (openF.base !== false) h += roots.filter(function (p) { return p.id !== "home"; }).map(function (p) { return pgRow(p, 2); }).join("");
-    }
-    /* and apart from it, the starred templates */
-    h += '<div class="ed-pr fav" style="--d:0"><button type="button" class="tg' + (openF.fav !== false ? " o" : "") + '" data-tg="fav" aria-expanded="' + (openF.fav !== false) + '" aria-label="펼치기">' + XI.chev + '</button><span class="ic">' + XI.star + '</span><span class="nm"><span>즐겨찾기</span><em>' + fav.length + '</em></span>' +
-      '<button type="button" class="dots" id="edStarMe" aria-pressed="' + mine + '" title="이 템플릿을 즐겨찾기에 ' + (mine ? "서 빼기" : "넣기") + '">' + (mine ? "★" : "☆") + '</button></div>';
-    if (openF.fav !== false) h += fav.length ? fav.map(function (n) {
-      var b0 = T.find(n) || {};
-      return '<div class="ed-pr fvrow' + (n === N ? " on" : "") + '" style="--d:1"><span class="tg"></span><span class="ic">' + XI.tpl + '</span><button type="button" class="nm" data-go="' + n + '" title="' + esc(b0.label || "") + '"><span>' + T.tag(n) + '</span><em>' + esc(b0.label || "") + '</em></button><button type="button" class="dots" data-unstar="' + n + '" aria-label="' + T.tag(n) + ' 즐겨찾기 빼기">×</button></div>';
-    }).join("") : '<p class="ed-fe" style="--d:1">☆를 누른 템플릿이 여기에 모여요</p>';
+    var h = '<div class="ed-fh"><button type="button" class="sh' + (openS.pages === false ? '' : ' o') + '" data-sec="pages">' + XI.chev + '폴더</button><span class="ed-fa"><button type="button" id="edAddPg" title="새 페이지" aria-label="새 페이지">' + XI.newPage + '</button><button type="button" id="edAddSet" title="새 세트(폴더)" aria-label="새 세트">' + XI.newDir + '</button><button type="button" id="edFold" title="모두 접기" aria-label="모두 접기">' + XI.fold + '</button></span></div>' + treeHtml();
     var pdo = openS.pages !== false;
     h = '<section class="ed-sec' + (pdo ? "" : " c") + '">' + h + '</section>';
     h += '<section class="ed-sec' + (openS.tools === false ? " c" : "") + '"><div class="ed-fh"><button type="button" class="sh' + (openS.tools === false ? "" : " o") + '" data-sec="tools">' + XI.chev + '도구</button></div>' +
@@ -1055,55 +1334,13 @@
     if (!phone.matches) h += '<section class="ed-sec' + (openS.layers === false ? " c" : "") + '"><div class="ed-fh"><button type="button" class="sh' + (openS.layers === false ? "" : " o") + '" data-sec="layers">' + XI.chev + '레이어</button><span class="ed-fa"><button type="button" id="ed3d3" title="3D로 보기" aria-label="레이어를 3D로 보기" aria-pressed="' + d3on + '">' + XI.cube + '</button></span></div>' + (openS.layers === false ? "" : layerRows(1)) + '</section>';
     el.innerHTML = h;
     $$("[data-sec]", el).forEach(function (x) { x.addEventListener("click", function () { openS[x.dataset.sec] = openS[x.dataset.sec] === false; drawFiles(); }); });
-    $$("[data-eye]", el).forEach(function (x) { x.addEventListener("click", function (e) { e.stopPropagation(); var k = +x.dataset.eye; hidL[k] = !hidL[k]; applyLayerVis(); drawFiles(); }); });
+    $$("[data-eye]", el).forEach(function (x) { x.addEventListener("click", function (e) { e.stopPropagation(); var k = +x.dataset.eye; hidL[k] = !hidL[k]; applyLayerVis(); drawFiles(); vis3d(); }); });
     $$("[data-lyo]", el).forEach(function (x) { x.addEventListener("click", function () { var k = +x.dataset.lyo, L = LYS.filter(function (l) { return l.layer === k && !l.page; })[0]; flashLayer(L); }); });
     var b3 = $("#ed3d3", el); if (b3) b3.addEventListener("click", function () { if (d3on) close3d(); else open3d(); });
-    $$("[data-tg]", el).forEach(function (x) { x.addEventListener("click", function () { openF[x.dataset.tg] = openF[x.dataset.tg] === false; drawFiles(); }); });
-    $$("[data-open]", el).forEach(function (x) {
-      x.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); x.click(); } });
-      x.addEventListener("click", function () { var p = pgById(x.dataset.open); if (!p) return; if (p.type === "set") { openF[p.id] = openF[p.id] === false; drawFiles(); } else if (p.id !== curPage) gotoPage(p.id); });
-      x.addEventListener("dblclick", function () { if (x.dataset.open !== "home") { renaming = x.dataset.open; drawFiles(); } });
-    });
-    $$(".ed-pr[data-id]", el).forEach(function (row) {
-      var id = row.dataset.id; if (id === "base") return;
-      row.addEventListener("contextmenu", function (e) { e.preventDefault(); openMenu(id, e.clientX, e.clientY); });
-      row.addEventListener("dragstart", function (e) { dragId = id; try { e.dataTransfer.setData("text/plain", id); e.dataTransfer.effectAllowed = "move"; } catch (z) {} row.classList.add("drag"); });
-      row.addEventListener("dragend", function () { dragId = null; row.classList.remove("drag"); $$(".ed-pr.over, .ed-pr.into", el).forEach(function (r) { r.classList.remove("over", "into"); }); });
-    });
-    $$(".ed-pr[data-id]", el).forEach(function (row) {
-      var id = row.dataset.id;
-      row.addEventListener("dragover", function (e) {
-        if (!dragId || dragId === id) return; e.preventDefault();
-        var into = row.dataset.type === "set" || row.dataset.type === "base";
-        row.classList.toggle("into", into); row.classList.toggle("over", !into);
-      });
-      row.addEventListener("dragleave", function () { row.classList.remove("over", "into"); });
-      row.addEventListener("drop", function (e) {
-        e.preventDefault(); row.classList.remove("over", "into"); if (!dragId) return;
-        if (id === "base") { var it = pgById(dragId); if (it) { S.pages = S.pages.filter(function (p) { return p !== it; }); delete it.parent; S.pages.push(it); commit(true); drawFiles(); } }
-        else movePg(dragId, id, row.dataset.type === "set");
-        dragId = null;
-      });
-    });
-    $$("[data-dots]", el).forEach(function (x) { x.addEventListener("click", function (e) { e.stopPropagation(); var r = x.getBoundingClientRect(); openMenu(x.dataset.dots, r.left, r.bottom + 4); }); });
-    var rn = $(".rn", el);
-    if (rn) {
-      rn.focus(); rn.select();
-      var done = false, id0 = renaming;
-      var fin = function (ok) {
-        if (done) return; done = true; renaming = null;
-        var v = rn.value.trim(), p = pgById(id0);
-        if (ok && v && p && v !== p.name) { p.name = v; commit(true); if (curPage === id0 || S.pages.length) { var v0 = viewOf(); if (curPage !== "home" && v0) render(); } }
-        drawFiles();
-      };
-      rn.addEventListener("keydown", function (e) { if (e.key === "Enter") fin(true); else if (e.key === "Escape") { e.stopPropagation(); fin(false); } });
-      rn.addEventListener("blur", function () { fin(true); });
-    }
+    bindTree(el);
     $("#edAddPg", el).addEventListener("click", function () { addPg("page"); });
     $("#edAddSet", el).addEventListener("click", function () { addPg("set"); });
-    $$("[data-go]", el).forEach(function (x) { x.addEventListener("click", function () { if (+x.dataset.go !== N) location.href = "templates.html?edit=" + x.dataset.go + siteQ(); }); });
-    $$("[data-unstar]", el).forEach(function (x) { x.addEventListener("click", function () { var o = starsNow(); delete o[x.dataset.unstar]; saveStarsNow(o); drawFiles(); }); });
-    var me = $("#edStarMe", el); if (me) me.addEventListener("click", function () { var o = starsNow(); if (o[N]) delete o[N]; else o[N] = 1; saveStarsNow(o); drawFiles(); });
+    $("#edFold", el).addEventListener("click", function () { S.pages.forEach(function (p) { if (p.type === "set") openF[p.id] = false; }); openF.fav = false; drawFiles(); });
   }
   (function () {
     var rs = $("#edRs"), W_KEY = "1440-edit-files-w", raf = 0;
@@ -1116,7 +1353,10 @@
     });
     rs.addEventListener("keydown", function (e) { if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return; e.preventDefault(); var cur = $("#edFiles").offsetWidth; var w = setW(cur + (e.key === "ArrowLeft" ? 24 : -24)); try { localStorage.setItem(W_KEY, String(Math.round(w))); } catch (z) {} });
   })();
-  window.addEventListener("storage", function (e) { if (e.key === "1440-stars") drawFiles(); });
+  window.addEventListener("storage", function (e) { if (e.key === "1440-stars" || e.key === CLIPK || e.key === "1440-guest") drawFiles(); });
+  /* the account: the top of the tree is the person, and the form being edited becomes the one My hub opens */
+  if (window.ACCOUNT && !CHECK) { ACCOUNT.on(function () { drawFiles(); }); ACCOUNT.ready.then(function () { ACCOUNT.touch(N, T.site || "", C); drawFiles(); }); }
+  var touchedAt = Date.now();
   window.addEventListener("focus", function () { if (!renaming) drawFiles(); });
 
   /* a page other than the first is one screen of its own: the site's name and the pages along the top, a title and some words */
@@ -1161,7 +1401,7 @@
     var name = ""; try { name = localStorage.getItem("1440-site-name") || T.site || ""; } catch (e) {}
     $(".ed-dlg-box", dlg).innerHTML = '<h2 class="ed-h" id="edDlgT" style="font-size:1.4em">공개하기</h2><p class="ed-p2">내 사이트 주소를 정해 주세요. 영문 소문자, 숫자, 하이픈(-)을 쓸 수 있어요.</p>' +
       '<div class="ed-addr"><label class="ed-sr" for="edAddrIn">주소</label><input id="edAddrIn" type="text" maxlength="30" value="' + esc(name) + '" placeholder="이름" autocapitalize="off" autocomplete="off" spellcheck="false"><span>.kor.gallery</span></div>' +
-      '<p class="ed-p2" id="edAddrMsg">가입과 로그인, 실제 공개는 준비 중이에요. 지금은 주소만 저장해 둘게요. 고친 내용은 이 브라우저에 초안으로 저장되어 있어요.</p>' +
+      '<p class="ed-p2" id="edAddrMsg">실제 공개는 준비 중이에요. 지금은 주소만 저장해 둘게요. 고친 내용은 이 브라우저에 초안으로 저장되어 있어요.' + (window.ACCOUNT && ACCOUNT.user ? '' : ' 첫 화면의 Login으로 가입하면 My hub에서 이 폼으로 바로 돌아올 수 있어요.') + '</p>' +
       '<div class="ed-dlg-b"><button type="button" class="ed-btn ghost" id="edDlgX">닫기</button><button type="button" class="ed-btn" id="edDlgOk">주소 저장</button></div>';
     dlg.hidden = false; var inp = $("#edAddrIn");
     inp.addEventListener("input", function () { var v = inp.value.toLowerCase().replace(/[\s_]+/g, "-").replace(/[^a-z0-9-]/g, "").slice(0, 30); if (v !== inp.value) inp.value = v; });
@@ -1170,7 +1410,7 @@
       var v = inp.value.replace(/^-+|-+$/g, ""), m = $("#edAddrMsg");
       if (v.length < 2) { m.textContent = "두 글자 이상 적어 주세요."; inp.focus(); return; }
       try { localStorage.setItem("1440-site-name", v); } catch (e) {}
-      m.textContent = v + ".kor.gallery 주소를 저장했어요. 가입·공개는 준비 중이에요."; T.setHost(v); render();
+      m.textContent = v + ".kor.gallery 주소를 저장했어요. 공개는 준비 중이에요."; T.setHost(v); render();
     });
     if (!dlg._out) { dlg._out = 1; dlg.addEventListener("click", function (e) { if (e.target === dlg) closeDlg(); }); }
     setTimeout(function () { inp.focus(); }, 0);
@@ -1207,7 +1447,7 @@
         S.pages.push({ id: "t-set", type: "set", name: "세트" }, { id: "t-pg", type: "page", name: "시험 페이지", body: "글", parent: "t-set" });
         drawFiles(); var el = $("#edFiles");
         if (!$('[data-p="bg"]', el) || !$("#ed3d3", el)) cNote(n, "the tools or layers are missing from the side panel");
-        if (!$("#edAddPg", el) || !$("#edAddSet", el) || !$('[data-open="t-pg"]', el) || !$("#edStarMe", el)) cNote(n, "the page list is missing its parts");
+        if (!$("#edAddPg", el) || !$("#edAddSet", el) || !$('[data-k="p:t-pg"]', el) || !$("#edStarMe", el)) cNote(n, "the page list is missing its parts");
         movePg("t-pg", "home", false); if (pgById("t-pg").parent) cNote(n, "a page does not move out of a set");
         movePg("t-pg", "t-set", true); if (pgById("t-pg").parent !== "t-set") cNote(n, "a page does not move into a set");
         dupPg("t-pg"); if (S.pages.length !== 4) cNote(n, "a page is not duplicated");

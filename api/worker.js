@@ -1,0 +1,196 @@
+/* 1440 accounts: a Cloudflare Worker on 1440.kor.gallery/api/* (see api/wrangler.jsonc and CLAUDE.md → 계정).
+   Sign-up, log-in, the hub (the form last edited, the forms in 홈), and the student month: a university address is
+   checked with a code sent by e-mail (Resend), which gives the first month free once per address. Addresses the site
+   does not know as a university go to the admin, who can approve them, or give or take back a free month by hand.
+   Storage is D1 (api/schema.sql). Passwords: PBKDF2-SHA-256. Sessions: a random token in an HttpOnly cookie, kept
+   hashed. Every change must come from this site (Origin) as JSON. */
+
+const DAY = 86400000, MONTH = 30 * DAY, SESSION = 60 * DAY, CODE_LIFE = 10 * 60000;
+const ITER = 100000; /* the most Workers allow for PBKDF2 */
+const enc = new TextEncoder();
+
+export const UNI = /(^|\.)(ac\.[a-z]{2}|edu(\.[a-z]{2})?)$/i; /* snu.ac.kr, mit.edu, unimelb.edu.au, ox.ac.uk */
+export function uniDomain(email) { const d = String(email).split("@")[1] || ""; return UNI.test(d); }
+const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[a-z]{2,}$/i;
+const NICK = /^[\p{L}\p{N}_.-]{2,20}$/u;
+
+function b64(buf) { let s = ""; new Uint8Array(buf).forEach((c) => (s += String.fromCharCode(c))); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+function unb64(s) { s = s.replace(/-/g, "+").replace(/_/g, "/"); const b = atob(s + "===".slice((s.length + 3) % 4)); return Uint8Array.from(b, (c) => c.charCodeAt(0)); }
+function rand(n) { return crypto.getRandomValues(new Uint8Array(n)); }
+async function sha(s) { return b64(await crypto.subtle.digest("SHA-256", enc.encode(s))); }
+async function pbkdf2(pass, salt, iter) {
+  const k = await crypto.subtle.importKey("raw", enc.encode(pass), "PBKDF2", false, ["deriveBits"]);
+  return b64(await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations: iter }, k, 256));
+}
+export async function hashPass(pass) { const salt = rand(16); return "pbkdf2$" + ITER + "$" + b64(salt) + "$" + (await pbkdf2(pass, salt, ITER)); }
+export async function checkPass(pass, stored) {
+  const [, it, salt, h] = String(stored).split("$"); if (!h) return false;
+  const got = await pbkdf2(pass, unb64(salt), +it);
+  let d = got.length ^ h.length; for (let i = 0; i < Math.min(got.length, h.length); i++) d |= got.charCodeAt(i) ^ h.charCodeAt(i);
+  return d === 0;
+}
+
+function json(data, status = 200, headers = {}) { return new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", ...headers } }); }
+function fail(msg, status = 400) { return json({ error: msg }, status); }
+function cookie(name, val, maxAge) { return name + "=" + val + "; Path=/api; HttpOnly; Secure; SameSite=Lax; Max-Age=" + maxAge; }
+function readCookie(req, name) { const m = (req.headers.get("cookie") || "").match(new RegExp("(?:^|;\\s*)" + name + "=([^;]+)")); return m ? m[1] : ""; }
+
+function publicUser(u) {
+  let state = {}; try { state = JSON.parse(u.state || "{}"); } catch (e) {}
+  return { id: u.id, nick: u.nick, email: u.email, role: u.role, student: u.student, uniEmail: u.uni_email || "", trialUntil: u.trial_until || 0, state };
+}
+async function userOf(env, req) {
+  const t = readCookie(req, "sid"); if (!t) return null;
+  const row = await env.DB.prepare("SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ? AND s.expires > ?").bind(await sha(t), Date.now()).first();
+  return row || null;
+}
+async function startSession(env, userId) {
+  const t = b64(rand(32));
+  await env.DB.prepare("INSERT INTO sessions (token, user_id, expires) VALUES (?, ?, ?)").bind(await sha(t), userId, Date.now() + SESSION).run();
+  return cookie("sid", t, SESSION / 1000);
+}
+function isAdmin(env, u) { return u && (u.role === "admin" || (env.ADMIN_EMAILS || "").split(",").map((s) => s.trim().toLowerCase()).includes(u.email)); }
+async function tooMany(env, key, max, win) {
+  const r = await env.DB.prepare("SELECT COUNT(*) AS n FROM attempts WHERE key = ? AND at > ?").bind(key, Date.now() - win).first();
+  return (r ? r.n : 0) >= max;
+}
+async function note(env, key) { await env.DB.prepare("INSERT INTO attempts (key, at) VALUES (?, ?)").bind(key, Date.now()).run(); }
+
+async function sendMail(env, to, subject, text) {
+  if (!env.RESEND_API_KEY) throw new Error("no mail key");
+  const r = await fetch("https://api.resend.com/emails", {
+    method: "POST", headers: { authorization: "Bearer " + env.RESEND_API_KEY, "content-type": "application/json" },
+    body: JSON.stringify({ from: env.MAIL_FROM || "1440 <no-reply@kor.gallery>", to: [to], subject, text })
+  });
+  if (!r.ok) throw new Error("mail " + r.status);
+}
+
+async function body(req) { try { return await req.json(); } catch (e) { return {}; } }
+
+const routes = {
+  "GET /api/health": async () => json({ ok: true }),
+
+  "GET /api/me": async (env, req, u) => json({ user: u ? { ...publicUser(u), admin: isAdmin(env, u) } : null }),
+
+  "POST /api/signup": async (env, req) => {
+    const d = await body(req), email = String(d.email || "").trim().toLowerCase(), nick = String(d.nick || "").trim(), pass = String(d.password || "");
+    if (!NICK.test(nick)) return fail("닉네임은 2–20자, 글자·숫자·_ . - 만 쓸 수 있어요.");
+    if (!EMAIL.test(email)) return fail("이메일 주소를 확인해 주세요.");
+    if (pass.length < 8) return fail("비밀번호는 8자 이상이에요.");
+    if (await env.DB.prepare("SELECT 1 FROM users WHERE email = ?").bind(email).first()) return fail("이미 가입한 이메일이에요.", 409);
+    if (await env.DB.prepare("SELECT 1 FROM users WHERE nick = ?").bind(nick).first()) return fail("이미 쓰는 닉네임이에요.", 409);
+    const id = b64(rand(12)), state = JSON.stringify(d.state && typeof d.state === "object" ? d.state : {}).slice(0, 8000);
+    await env.DB.prepare("INSERT INTO users (id, email, nick, pass, state, created) VALUES (?, ?, ?, ?, ?, ?)").bind(id, email, nick, await hashPass(pass), state, Date.now()).run();
+    const u = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(id).first();
+    return json({ user: { ...publicUser(u), admin: isAdmin(env, u) } }, 200, { "set-cookie": await startSession(env, id) });
+  },
+
+  "POST /api/login": async (env, req) => {
+    const d = await body(req), email = String(d.email || "").trim().toLowerCase(), ip = req.headers.get("cf-connecting-ip") || "";
+    if (await tooMany(env, "login:" + email, 8, 15 * 60000) || await tooMany(env, "ip:" + ip, 30, 15 * 60000)) return fail("잠시 후 다시 해 주세요.", 429);
+    const u = await env.DB.prepare("SELECT * FROM users WHERE email = ?").bind(email).first();
+    if (!u || !(await checkPass(String(d.password || ""), u.pass))) { await note(env, "login:" + email); await note(env, "ip:" + ip); return fail("이메일이나 비밀번호가 맞지 않아요.", 401); }
+    return json({ user: { ...publicUser(u), admin: isAdmin(env, u) } }, 200, { "set-cookie": await startSession(env, u.id) });
+  },
+
+  "POST /api/logout": async (env, req) => {
+    const t = readCookie(req, "sid"); if (t) await env.DB.prepare("DELETE FROM sessions WHERE token = ?").bind(await sha(t)).run();
+    return json({ ok: true }, 200, { "set-cookie": cookie("sid", "", 0) });
+  },
+
+  /* the hub: which form was edited last and the forms kept in 홈 */
+  "PUT /api/me/state": async (env, req, u) => {
+    if (!u) return fail("로그인해 주세요.", 401);
+    const d = await body(req), s = JSON.stringify(d.state && typeof d.state === "object" ? d.state : {});
+    if (s.length > 8000) return fail("too big", 413);
+    await env.DB.prepare("UPDATE users SET state = ? WHERE id = ?").bind(s, u.id).run();
+    return json({ ok: true });
+  },
+
+  /* the student month: a code to the university address */
+  "POST /api/student/send": async (env, req, u) => {
+    if (!u) return fail("로그인해 주세요.", 401);
+    if (u.student === "verified") return fail("이미 확인했어요.");
+    const d = await body(req), uni = String(d.uniEmail || "").trim().toLowerCase();
+    if (!EMAIL.test(uni)) return fail("학교 메일 주소를 확인해 주세요.");
+    if (!uniDomain(uni)) return fail("대학 메일(.ac.kr, .edu 등)이 아니에요. 아래 '관리자 확인 요청'을 써 주세요.", 422);
+    if (await env.DB.prepare("SELECT 1 FROM users WHERE uni_email = ? AND id != ?").bind(uni, u.id).first()) return fail("이 학교 메일은 이미 다른 계정이 썼어요.", 409);
+    const old = await env.DB.prepare("SELECT sent FROM codes WHERE user_id = ?").bind(u.id).first();
+    if (old && Date.now() - old.sent < 60000) return fail("1분 뒤에 다시 보낼 수 있어요.", 429);
+    if (await tooMany(env, "code:" + u.id, 6, DAY)) return fail("오늘은 더 보낼 수 없어요.", 429);
+    const code = String(100000 + (crypto.getRandomValues(new Uint32Array(1))[0] % 900000));
+    await env.DB.prepare("INSERT OR REPLACE INTO codes (user_id, uni_email, code, expires, tries, sent) VALUES (?, ?, ?, ?, 0, ?)").bind(u.id, uni, await sha(code), Date.now() + CODE_LIFE, Date.now()).run();
+    await note(env, "code:" + u.id);
+    try { await sendMail(env, uni, "1440 학교 메일 확인 코드 " + code, "1440 학교 메일 확인 코드: " + code + "\n\n10분 안에 입력해 주세요. 요청하지 않았다면 이 메일은 지워도 됩니다.\n\n1440.kor.gallery"); }
+    catch (e) { return fail("메일을 보내지 못했어요. 잠시 후 다시 해 주세요.", 502); }
+    return json({ ok: true });
+  },
+
+  "POST /api/student/verify": async (env, req, u) => {
+    if (!u) return fail("로그인해 주세요.", 401);
+    const d = await body(req), c = await env.DB.prepare("SELECT * FROM codes WHERE user_id = ?").bind(u.id).first();
+    if (!c || c.expires < Date.now()) return fail("코드가 없거나 시간이 지났어요. 다시 보내 주세요.");
+    if (c.tries >= 5) return fail("여러 번 틀렸어요. 코드를 다시 보내 주세요.", 429);
+    if ((await sha(String(d.code || "").trim())) !== c.code) { await env.DB.prepare("UPDATE codes SET tries = tries + 1 WHERE user_id = ?").bind(u.id).run(); return fail("코드가 맞지 않아요."); }
+    if (await env.DB.prepare("SELECT 1 FROM users WHERE uni_email = ? AND id != ?").bind(c.uni_email, u.id).first()) return fail("이 학교 메일은 이미 다른 계정이 썼어요.", 409);
+    const until = Math.max(u.trial_until || 0, Date.now()) + MONTH;
+    await env.DB.prepare("UPDATE users SET uni_email = ?, student = 'verified', trial_until = ? WHERE id = ?").bind(c.uni_email, until, u.id).run();
+    await env.DB.prepare("DELETE FROM codes WHERE user_id = ?").bind(u.id).run();
+    return json({ ok: true, trialUntil: until });
+  },
+
+  /* an address the site does not know as a university: the admin looks */
+  "POST /api/student/request": async (env, req, u) => {
+    if (!u) return fail("로그인해 주세요.", 401);
+    if (u.student === "verified") return fail("이미 확인했어요.");
+    const d = await body(req), uni = String(d.uniEmail || "").trim().toLowerCase(), school = String(d.school || "").trim().slice(0, 80);
+    if (!EMAIL.test(uni) || !school) return fail("학교 이름과 학교 메일을 적어 주세요.");
+    if (await env.DB.prepare("SELECT 1 FROM requests WHERE user_id = ? AND status = 'pending'").bind(u.id).first()) return fail("이미 요청했어요. 확인되면 알려 드려요.");
+    await env.DB.prepare("INSERT INTO requests (id, user_id, uni_email, school, created) VALUES (?, ?, ?, ?, ?)").bind(b64(rand(9)), u.id, uni, school, Date.now()).run();
+    await env.DB.prepare("UPDATE users SET student = 'pending' WHERE id = ?").bind(u.id).run();
+    return json({ ok: true });
+  },
+
+  /* the admin: who asked, who is a student, and a free month given or taken back by hand */
+  "GET /api/admin/students": async (env, req, u) => {
+    if (!isAdmin(env, u)) return fail("관리자만 볼 수 있어요.", 403);
+    const reqs = await env.DB.prepare("SELECT r.id, r.uni_email, r.school, r.status, r.created, u.id AS user_id, u.nick, u.email FROM requests r JOIN users u ON u.id = r.user_id ORDER BY r.status = 'pending' DESC, r.created DESC LIMIT 200").all();
+    const users = await env.DB.prepare("SELECT id, nick, email, uni_email, student, trial_until, created FROM users ORDER BY created DESC LIMIT 300").all();
+    return json({ requests: reqs.results || [], users: users.results || [] });
+  },
+  "POST /api/admin/decide": async (env, req, u) => {
+    if (!isAdmin(env, u)) return fail("관리자만 할 수 있어요.", 403);
+    const d = await body(req), r = await env.DB.prepare("SELECT * FROM requests WHERE id = ?").bind(String(d.id || "")).first();
+    if (!r || r.status !== "pending") return fail("없거나 이미 처리한 요청이에요.", 404);
+    const ok = !!d.approve;
+    if (ok && await env.DB.prepare("SELECT 1 FROM users WHERE uni_email = ? AND id != ?").bind(r.uni_email, r.user_id).first()) return fail("이 학교 메일은 이미 다른 계정이 썼어요.", 409);
+    await env.DB.prepare("UPDATE requests SET status = ? WHERE id = ?").bind(ok ? "approved" : "denied", r.id).run();
+    if (ok) {
+      const t = await env.DB.prepare("SELECT trial_until FROM users WHERE id = ?").bind(r.user_id).first();
+      await env.DB.prepare("UPDATE users SET uni_email = ?, student = 'verified', trial_until = ? WHERE id = ?").bind(r.uni_email, Math.max((t && t.trial_until) || 0, Date.now()) + MONTH, r.user_id).run();
+    } else await env.DB.prepare("UPDATE users SET student = 'none' WHERE id = ?").bind(r.user_id).run();
+    return json({ ok: true });
+  },
+  "POST /api/admin/grant": async (env, req, u) => {
+    if (!isAdmin(env, u)) return fail("관리자만 할 수 있어요.", 403);
+    const d = await body(req), days = Math.max(-365, Math.min(365, Math.round(+d.days || 0))), t = await env.DB.prepare("SELECT trial_until FROM users WHERE id = ?").bind(String(d.userId || "")).first();
+    if (!t) return fail("그런 사용자가 없어요.", 404);
+    const until = days > 0 ? Math.max(t.trial_until || 0, Date.now()) + days * DAY : null;
+    await env.DB.prepare("UPDATE users SET trial_until = ? WHERE id = ?").bind(until, String(d.userId)).run();
+    return json({ ok: true, trialUntil: until || 0 });
+  }
+};
+
+export default {
+  async fetch(req, env) {
+    const url = new URL(req.url), key = req.method + " " + url.pathname.replace(/\/+$/, ""), fn = routes[key];
+    if (!fn) return fail("not found", 404);
+    if (req.method !== "GET") {
+      const origin = req.headers.get("origin");
+      if (origin && origin !== url.origin && origin !== env.SITE_ORIGIN) return fail("forbidden", 403);
+      if (!/application\/json/.test(req.headers.get("content-type") || "")) return fail("json only", 415);
+    }
+    try { return await fn(env, req, await userOf(env, req)); }
+    catch (e) { return fail("잠시 문제가 생겼어요.", 500); }
+  }
+};

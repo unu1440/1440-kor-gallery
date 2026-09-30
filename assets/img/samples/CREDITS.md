@@ -1820,3 +1820,194 @@
 | `wt-water-p488198.jpg` | https://www.pexels.com/photo/9488198/ | water |
 | `wt-water-p918642.jpg` | https://www.pexels.com/photo/918642/ | water |
 | `wt-water-p940678.jpg` | https://www.pexels.com/photo/8940678/ | water |
+
+## 졸업전시 작품 목록 페이지용 사진 (`gw-*.jpg`)
+
+Works 페이지에 쓰는 사진입니다. 클리블랜드 미술관 오픈 액세스(CC0, 출처 표기 의무 없음)와 Openverse에서 CC0로 공개된 사진입니다. 작품 이름·작가 이름은 지어낸 것이며 원래 작품과 관계없습니다.
+
+| 파일 | 원본 |
+|---|---|
+| `gw-cer-160809.jpg` | Cleveland Museum of Art Open Access, 1999.121 |
+| `gw-cer-140177.jpg` | Cleveland Museum of Art Open Access, 1964.175 |
+| `gw-cer-134757.jpg` | Cleveland Museum of Art Open Access, 1957.30 |
+| `gw-cer-135838.jpg` | Cleveland Museum of Art Open Access, 1959.35 |
+| `gw-cer-154692.jpg` | Cleveland Museum of Art Open Access, 1989.284 |
+| `gw-cer-380101.jpg` | Cleveland Museum of Art Open Access, 2020.196 |
+| `gw-cer-154679.jpg` | Cleveland Museum of Art Open Access, 1989.274 |
+| `gw-cer-101465.jpg` | Cleveland Museum of Art Open Access, 1920.258 |
+| `gw-cer-134219.jpg` | Cleveland Museum of Art Open Access, 1956.702 |
+| `gw-cer-155785.jpg` | Cleveland Museum of Art Open Access, 1991.112 |
+| `gw-cer-135013.jpg` | Cleveland Museum of Art Open Access, 1957.64 |
+| `gw-cer-154547.jpg` | Cleveland Museum of Art Open Access, 1989.177 |
+| `gw-cer-128191.jpg` | Cleveland Museum of Art Open Access, 1951.182 |
+| `gw-cer-156535.jpg` | Cleveland Museum of Art Open Access, 1992.245 |
+| `gw-cer-151891.jpg` | Cleveland Museum of Art Open Access, 1984.183 |
+| `gw-cer-144852.jpg` | Cleveland Museum of Art Open Access, 1969.74.2 |
+| `gw-cer-162688.jpg` | Cleveland Museum of Art Open Access, 2003.250.2.a |
+| `gw-cer-132002.jpg` | Cleveland Museum of Art Open Access, 1954.575 |
+| `gw-cer-132000.jpg` | Cleveland Museum of Art Open Access, 1954.574.a |
+| `gw-cer-134997.jpg` | Cleveland Museum of Art Open Access, 1957.53.a |
+| `gw-cer-134998.jpg` | Cleveland Museum of Art Open Access, 1957.53.b |
+| `gw-cer-159690.jpg` | Cleveland Museum of Art Open Access, 1996.400.a |
+| `gw-cer-148541.jpg` | Cleveland Museum of Art Open Access, 1976.110 |
+| `gw-cer-131999.jpg` | Cleveland Museum of Art Open Access, 1954.574 |
+| `gw-cer-132001.jpg` | Cleveland Museum of Art Open Access, 1954.574.b |
+| `gw-cer-134996.jpg` | Cleveland Museum of Art Open Access, 1957.53 |
+| `gw-cer-151470.jpg` | Cleveland Museum of Art Open Access, 1983.46.1 |
+| `gw-cer-154713.jpg` | Cleveland Museum of Art Open Access, 1989.30.b |
+| `gw-cer-144679.jpg` | Cleveland Museum of Art Open Access, 1969.300 |
+| `gw-cer-284749.jpg` | Cleveland Museum of Art Open Access, 2017.21 |
+| `gw-cer-141272.jpg` | Cleveland Museum of Art Open Access, 1964.501 |
+| `gw-cer-98222.jpg` | Cleveland Museum of Art Open Access, 1917.905 |
+| `gw-cer-97635.jpg` | Cleveland Museum of Art Open Access, 1917.278 |
+| `gw-cer-120202.jpg` | Cleveland Museum of Art Open Access, 1940.968 |
+| `gw-cer-98221.jpg` | Cleveland Museum of Art Open Access, 1917.904 |
+| `gw-cer-128313.jpg` | Cleveland Museum of Art Open Access, 1951.297 |
+| `gw-cer-93946.jpg` | Cleveland Museum of Art Open Access, 1914.535 |
+| `gw-cer-113921.jpg` | Cleveland Museum of Art Open Access, 1933.201 |
+| `gw-cer-119620.jpg` | Cleveland Museum of Art Open Access, 1940.472 |
+| `gw-cer-160024.jpg` | Cleveland Museum of Art Open Access, 1997.286 |
+| `gw-cer-119643.jpg` | Cleveland Museum of Art Open Access, 1940.49 |
+| `gw-cer-120209.jpg` | Cleveland Museum of Art Open Access, 1940.972 |
+| `gw-cer-97956.jpg` | Cleveland Museum of Art Open Access, 1917.60 |
+| `gw-cer-97749.jpg` | Cleveland Museum of Art Open Access, 1917.382 |
+| `gw-cer-128347.jpg` | Cleveland Museum of Art Open Access, 1951.310 |
+| `gw-cer-135018.jpg` | Cleveland Museum of Art Open Access, 1957.69 |
+| `gw-cer-123645.jpg` | Cleveland Museum of Art Open Access, 1944.209.a |
+| `gw-cer-123617.jpg` | Cleveland Museum of Art Open Access, 1944.191 |
+| `gw-cer-156824.jpg` | Cleveland Museum of Art Open Access, 1992.46 |
+| `gw-cer-160045.jpg` | Cleveland Museum of Art Open Access, 1997.302 |
+| `gw-cer-173951.jpg` | Cleveland Museum of Art Open Access, 2018.290 |
+| `gw-cer-127731.jpg` | Cleveland Museum of Art Open Access, 1950.390.b |
+| `gw-cer-128093.jpg` | Cleveland Museum of Art Open Access, 1951.108 |
+| `gw-cer-144900.jpg` | Cleveland Museum of Art Open Access, 1970.116 |
+| `gw-cer-135710.jpg` | Cleveland Museum of Art Open Access, 1959.250 |
+| `gw-cer-94984.jpg` | Cleveland Museum of Art Open Access, 1915.537 |
+| `gw-cer-127476.jpg` | Cleveland Museum of Art Open Access, 1950.158 |
+| `gw-cer-148319.jpg` | Cleveland Museum of Art Open Access, 1975.46 |
+| `gw-cer-127727.jpg` | Cleveland Museum of Art Open Access, 1950.388 |
+| `gw-cer-120869.jpg` | Cleveland Museum of Art Open Access, 1941.59 |
+| `gw-cer-123992.jpg` | Cleveland Museum of Art Open Access, 1944.488 |
+| `gw-cer-127730.jpg` | Cleveland Museum of Art Open Access, 1950.390.a |
+| `gw-cer-99419.jpg` | Cleveland Museum of Art Open Access, 1919.10 |
+| `gw-cer-160979.jpg` | Cleveland Museum of Art Open Access, 1999.235 |
+| `gw-cer-95002.jpg` | Cleveland Museum of Art Open Access, 1915.553 |
+| `gw-cer-160043.jpg` | Cleveland Museum of Art Open Access, 1997.300 |
+| `gw-cer-296873.jpg` | Cleveland Museum of Art Open Access, 2018.272 |
+| `gw-cer-155856.jpg` | Cleveland Museum of Art Open Access, 1991.16 |
+| `gw-cer-169214.jpg` | Cleveland Museum of Art Open Access, 2011.122.a |
+| `gw-cer-93161.jpg` | Cleveland Museum of Art Open Access, 2018.279 |
+| `gw-cer-135711.jpg` | Cleveland Museum of Art Open Access, 1959.251 |
+| `gw-cer-99483.jpg` | Cleveland Museum of Art Open Access, 1919.12 |
+| `gw-cer-94999.jpg` | Cleveland Museum of Art Open Access, 1915.550 |
+| `gw-cer-117634.jpg` | Cleveland Museum of Art Open Access, 1938.285.b |
+| `gw-cer-138541.jpg` | Cleveland Museum of Art Open Access, 1962.429 |
+| `gw-cer-155818.jpg` | Cleveland Museum of Art Open Access, 1991.132.b |
+| `gw-cer-155816.jpg` | Cleveland Museum of Art Open Access, 1991.132 |
+| `gw-cer-117772.jpg` | Cleveland Museum of Art Open Access, 1938.390 |
+| `gw-cer-119203.jpg` | Cleveland Museum of Art Open Access, 1940.134 |
+| `gw-cer-127939.jpg` | Cleveland Museum of Art Open Access, 1950.571 |
+| `gw-cer-155806.jpg` | Cleveland Museum of Art Open Access, 1991.128.1.a |
+| `gw-cer-144661.jpg` | Cleveland Museum of Art Open Access, 1969.285 |
+| `gw-cer-99214.jpg` | Cleveland Museum of Art Open Access, 1918.788 |
+| `gw-tex-119485.jpg` | Cleveland Museum of Art Open Access, 1940.363 |
+| `gw-tex-128263.jpg` | Cleveland Museum of Art Open Access, 1951.257 |
+| `gw-tex-131737.jpg` | Cleveland Museum of Art Open Access, 1954.317 |
+| `gw-tex-108095.jpg` | Cleveland Museum of Art Open Access, 1925.712 |
+| `gw-tex-112182.jpg` | Cleveland Museum of Art Open Access, 1930.628 |
+| `gw-tex-108073.jpg` | Cleveland Museum of Art Open Access, 1925.693 |
+| `gw-tex-125225.jpg` | Cleveland Museum of Art Open Access, 1947.189 |
+| `gw-tex-131739.jpg` | Cleveland Museum of Art Open Access, 1954.318.a |
+| `gw-tex-101246.jpg` | Cleveland Museum of Art Open Access, 1920.1624 |
+| `gw-tex-114582.jpg` | Cleveland Museum of Art Open Access, 1934.202.2 |
+| `gw-tex-128900.jpg` | Cleveland Museum of Art Open Access, 1951.500 |
+| `gw-tex-108068.jpg` | Cleveland Museum of Art Open Access, 1925.689 |
+| `gw-tex-101267.jpg` | Cleveland Museum of Art Open Access, 1920.1685 |
+| `gw-tex-101149.jpg` | Cleveland Museum of Art Open Access, 1920.1480 |
+| `gw-tex-101323.jpg` | Cleveland Museum of Art Open Access, 1920.1939 |
+| `gw-tex-109577.jpg` | Cleveland Museum of Art Open Access, 1928.209 |
+| `gw-tex-101260.jpg` | Cleveland Museum of Art Open Access, 1920.1653 |
+| `gw-tex-108071.jpg` | Cleveland Museum of Art Open Access, 1925.691 |
+| `gw-tex-95780.jpg` | Cleveland Museum of Art Open Access, 1916.1470 |
+| `gw-tex-101187.jpg` | Cleveland Museum of Art Open Access, 1920.1548 |
+| `gw-tex-117037.jpg` | Cleveland Museum of Art Open Access, 1937.581 |
+| `gw-tex-101274.jpg` | Cleveland Museum of Art Open Access, 1920.1721 |
+| `gw-tex-107896.jpg` | Cleveland Museum of Art Open Access, 1925.521 |
+| `gw-tex-102108.jpg` | Cleveland Museum of Art Open Access, 1920.759 |
+| `gw-tex-101202.jpg` | Cleveland Museum of Art Open Access, 1920.1562 |
+| `gw-tex-107901.jpg` | Cleveland Museum of Art Open Access, 1925.526 |
+| `gw-tex-99471.jpg` | Cleveland Museum of Art Open Access, 1919.109 |
+| `gw-tex-128930.jpg` | Cleveland Museum of Art Open Access, 1951.522 |
+| `gw-tex-98460.jpg` | Cleveland Museum of Art Open Access, 1918.189 |
+| `gw-tex-108056.jpg` | Cleveland Museum of Art Open Access, 1925.678 |
+| `gw-tex-97926.jpg` | Cleveland Museum of Art Open Access, 1917.521 |
+| `gw-tex-110730.jpg` | Cleveland Museum of Art Open Access, 1929.274 |
+| `gw-tex-97805.jpg` | Cleveland Museum of Art Open Access, 1917.425 |
+| `gw-tex-97830.jpg` | Cleveland Museum of Art Open Access, 1917.439 |
+| `gw-tex-97853.jpg` | Cleveland Museum of Art Open Access, 1917.462 |
+| `gw-tex-110796.jpg` | Cleveland Museum of Art Open Access, 1929.326 |
+| `gw-tex-97835.jpg` | Cleveland Museum of Art Open Access, 1917.441 |
+| `gw-tex-97941.jpg` | Cleveland Museum of Art Open Access, 1917.537 |
+| `gw-tex-124878.jpg` | Cleveland Museum of Art Open Access, 1946.358 |
+| `gw-tex-149427.jpg` | Cleveland Museum of Art Open Access, 1978.77 |
+| `gw-tex-97914.jpg` | Cleveland Museum of Art Open Access, 1917.511 |
+| `gw-tex-97928.jpg` | Cleveland Museum of Art Open Access, 1917.523 |
+| `gw-tex-97936.jpg` | Cleveland Museum of Art Open Access, 1917.532 |
+| `gw-scu-159070.jpg` | Cleveland Museum of Art Open Access, 1995.269 |
+| `gw-scu-159125.jpg` | Cleveland Museum of Art Open Access, 1995.316 |
+| `gw-scu-119888.jpg` | Cleveland Museum of Art Open Access, 1940.697 |
+| `gw-scu-118386.jpg` | Cleveland Museum of Art Open Access, 1939.426.3 |
+| `gw-scu-118382.jpg` | Cleveland Museum of Art Open Access, 1939.425.b |
+| `gw-scu-159092.jpg` | Cleveland Museum of Art Open Access, 1995.289 |
+| `gw-scu-125786.jpg` | Cleveland Museum of Art Open Access, 1947.675 |
+| `gw-scu-100027.jpg` | Cleveland Museum of Art Open Access, 1919.573.b |
+| `gw-scu-284355.jpg` | Cleveland Museum of Art Open Access, 2016.38 |
+| `gw-scu-141671.jpg` | Cleveland Museum of Art Open Access, 1965.26 |
+| `gw-scu-159204.jpg` | Cleveland Museum of Art Open Access, 1995.389 |
+| `gw-scu-148830.jpg` | Cleveland Museum of Art Open Access, 1976.71.b |
+| `gw-scu-153762.jpg` | Cleveland Museum of Art Open Access, 1987.6 |
+| `gw-scu-119731.jpg` | Cleveland Museum of Art Open Access, 1940.566 |
+| `gw-scu-146086.jpg` | Cleveland Museum of Art Open Access, 1971.276 |
+| `gw-scu-152323.jpg` | Cleveland Museum of Art Open Access, 1985.185 |
+| `gw-scu-119733.jpg` | Cleveland Museum of Art Open Access, 1940.568 |
+| `gw-scu-119743.jpg` | Cleveland Museum of Art Open Access, 1940.577 |
+| `gw-scu-145959.jpg` | Cleveland Museum of Art Open Access, 1971.165 |
+| `gw-scu-137201.jpg` | Cleveland Museum of Art Open Access, 1962.155.2 |
+| `gw-scu-95004.jpg` | Cleveland Museum of Art Open Access, 1915.555 |
+| `gw-scu-144309.jpg` | Cleveland Museum of Art Open Access, 1969.136 |
+| `gw-scu-119734.jpg` | Cleveland Museum of Art Open Access, 1940.569 |
+| `gw-scu-141644.jpg` | Cleveland Museum of Art Open Access, 1965.238 |
+| `gw-scu-144280.jpg` | Cleveland Museum of Art Open Access, 1969.118 |
+| `gw-scu-119730.jpg` | Cleveland Museum of Art Open Access, 1940.565 |
+| `gw-scu-120308.jpg` | Cleveland Museum of Art Open Access, 1941.16 |
+| `gw-scu-95005.jpg` | Cleveland Museum of Art Open Access, 1915.556 |
+| `gw-dsn-136614.jpg` | Cleveland Museum of Art Open Access, 1961.172.2.a |
+| `gw-dsn-399505.jpg` | Cleveland Museum of Art Open Access, 2020.206.b |
+| `gw-dsn-387678.jpg` | Cleveland Museum of Art Open Access, 2020.206 |
+| `gw-dsn-96519.jpg` | Cleveland Museum of Art Open Access, 1916.280 |
+| `gw-dsn-95256.jpg` | Cleveland Museum of Art Open Access, 1916.103 |
+| `gw-dsn-97493.jpg` | Cleveland Museum of Art Open Access, 1917.1059 |
+| `gw-dsn-142837.jpg` | Cleveland Museum of Art Open Access, 1966.515.a |
+| `gw-dsn-153417.jpg` | Cleveland Museum of Art Open Access, 1987.1 |
+| `gw-dsn-95589.jpg` | Cleveland Museum of Art Open Access, 1916.131 |
+| `gw-dsn-111704.jpg` | Cleveland Museum of Art Open Access, 1930.231 |
+| `gw-dsn-94777.jpg` | Cleveland Museum of Art Open Access, 1915.342.2 |
+| `gw-dsn-97490.jpg` | Cleveland Museum of Art Open Access, 1917.1056 |
+| `gw-dsn-97492.jpg` | Cleveland Museum of Art Open Access, 1917.1058 |
+| `gw-dsn-97495.jpg` | Cleveland Museum of Art Open Access, 1917.1060 |
+| `gw-dsn-97496.jpg` | Cleveland Museum of Art Open Access, 1917.1061 |
+| `gw-dsn-97497.jpg` | Cleveland Museum of Art Open Access, 1917.1062 |
+| `gw-dsn-109609.jpg` | Cleveland Museum of Art Open Access, 1928.234 |
+| `gw-dsn-97491.jpg` | Cleveland Museum of Art Open Access, 1917.1057 |
+| `gw-pnt-f060dd40.jpg` | https://cdn.stocksnap.io/img-thumbs/960w/J8HQTPQR4I.jpg |
+| `gw-pnt-06673189.jpg` | https://cdn.stocksnap.io/img-thumbs/960w/Z9CLCWFKBH.jpg |
+| `gw-pnt-0d0255ee.jpg` | https://cdn.stocksnap.io/img-thumbs/960w/AMQNKBXFIQ.jpg |
+| `gw-pnt-5389a2bb.jpg` | https://cdn.stocksnap.io/img-thumbs/960w/BO2LNK630N.jpg |
+| `gw-pnt-e2433555.jpg` | https://cdn.stocksnap.io/img-thumbs/960w/PS7M4VMB9P.jpg |
+| `gw-pnt-ce1e6fda.jpg` | https://cdn.stocksnap.io/img-thumbs/960w/NFUFXSZFHZ.jpg |
+| `gw-pnt-83e66a47.jpg` | https://live.staticflickr.com/65535/51339797779_4f2dfc9ede_b.jpg |
+| `gw-pnt-0aa32c21.jpg` | https://live.staticflickr.com/65535/51337672249_13b36b7bda_b.jpg |
+| `gw-fib-8f0c19c6.jpg` | https://live.staticflickr.com/65535/52720429888_da91aaafbb_b.jpg |
+| `gw-fib-94690fee.jpg` | https://live.staticflickr.com/65535/52720211914_6d681e7c00_b.jpg |
+| `gw-fib-73e17a29.jpg` | https://live.staticflickr.com/65535/52720430678_aa31d910b8_b.jpg |
+| `gw-prt-bdeee1a9.jpg` | https://images.rawpixel.com/editor_1024/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDI0LTAxL2xyL3JpamtzcnAtcC0xOTE4LTE1MDAtaW1hZ2UuanBn.jpg |

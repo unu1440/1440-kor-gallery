@@ -1,0 +1,24 @@
+{
+  // 1440 accounts API: a second Worker that answers only 1440.kor.gallery/api/* (the site itself stays static assets).
+  // Not deployed by the site's GitHub workflows. Setting it up once (see CLAUDE.md → 계정):
+  //   npx wrangler d1 create kor-gallery-accounts            → put the database_id below
+  //   npx wrangler d1 execute kor-gallery-accounts --remote --file api/schema.sql
+  //   npx wrangler secret put RESEND_API_KEY -c api/wrangler.jsonc
+  //   npx wrangler deploy -c api/wrangler.jsonc
+  // Until it is deployed the pages fall back to the browser-only preview of accounts (assets/account.js).
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "kor-gallery-api",
+  "main": "worker.js",
+  "account_id": "8f5d3c3d30c383c3a9ca84eac2a9e325",
+  "compatibility_date": "2025-09-01",
+  "workers_dev": false,
+  "routes": [{ "pattern": "1440.kor.gallery/api/*", "zone_name": "kor.gallery" }],
+  "vars": {
+    "ADMIN_EMAILS": "1440unu@kor.gallery",
+    "MAIL_FROM": "1440 <no-reply@kor.gallery>",
+    "SITE_ORIGIN": "https://1440.kor.gallery"
+  },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "kor-gallery-accounts", "database_id": "SET-AFTER-d1-create" }
+  ]
+}

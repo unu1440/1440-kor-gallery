@@ -232,17 +232,20 @@
 
   /* 정보: comes up over this page (nothing is loaded), goes away with the same link, Esc, or a press on the empty left half */
   var infoOv = document.getElementById("infoOv"), aboutLink = document.getElementById("aboutLink");
-  function infoOpen() { return infoOv.classList.contains("open"); }
+  /* the account layer (assets/acct-ui.js) sits in the same place: while either is open the address stays still */
+  function infoOpen() { return infoOv.classList.contains("open") || document.body.classList.contains("acct-open"); }
   function setInfo(on) {
+    if (on && window.ACCT_UI) window.ACCT_UI.close();
     infoOv.classList.toggle("open", on); infoOv.setAttribute("aria-hidden", String(!on)); aboutLink.setAttribute("aria-expanded", String(on));
     if (on) { if (document.activeElement === input) input.blur(); infoOv.scrollTop = 0; }
   }
+  window.SITE_INFO = { close: function () { if (infoOv.classList.contains("open")) setInfo(false); }, open: function (id) { setInfo(true); var a = infoOv.querySelector('[data-to="' + id + '"]'); if (a) a.click(); } };
   aboutLink.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); setInfo(!infoOpen()); });
   infoOv.addEventListener("click", function (e) {
     if (e.target.closest("[data-close]")) { e.preventDefault(); setInfo(false); return; }
     if (!e.target.closest(".info-half")) setInfo(false);
   });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && infoOpen()) setInfo(false); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && infoOv.classList.contains("open")) setInfo(false); });
   (function () {
     var links = [].slice.call(infoOv.querySelectorAll(".info-side [data-to]")), pages = [].slice.call(infoOv.querySelectorAll(".info-page"));
     function show(id) {

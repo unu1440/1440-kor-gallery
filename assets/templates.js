@@ -13,9 +13,8 @@
   var host = (site || DEF) + ".kor.gallery";
   var N = esc(site || DEF);
 
-  /* no address yet: it is chosen later, on the last page, so the header shows nothing here */
-  if (site) document.getElementById("catsAddr").innerHTML = '<span class="lbl">주소 </span><b>' + esc(host) + '</b><a href="./">바꾸기</a>';
-  else document.getElementById("catsAddr").hidden = true;
+  /* the address is chosen later, on the last page, so the header never shows it */
+  document.getElementById("catsAddr").hidden = true;
 
   /* ---------- building blocks for a 1440 × 900 page ---------- */
   function src(n) { return "assets/img/samples/" + n + ".jpg"; }
@@ -627,7 +626,7 @@
           '<div style="position:absolute;left:260px;bottom:0;width:420px;height:560px;overflow:hidden;box-shadow:0 18px 30px -18px rgba(0,0,0,.5)"><img src="' + src("paint-knife") + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover"></div>' +
           '<div class="sc-dim" style="position:absolute;left:260px;bottom:572px;width:420px;border-top:1.5px solid;text-align:center;font-family:var(--mono);font-size:14px;padding-top:4px">130 cm</div>' +
           '<div class="sc-dim" style="position:absolute;left:692px;bottom:0;height:560px;border-left:1.5px solid;writing-mode:vertical-rl;font-family:var(--mono);font-size:14px;padding-left:4px">162 cm</div>' +
-          '<svg class="sc-person" viewBox="0 0 60 170" style="position:absolute;left:780px;bottom:0;height:590px;fill:#111;opacity:.85"><circle cx="30" cy="14" r="11"/><path d="M16 32h28l6 58h-9l-3 80h-8l-2-58-2 58h-8l-3-80h-9z"/></svg>' +
+          '<svg class="sc-person" viewBox="0 0 60 170" style="position:absolute;left:780px;bottom:0;height:590px;fill:#111"><circle cx="30" cy="14" r="11"/><path d="M16 32h28l6 58h-9l-3 80h-8l-2-58-2 58h-8l-3-80h-9z"/></svg>' +
         '</div>' +
         at("left:1060px;right:28px;top:80px;display:grid;gap:22px", label("Tide Table", "Acrylic and plaster on canvas, 162 × 130 cm", "조석표 — 캔버스에 아크릴, 석고") +
           '<p style="font-size:16px;line-height:1.55;opacity:.8">Seen next to a person 175 cm tall.</p>' + ko("키 175cm 사람과 나란히 본 실제 크기.", "font-size:15px;opacity:.65") +
@@ -719,8 +718,9 @@
   };
   var HANDMADE = {};
   Object.keys(F).forEach(function (k) { HANDMADE[k] = F[k].length; });
-  if (window.console && JSON.stringify(HANDMADE) !== JSON.stringify(GEN.HAND)) console.warn("tpl-gen.js HAND does not match templates.js", HANDMADE);
-  var CATALOGUE = GEN.catalogue(window.PHOTOS || [], HANDMADE);
+  if (window.console && Object.keys(GEN.HAND).concat(Object.keys(HANDMADE)).some(function (k) { return GEN.HAND[k] !== HANDMADE[k]; })) console.warn("tpl-gen.js HAND does not match templates.js", HANDMADE);
+  var CATALOGUE = GEN.catalogue(window.PHOTOS || [], HANDMADE, window.WORKPICS || []);
+  var WORKSBY = CATALOGUE.specs.works || {}; /* the Works page each graduation template opens (tpl-gen.js worksFor) */
   var BASES = [], BYNO = {};
   CATALOGUE.plan.forEach(function (p) {
     F[p.fam].forEach(function (b, i) {
@@ -1065,6 +1065,7 @@
   }
   function hasFeat(tp, k) { var sp = tp._lv && tp._lv.spec; return !!(sp && sp.feats.indexOf(k) >= 0); }
   function openIndex(tp, ko) {
+    if (tp._lv && tp._lv.works) return openWorks(tp, ko, tp._lv.works); /* a graduation template's own Works page */
     var items = tp._lv && tp._lv.items && tp._lv.items.length ? tp._lv.items : gallery(tp); if (items.length < 3) items = poolItems(8, null, tp);
     items = items.slice(0, 10);
     var d = layer(tp, "lv-index",
@@ -1072,6 +1073,140 @@
       '<ol>' + items.map(function (it, i) { return '<li><button type="button" class="lv-row' + (i ? "" : " on") + '" data-i="' + i + '"><span class="m">' + pad2(i + 1) + '</span><span>' + (it.cap || (ko ? "무제" : "Untitled")) + '</span><span class="m">' + (2026 - (i % 5)) + '</span></button></li>'; }).join("") + '</ol>' +
       '<div class="lv-idx-img"><img src="' + items[0].src + '" alt=""></div>');
     d._items = items;
+    markOn(tp, "index");
+  }
+  /* ---------- the Works page of a graduation template ----------
+     Its own pictures, titles and names (tpl-gen.js worksFor), laid out one of twelve ways and in one of five looks
+     (data-v on the layer; the look is CSS). Each layout works differently: a list that shows the picture under the
+     pointer, a contact sheet, a strip you drag, a table you sort, chips that filter, one work at a time, rooms,
+     an artists' A–Z, a bento of tiles, an editorial column, folding rows, columns of pictures. */
+  var WK_MAJ = [["Painting", "회화"], ["Ceramics", "도예"], ["Sculpture", "조소"], ["Video", "영상"], ["Design", "디자인"], ["Printmaking", "판화"], ["Photography", "사진"], ["Textile", "섬유"]];
+  var WK_ROOMNAME = { A: "Painting hall", B: "Clay and thread", C: "Sculpture court", D: "Screen room", E: "Design floor" };
+  var WK_AREAS = [["a a b", "a a c", "d e e"], ["a b b", "a c d", "e e d"], ["a a a", "b c d", "b e e"], ["a a b c", "a a d e"], ["a b b c", "a d e e"]];
+  function wkT(w) { return '<b class="wk-t">' + esc(w.t[0]) + '</b><i class="wk-ko">' + esc(w.t[1]) + '</i>'; }
+  function wkBy(w) { return '<span class="wk-by">' + esc(w.a[0]) + ' · ' + WK_MAJ[w.m][0] + ' · ' + w.y + '</span>'; }
+  function wkImg(w) { return '<span class="wk-ph" style="--ar:' + w.w + ' / ' + w.h + ';--arn:' + (w.w / w.h).toFixed(4) + '"><img src="' + src(w.f) + '" alt="" loading="lazy"></span>'; }
+  var WKR = {
+    index: function (W) {
+      return '<ol>' + W.map(function (w, i) { return '<li><button type="button" class="lv-row' + (i ? "" : " on") + '" data-i="' + i + '"><span class="m">' + pad2(i + 1) + '</span><span>' + esc(w.t[0]) + ' <em class="wk-by">' + esc(w.a[0]) + '</em></span><span class="m">' + w.y + '</span></button></li>'; }).join("") + '</ol>' +
+        '<div class="lv-idx-img"><img src="' + src(W[0].f) + '" alt=""></div>';
+    },
+    sheet: function (W) {
+      return '<div class="wk-sheet">' + W.map(function (w, i) { return '<button type="button" class="wk-cell" data-wi="' + i + '">' + wkImg(w) + '<span class="wk-no m">' + pad2(i + 1) + '</span><span class="wk-cap">' + wkT(w) + '<span class="wk-by">' + esc(w.a[0]) + '</span></span></button>'; }).join("") + '</div>';
+    },
+    strip: function (W) {
+      return '<div class="wk-stripbar"><button type="button" class="wk-b" data-wk-step="-1" aria-label="이전">←</button><span class="wk-prog"><i></i></span><button type="button" class="wk-b" data-wk-step="1" aria-label="다음">→</button></div>' +
+        '<div class="wk-rail">' + W.map(function (w, i) { return '<figure class="wk-pane" data-wi="' + i + '">' + wkImg(w) + '<figcaption><span class="m">' + pad2(i + 1) + '</span>' + wkT(w) + wkBy(w) + '</figcaption></figure>'; }).join("") + '</div>';
+    },
+    table: function (W) {
+      return '<table class="wk-table"><thead><tr><th></th><th data-k="n">No.</th><th data-k="t">Title</th><th data-k="a">Artist</th><th data-k="m" class="hm">Major</th><th data-k="y">Year</th></tr></thead><tbody>' +
+        W.map(function (w, i) { return '<tr data-wi="' + i + '" data-n="' + i + '" data-t="' + esc(w.t[0]) + '" data-a="' + esc(w.a[0]) + '" data-m="' + WK_MAJ[w.m][0] + '" data-y="' + w.y + '"><td class="wk-th">' + wkImg(w) + '</td><td class="m">' + pad2(i + 1) + '</td><td>' + wkT(w) + '</td><td>' + esc(w.a[0]) + '<i class="wk-ko">' + esc(w.a[1]) + '</i></td><td class="hm">' + WK_MAJ[w.m][0] + '</td><td class="m">' + w.y + '</td></tr>'; }).join("") + '</tbody></table>';
+    },
+    filter: function (W) {
+      var ms = []; W.forEach(function (w) { if (ms.indexOf(w.m) < 0) ms.push(w.m); });
+      return '<div class="wk-chips"><button type="button" class="wk-chip on" data-f="">All <span class="m">' + W.length + '</span></button>' + ms.map(function (m) { return '<button type="button" class="wk-chip" data-f="' + m + '">' + WK_MAJ[m][0] + ' <span class="m">' + W.filter(function (w) { return w.m === m; }).length + '</span></button>'; }).join("") + '</div>' +
+        '<div class="wk-grid">' + W.map(function (w, i) { return '<button type="button" class="wk-card" data-wi="' + i + '" data-m="' + w.m + '">' + wkImg(w) + '<span class="wk-cap">' + wkT(w) + wkBy(w) + '</span></button>'; }).join("") + '</div>';
+    },
+    stepper: function (W) {
+      return '<div class="wk-step"><button type="button" class="wk-stage" data-wi="0">' + wkImg(W[0]) + '</button><div class="wk-side"><span class="wk-count m"></span><div class="wk-title"></div><div class="wk-facts"></div>' +
+        '<div class="wk-ctl"><button type="button" class="wk-b" data-wk-go="-1" aria-label="이전">←</button><span class="wk-dots">' + W.map(function (w, i) { return '<button type="button" class="wk-dot" data-wk-to="' + i + '" aria-label="' + (i + 1) + '"></button>'; }).join("") + '</span><button type="button" class="wk-b" data-wk-go="1" aria-label="다음">→</button></div></div></div>';
+    },
+    rooms: function (W) {
+      var rs = {}; W.forEach(function (w, i) { (rs[w.r] = rs[w.r] || []).push([w, i]); });
+      var ks = Object.keys(rs).sort();
+      return '<div class="wk-rooms" style="--n:' + ks.length + '">' + ks.map(function (k) { return '<section class="wk-room"><h3><span class="wk-big">' + k + '</span><span class="wk-rn">' + WK_ROOMNAME[k] + '</span></h3>' +
+        rs[k].map(function (x) { return '<button type="button" class="wk-li" data-wi="' + x[1] + '">' + wkImg(x[0]) + '<span>' + wkT(x[0]) + '<span class="wk-by">' + esc(x[0].a[0]) + '</span></span></button>'; }).join("") + '</section>'; }).join("") + '</div>';
+    },
+    alphabet: function (W) {
+      var s = W.map(function (w, i) { return [w, i]; }).sort(function (a, b) { return a[0].a[0] < b[0].a[0] ? -1 : 1; }), g = [];
+      s.forEach(function (x) { var L = x[0].a[0].charAt(0); if (!g.length || g[g.length - 1][0] !== L) g.push([L, []]); g[g.length - 1][1].push(x); });
+      return '<div class="wk-abc">' + g.map(function (x) { return '<section><h3>' + x[0] + '</h3>' + x[1].map(function (y) { return '<button type="button" class="wk-li" data-wi="' + y[1] + '"><span class="wk-dotpic">' + wkImg(y[0]) + '</span><span><b class="wk-name">' + esc(y[0].a[0]) + '</b><i class="wk-ko">' + esc(y[0].a[1]) + '</i><span class="wk-by">' + esc(y[0].t[0]) + ' · ' + y[0].y + '</span></span></button>'; }).join("") + '</section>'; }).join("") + '</div>';
+    },
+    mosaic: function (W, v) {
+      var areas = WK_AREAS[v % WK_AREAS.length], letters = "abcde";
+      return '<div class="wk-mos" style="grid-template-areas:' + areas.map(function (r) { return '\'' + r + '\''; }).join(" ") + '">' + W.map(function (w, i) { return '<button type="button" class="wk-tile" data-wi="' + i + '" style="grid-area:' + letters.charAt(i % 5) + '"><img src="' + src(w.f) + '" alt="" loading="lazy"><span class="wk-cap">' + wkT(w) + '<span class="wk-by">' + esc(w.a[0]) + '</span></span></button>'; }).join("") + '</div>';
+    },
+    stack: function (W) {
+      return '<div class="wk-stack">' + W.map(function (w, i) { return '<article class="wk-row' + (i % 2 ? " rev" : "") + '" data-wi="' + i + '">' + wkImg(w) + '<div class="wk-text"><span class="wk-num m">' + pad2(i + 1) + '</span>' + wkT(w) + wkBy(w) + '<span class="wk-mat">' + esc(w.mat[0]) + ', ' + w.dim + '</span></div></article>'; }).join("") + '</div>';
+    },
+    accordion: function (W) {
+      return '<div class="wk-acc">' + W.map(function (w, i) { return '<div class="wk-ar' + (i ? "" : " open") + '"><button type="button" class="wk-ah" data-wk-ar="' + i + '"><span class="m">' + pad2(i + 1) + '</span><span>' + wkT(w) + '</span><span class="wk-by">' + esc(w.a[0]) + '</span><span class="wk-plus">+</span></button>' +
+        '<div class="wk-ab"><button type="button" class="wk-pic" data-wi="' + i + '">' + wkImg(w) + '</button><div class="wk-facts">' + wkFacts(w) + '</div></div></div>'; }).join("") + '</div>';
+    },
+    masonry: function (W) {
+      return '<div class="wk-mas">' + W.map(function (w, i) { return '<figure class="wk-fig" data-wi="' + i + '">' + wkImg(w) + '<figcaption><span class="m">' + pad2(i + 1) + '</span>' + wkT(w) + wkBy(w) + '</figcaption></figure>'; }).join("") + '</div>';
+    }
+  };
+  function wkFacts(w) {
+    return '<dl><div><dt>Artist</dt><dd>' + esc(w.a[0]) + ' <i class="wk-ko">' + esc(w.a[1]) + '</i></dd></div><div><dt>Major</dt><dd>' + WK_MAJ[w.m][0] + ' <i class="wk-ko">' + WK_MAJ[w.m][1] + '</i></dd></div>' +
+      '<div><dt>Year</dt><dd>' + w.y + '</dd></div><div><dt>Medium</dt><dd>' + esc(w.mat[0]) + ' <i class="wk-ko">' + esc(w.mat[1]) + '</i></dd></div><div><dt>Size</dt><dd>' + w.dim + '</dd></div><div><dt>Room</dt><dd>' + w.r + ' · ' + WK_ROOMNAME[w.r] + '</dd></div></dl>';
+  }
+  var WKI = {
+    strip: function (d) {
+      var rail = d.querySelector(".wk-rail"), bar = d.querySelector(".wk-prog i");
+      function prog() { var m = rail.scrollWidth - rail.clientWidth; bar.style.width = (m > 0 ? 20 + 80 * rail.scrollLeft / m : 100) + "%"; }
+      rail.addEventListener("scroll", prog); prog();
+      d.addEventListener("click", function (e) { var b = e.target.closest("[data-wk-step]"); if (!b) return; e.stopPropagation(); rail.scrollBy({ left: rail.clientWidth * 0.6 * +b.dataset.wkStep, behavior: reduce ? "auto" : "smooth" }); });
+      var down = null, moved = false;
+      rail.addEventListener("pointerdown", function (e) { if (e.pointerType === "mouse") down = { x: e.clientX, l: rail.scrollLeft }; moved = false; });
+      rail.addEventListener("pointermove", function (e) { if (!down) return; var k = (rail.getBoundingClientRect().width / rail.offsetWidth) || 1, dx = (e.clientX - down.x) / k; if (Math.abs(dx) > 4) moved = true; if (moved) rail.scrollLeft = down.l - dx; });
+      window.addEventListener("pointerup", function () { down = null; }, { once: false });
+      rail.addEventListener("click", function (e) { if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; } }, true);
+    },
+    table: function (d) {
+      var body = d.querySelector("tbody"), dir = {};
+      d.addEventListener("click", function (e) {
+        var th = e.target.closest("th[data-k]"); if (!th) return; e.stopPropagation();
+        var k = th.dataset.k, up = dir[k] = !dir[k], rows = [].slice.call(body.children);
+        rows.sort(function (a, b) { var x = a.dataset[k], y = b.dataset[k]; if (k === "n" || k === "y") { x = +x; y = +y; } return (x < y ? -1 : x > y ? 1 : 0) * (up ? 1 : -1); });
+        rows.forEach(function (r) { body.appendChild(r); });
+        [].forEach.call(d.querySelectorAll("th"), function (t) { t.classList.remove("asc", "desc"); }); th.classList.add(up ? "asc" : "desc");
+      });
+    },
+    filter: function (d) {
+      d.addEventListener("click", function (e) {
+        var c = e.target.closest(".wk-chip"); if (!c) return; e.stopPropagation();
+        [].forEach.call(d.querySelectorAll(".wk-chip"), function (x) { x.classList.toggle("on", x === c); });
+        [].forEach.call(d.querySelectorAll(".wk-card"), function (x) { x.hidden = c.dataset.f !== "" && x.dataset.m !== c.dataset.f; });
+      });
+    },
+    stepper: function (d, tp, W, items) {
+      var i = 0, stage = d.querySelector(".wk-stage");
+      function show(k) {
+        i = (k + W.length) % W.length; var w = W[i];
+        stage.dataset.wi = i; stage.innerHTML = wkImg(w);
+        d.querySelector(".wk-count").textContent = pad2(i + 1) + " / " + pad2(W.length);
+        d.querySelector(".wk-title").innerHTML = wkT(w); d.querySelector(".wk-facts").innerHTML = wkFacts(w);
+        [].forEach.call(d.querySelectorAll(".wk-dot"), function (x, j) { x.classList.toggle("on", j === i); });
+        stage.classList.remove("lv-fade"); void stage.offsetWidth; stage.classList.add("lv-fade");
+      }
+      show(0);
+      d.addEventListener("click", function (e) {
+        var g = e.target.closest("[data-wk-go]"), t = e.target.closest("[data-wk-to]");
+        if (g) { e.stopPropagation(); show(i + +g.dataset.wkGo); } else if (t) { e.stopPropagation(); show(+t.dataset.wkTo); }
+      });
+      var key = function (e) { if (!d.isConnected) return document.removeEventListener("keydown", key); if (tp.querySelector(".lv-lb")) return; if (e.key === "ArrowRight") show(i + 1); else if (e.key === "ArrowLeft") show(i - 1); };
+      document.addEventListener("keydown", key);
+    },
+    accordion: function (d) {
+      d.addEventListener("click", function (e) {
+        var h = e.target.closest("[data-wk-ar]"); if (!h) return; e.stopPropagation();
+        var row = h.parentNode, was = row.classList.contains("open");
+        [].forEach.call(d.querySelectorAll(".wk-ar"), function (r) { r.classList.remove("open"); });
+        if (!was) row.classList.add("open");
+      });
+    }
+  };
+  function openWorks(tp, ko, W) {
+    var n = W.items.length, items = W.items.map(function (w) { return { src: src(w.f), cap: w.t[0] + " — " + w.a[0] + ", " + w.y }; });
+    var d = layer(tp, "lv-index lv-wk wk-" + W.d,
+      '<div class="lv-top wk-top"><span>' + (ko ? "작품" : "Works") + ' <span class="m" style="opacity:.5">(' + n + ')</span></span><button type="button" class="lv-x">' + (ko ? "닫기" : "Close") + ' ✕</button></div>' + WKR[W.d](W.items, W.v));
+    d.dataset.v = W.v; d._items = items;
+    d.addEventListener("click", function (e) {
+      var t = e.target.closest("[data-wi]"); if (!t || t.closest(".lv-row") || t.closest("[data-wk-go],[data-wk-to],[data-wk-step]")) return;
+      e.stopPropagation(); openLightbox(tp, items, +t.dataset.wi);
+    });
+    if (WKI[W.d]) WKI[W.d](d, tp, W.items, items);
     markOn(tp, "index");
   }
   function openCart(tp, ko) {
@@ -1337,7 +1472,7 @@
     var tp = view.querySelector(".tp"); if (!tp) return [];
     if (!b.gen) { linkify(tp); if (HAND_EXTRA[b.first]) addExtras(tp, HAND_EXTRA[b.first]); }
     var first = tp.querySelector(".tp-nav .lv-a:not(.tp-name)") || tp.querySelector(".lv-a");
-    var st = tp._lv = { cart: [], ko: b.gen ? b.gen.ko : isKo(first ? first.textContent : "Work"), own: !!b.gen || b.fam === "grad", items: b.items || null };
+    var st = tp._lv = { cart: [], ko: b.gen ? b.gen.ko : isKo(first ? first.textContent : "Work"), own: !!b.gen || b.fam === "grad", items: b.items || null, works: WORKSBY[b.first] || null };
     st.shop = !!tp.querySelector('.lv-a[data-lv="cart"]');
     st.pin = !!(b.gen && b.gen.pin);
     st.spec = b.gen || null;
@@ -1473,7 +1608,12 @@
           return openLightbox(tp, G.items, G.i);
         }
       }
-      if (st.own && !b.gen) return;
+      if (st.own && !b.gen) { /* graduation pages: their own pictures open large too, except where the picture itself is the interaction */
+        if (t.tagName !== "IMG" || t.closest(".ba, .lp, .lv-layer, canvas")) return;
+        var gi = gallery(tp), gs = t.getAttribute("src"), gk = 0;
+        gi.forEach(function (it, k) { if (it.src === gs) gk = k; });
+        return openLightbox(tp, gi, gk);
+      }
       var step = t.closest("[data-step]");
       if (step && st.slide) return slideStep(st, +step.dataset.step);
       var li = t.closest("[data-li]");

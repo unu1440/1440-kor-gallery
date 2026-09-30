@@ -26,7 +26,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="assets/site.css?v=34">
+  <link rel="stylesheet" href="assets/site.css?v=35">
 </head>
 <body class="page-home">
 
@@ -35,6 +35,7 @@
   <nav class="menu" aria-label="주 메뉴">
     <a href="templates.html">Form</a>
     <a href="#" id="aboutLink" aria-expanded="false" aria-controls="infoOv">Information</a>
+    <span class="acct" id="acctSlot"><a href="#" id="loginLink" aria-expanded="false" aria-controls="acctOv">Login</a></span>
   </nav>
 </header>
 
@@ -115,7 +116,7 @@
             <h2>상품 판매</h2>
             <p>상품이나 입장권을 파는 사이트의 결제 수수료는 준비 중입니다.</p>
             <h2>대학생</h2>
-            <p>재학 확인 방법은 개시 때 안내합니다.</p>
+            <p>가입할 때 학교 메일(.ac.kr, .edu 등)로 받은 코드를 넣으면 첫 한 달이 무료입니다. 학교 메일 하나로 한 번만 받을 수 있습니다.</p>
           </section>
         </div>
       </article>
@@ -125,7 +126,7 @@
         <p class="dim">서비스 개시 전 초안입니다. 개시 때 확정해 다시 알립니다.</p>
         <section><h2>제1조 (목적)</h2><p>이 약관은 1440컴퍼니(이하 “회사”)가 제공하는 1440 서비스(이하 “서비스”)의 이용과 관련하여 회사와 이용자의 권리, 의무 및 책임사항을 정함을 목적으로 합니다.</p></section>
         <section><h2>제2조 (서비스)</h2><p>서비스는 웹사이트 템플릿, 편집기, 이름.kor.gallery 주소 연결 등 이용자가 자신의 웹사이트를 만들고 공개하도록 돕는 기능을 말합니다. 서비스의 일부는 준비 중이며, 준비 중인 기능은 제공하기 시작할 때 안내합니다.</p></section>
-        <section><h2>제3조 (이용계약)</h2><p>이용계약은 이용자가 이 약관에 동의하고 회사가 가입을 승낙하면 성립합니다. 가입과 로그인은 준비 중입니다.</p></section>
+        <section><h2>제3조 (이용계약)</h2><p>이용계약은 이용자가 이 약관에 동의하고 가입하면 성립합니다. 대학생 한 달 무료는 학교 메일로 확인한 계정에 한 번 주어지며, 학교 메일로 확인이 어려운 경우 회사가 직접 확인할 수 있습니다.</p></section>
         <section><h2>제4조 (요금과 결제)</h2><p>요금은 요금 항목에 안내한 바에 따릅니다. 결제는 결제대행사를 통해 이루어지며, 환불은 관련 법령과 회사가 안내하는 기준에 따릅니다.</p></section>
         <section><h2>제5조 (이용자의 의무)</h2>
           <ul class="sq"><li>타인의 저작권 등 권리를 침해하는 콘텐츠를 올리지 않습니다.</li><li>법령을 어기는 콘텐츠를 올리지 않습니다.</li><li>타인의 이름이나 정보를 도용하지 않습니다.</li><li>서비스의 정상적인 운영을 방해하지 않습니다.</li></ul></section>
@@ -140,14 +141,14 @@
       <article class="info-page doc" id="privacy">
         <p class="info-title">개인정보 보호정책</p>
         <p class="dim">서비스 개시 전 초안입니다. 개시 때 확정해 다시 알립니다.</p>
-        <section><h2>지금 수집하는 것</h2><p>지금은 가입 없이 둘러볼 수 있고, 회사는 이용자의 정보를 서버에 저장하지 않습니다. 편집기에서 고친 글, 사진, 설정은 이용자의 브라우저(localStorage, IndexedDB)에만 저장됩니다.</p></section>
-        <section><h2>개시 후 수집할 것</h2>
-          <ul class="sq"><li>가입: 이메일</li><li>결제: 결제대행사가 처리하며, 회사는 카드 정보를 받아 저장하지 않습니다.</li><li>문의: 이메일 주소와 문의 내용</li><li>자동 수집: 접속 기록</li></ul></section>
+        <section><h2>수집하는 것</h2><p>가입하지 않아도 둘러보고 편집할 수 있습니다. 편집기에서 고친 글, 사진, 설정은 이용자의 브라우저(localStorage, IndexedDB)에 저장됩니다. 가입하면 아래를 저장합니다.</p><ul class="sq"><li>가입: 닉네임, 이메일, 비밀번호(되돌릴 수 없는 형태로 바꿔 저장)</li><li>대학생 확인: 학교 메일, 확인 결과, 요청할 때 적은 학교 이름</li><li>My hub: 마지막으로 고친 폼 번호와 홈에 둔 폼 목록</li></ul></section>
+        <section><h2>개시 후 더 수집할 것</h2>
+          <ul class="sq"><li>결제: 결제대행사가 처리하며, 회사는 카드 정보를 받아 저장하지 않습니다.</li><li>문의: 이메일 주소와 문의 내용</li><li>자동 수집: 접속 기록</li></ul></section>
         <section><h2>이용 목적</h2><p>회원 확인, 서비스 제공, 요금 결제와 정산, 문의 응대.</p></section>
         <section><h2>보유 기간</h2><p>목적을 이루면 지체 없이 파기합니다. 법령에 따라 보관해야 하는 정보는 그 기간 동안 보관합니다. 계약과 결제 기록은 5년, 소비자 불만과 분쟁 처리 기록은 3년입니다(전자상거래법).</p></section>
         <section><h2>맡기는 곳과 외부 서비스</h2>
-          <ul class="sq"><li>결제대행(결제할 때)</li><li>웹 호스팅: Cloudflare</li><li>글꼴을 Google Fonts와 jsDelivr에서 불러옵니다. 이때 이용자의 IP 주소 등 접속 정보가 해당 서비스에 전달될 수 있습니다.</li></ul></section>
-        <section><h2>쿠키</h2><p>지금은 로그인용 쿠키를 쓰지 않습니다. 브라우저 저장소는 편집 초안을 저장하는 데만 씁니다.</p></section>
+          <ul class="sq"><li>결제대행(결제할 때)</li><li>웹 호스팅과 계정 저장: Cloudflare</li><li>학교 메일 확인 코드 발송: Resend</li><li>글꼴을 Google Fonts와 jsDelivr에서 불러옵니다. 이때 이용자의 IP 주소 등 접속 정보가 해당 서비스에 전달될 수 있습니다.</li></ul></section>
+        <section><h2>쿠키</h2><p>로그인을 유지하는 쿠키 하나만 씁니다(스크립트로 읽을 수 없고, 60일 뒤 사라집니다). 브라우저 저장소는 편집 초안과 My hub를 저장하는 데 씁니다. 광고나 추적 쿠키는 쓰지 않습니다.</p></section>
         <section><h2>이용자의 권리</h2><p>언제든 자신의 정보를 보여 달라고, 고쳐 달라고, 지워 달라고, 쓰지 말라고 요청할 수 있습니다. 아래 책임자에게 이메일로 알려 주세요.</p></section>
         <section><h2>개인정보 보호책임자</h2><p>이현호 · 1440컴퍼니<br><a href="mailto:1440unu@kor.gallery">1440unu@kor.gallery</a> · <a href="tel:010-7907-1740">010-7907-1740</a></p></section>
         <section><h2>바뀔 때</h2><p>이 정책이 바뀌면 이 페이지에 알립니다.</p></section>
@@ -159,7 +160,7 @@
         <section><h2>1440</h2><p>1440 서비스의 화면, 디자인, 코드, 문구의 저작권은 1440컴퍼니에 있습니다. 허락 없이 복제하거나 배포할 수 없습니다.</p></section>
         <section><h2>이용자의 콘텐츠</h2><p>이용자가 올린 글, 사진, 작품의 저작권은 이용자에게 있습니다. 다른 사람의 저작물을 올릴 때는 그 권리자의 허락을 받아야 합니다.</p></section>
         <section><h2>템플릿에 들어 있는 자료</h2>
-          <ul class="sq"><li>샘플 사진: Unsplash 라이선스, Pexels 라이선스</li><li>3D 모델: Poly Haven (CC0)</li><li>서체: SUIT, 마루 부리, 갈무리11 (SIL Open Font License)</li></ul>
+          <ul class="sq"><li>샘플 사진: Unsplash 라이선스, Pexels 라이선스, 클리블랜드 미술관 오픈 액세스(CC0)</li><li>3D 모델: Poly Haven (CC0)</li><li>서체: SUIT, 마루 부리, 갈무리11 (SIL Open Font License)</li></ul>
           <p>출처는 서비스에 포함된 CREDITS 파일에 적어 두었습니다.</p></section>
         <section><h2>침해 신고</h2><p>내 저작물이 허락 없이 쓰였다고 생각하시면 아래 내용을 이메일로 보내 주세요.</p>
           <ul class="sq"><li>권리자의 이름과 연락처</li><li>침해가 의심되는 페이지 주소</li><li>내 저작물임을 보여 주는 설명이나 자료</li><li>위 내용이 사실이라는 확인</li></ul>
@@ -167,6 +168,97 @@
           <p><a href="mailto:1440unu@kor.gallery">1440unu@kor.gallery</a></p></section>
       </article>
 
+    </div>
+  </div>
+</div>
+
+<!-- 계정: Login, Sign up and, once in, the account, the student month and (for the admin) the requests; appears over the first page like Information -->
+<div class="info-ov acct-ov" id="acctOv" aria-hidden="true">
+  <div class="info-half">
+    <nav class="info-side" aria-label="계정">
+      <a href="#" data-to="login" class="g on">Log in</a>
+      <a href="#" data-to="signup" class="g">Sign up</a>
+      <a href="#" data-to="account" class="m">Account</a>
+      <a href="#" data-to="student" class="m">Student</a>
+      <a href="#" data-to="admin" class="m a">Admin</a>
+    </nav>
+    <div class="info-body">
+      <article class="info-page" id="a-login">
+        <p class="info-title">Log in</p>
+        <form class="acct-f" data-f="login" novalidate>
+          <label class="fld"><span>이메일</span><input name="email" type="email" autocomplete="email" required></label>
+          <label class="fld"><span>비밀번호</span><input name="password" type="password" autocomplete="current-password" required></label>
+          <button class="acct-go" type="submit">Log in →</button>
+          <p class="acct-msg" role="status"></p>
+        </form>
+        <p class="dim">처음이신가요? <a href="#" data-to="signup" class="u">Sign up</a></p>
+      </article>
+
+      <article class="info-page" id="a-signup">
+        <p class="info-title">Sign up</p>
+        <form class="acct-f" data-f="signup" novalidate>
+          <label class="fld"><span>닉네임 <em>헤더에 보이는 이름 · 2–20자</em></span><input name="nick" type="text" autocomplete="nickname" maxlength="20" required></label>
+          <label class="fld"><span>이메일</span><input name="email" type="email" autocomplete="email" required></label>
+          <label class="fld"><span>비밀번호 <em>8자 이상</em></span><input name="password" type="password" autocomplete="new-password" minlength="8" required></label>
+          <label class="ckx"><input type="checkbox" name="student"><span>대학생이에요 <em>학교 메일을 확인하면 첫 한 달 무료</em></span></label>
+          <label class="ckx"><input type="checkbox" name="agree" required><span><a href="#terms" data-info="terms" class="u">서비스 약관</a>과 <a href="#privacy" data-info="privacy" class="u">개인정보 보호정책</a>에 동의합니다</span></label>
+          <button class="acct-go" type="submit">Sign up →</button>
+          <p class="acct-msg" role="status"></p>
+        </form>
+        <p class="dim">이미 계정이 있나요? <a href="#" data-to="login" class="u">Log in</a></p>
+      </article>
+
+      <article class="info-page" id="a-account">
+        <p class="info-title" data-v="nick"></p>
+        <ul class="ck acct-dl">
+          <li><span class="b"></span><span class="t">이메일</span><span class="v" data-v="email"></span></li>
+          <li><span class="b"></span><span class="t">무료 이용</span><span class="v" data-v="trial"></span></li>
+          <li><span class="b"></span><span class="t">대학생 확인</span><span class="v" data-v="student"></span></li>
+        </ul>
+        <div class="two">
+          <section><h2>My hub</h2><p>가장 최근에 고친 폼으로 바로 갑니다.</p><p><a href="templates.html" class="u" data-v="hub">My hub →</a></p></section>
+          <section><h2>나가기</h2><p>이 브라우저에서 로그아웃합니다. 고친 초안은 그대로 남습니다.</p><p><a href="#" class="u" id="logoutLink">Log out</a></p></section>
+        </div>
+      </article>
+
+      <article class="info-page" id="a-student">
+        <p class="info-title">Student</p>
+        <p data-v="stuState"></p>
+        <form class="acct-f" data-f="send" novalidate>
+          <label class="fld"><span>학교 메일 <em>.ac.kr · .edu 등</em></span><input name="uni" type="email" autocomplete="off" required></label>
+          <button class="acct-go" type="submit">코드 보내기</button>
+          <p class="acct-msg" role="status"></p>
+        </form>
+        <form class="acct-f" data-f="verify" novalidate hidden>
+          <label class="fld"><span>메일로 받은 여섯 자리</span><input name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></label>
+          <button class="acct-go" type="submit">확인</button>
+          <p class="acct-msg" role="status"></p>
+        </form>
+        <div class="two" data-v="reqBox">
+          <section>
+            <h2>관리자 확인 요청</h2>
+            <p>학교 메일이 .ac.kr이나 .edu로 끝나지 않으면, 학교 이름과 메일을 남겨 주세요. 확인한 뒤 한 달을 열어 드립니다.</p>
+          </section>
+          <section>
+            <form class="acct-f" data-f="request" novalidate>
+              <label class="fld"><span>학교 이름</span><input name="school" type="text" maxlength="80" required></label>
+              <label class="fld"><span>학교 메일</span><input name="uni" type="email" required></label>
+              <button class="acct-go" type="submit">요청</button>
+              <p class="acct-msg" role="status"></p>
+            </form>
+          </section>
+        </div>
+      </article>
+
+      <article class="info-page" id="a-admin">
+        <p class="info-title">Admin</p>
+        <p class="dim">대학생 확인 요청을 받아들이거나 거절하고, 누구에게나 무료 한 달을 주거나 거둡니다.</p>
+        <section class="adm"><h2>요청</h2><div data-v="reqs"></div></section>
+        <section class="adm"><h2>사용자</h2><label class="fld adm-q"><span>찾기</span><input type="search" data-v="q" autocomplete="off"></label><div data-v="users"></div></section>
+        <p class="acct-msg" role="status" data-v="admMsg"></p>
+      </article>
+
+      <p class="dim acct-local" hidden>계정 서버가 아직 열리지 않아, 지금은 이 브라우저 안에서만 가입·로그인돼요. 학교 메일 코드도 메일 대신 이 화면에 보여요.</p>
     </div>
   </div>
 </div>
@@ -184,6 +276,8 @@
 </footer>
 
 <script src="assets/common.js?v=5"></script>
-<script src="assets/site.js?v=17"></script>
+<script src="assets/site.js?v=18"></script>
+<script src="assets/account.js?v=1"></script>
+<script src="assets/acct-ui.js?v=1"></script>
 </body>
 </html>

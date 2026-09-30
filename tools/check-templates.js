@@ -9,7 +9,7 @@ vm.createContext(sandbox);
 vm.runInContext(fs.readFileSync(path.join(root, "assets/photos.js"), "utf8"), sandbox);
 var G = require(path.join(root, "assets/tpl-gen.js"));
 var HAND = G.HAND;
-var photos = sandbox.window.PHOTOS, cat = G.catalogue(photos, HAND), specs = cat.specs, fail = 0;
+var photos = sandbox.window.PHOTOS, cat = G.catalogue(photos, HAND, sandbox.window.WORKPICS), specs = cat.specs, fail = 0;
 function bad(m) { console.error("✗ " + m); fail++; }
 
 /* templates.js is one scope: two functions or variables with the same name silently replace each other */
@@ -71,6 +71,23 @@ console.log("unique nav+layout+features: " + Object.keys(sk).length + ", unique 
 console.log("photographs: " + photos.length + " in the pool; basic templates share " + G.SHARED.length);
 console.log("other templates: " + counts.length + " photographs used; per photograph min " + counts[0] + " / median " + counts[counts.length >> 1] + " / max " + counts[counts.length - 1]);
 console.log(specs.strict ? "✓ no photograph is shared between templates (outside the basic set)" : "! photographs are still shared between templates: " + specs.demand + " needed for none to be, " + specs.pool + " available — add about " + (specs.demand - specs.pool) + " more");
+/* the Works pages of the graduation templates: every page has its own pictures, titles and names, and no other template shows them */
+var wk = specs.works || {}, wpics = {}, wtitles = {}, wnames = {}, wnos = Object.keys(wk), wkinds = {};
+var onPage = {}; specs.forEach(function (s) { (s.photos || []).forEach(function (f) { onPage[f] = s.no; }); });
+G.HAND_USED.forEach(function (f) { onPage[f] = "hand-made"; });
+wnos.forEach(function (no) {
+  wkinds[wk[no].d + wk[no].v] = 1;
+  if (wk[no].items.length < 4) bad("the Works page of " + no + " has only " + wk[no].items.length + " works");
+  wk[no].items.forEach(function (it) {
+    if (wpics[it.f]) bad("Works picture " + it.f + " is on " + wpics[it.f] + " and " + no); wpics[it.f] = no;
+    if (onPage[it.f]) bad("Works picture " + it.f + " (page " + no + ") is also shown by template " + onPage[it.f]);
+    if (wtitles[it.t[0]]) bad("Works title '" + it.t[0] + "' is on " + wtitles[it.t[0]] + " and " + no); wtitles[it.t[0]] = no;
+    if (wnames[it.a[0]]) bad("Works artist '" + it.a[0] + "' is on " + wnames[it.a[0]] + " and " + no); wnames[it.a[0]] = no;
+    if (!fs.existsSync(path.join(root, "assets/img/samples", it.f + ".jpg"))) bad("Works picture missing: " + it.f);
+  });
+});
+console.log("Works pages: " + wnos.length + ", " + Object.keys(wpics).length + " pictures, " + Object.keys(wkinds).length + " different layout × look pairs" + (Object.keys(wkinds).length === wnos.length ? " ✓" : " — some pages look alike"));
+if (Object.keys(wkinds).length !== wnos.length) bad("two Works pages have the same layout and look");
 var layouts = {}; specs.forEach(function (s) { layouts[s.layout] = (layouts[s.layout] || 0) + 1; });
 console.log("layouts: " + Object.keys(layouts).length);
 if (fail) { console.error(fail + " problem(s)"); process.exit(1); }

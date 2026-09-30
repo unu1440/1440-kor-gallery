@@ -944,7 +944,105 @@
     "st-bw-roses", "hd-bw", "sc-hand", "cer-dark-jug", "cer-cup-speckle", "cer-vases-beige", "ch-tulip", "gl-green", "ch-yellow", "cer-blue-set", "gl-flower", "st-yellow-jars", "dn-blur", "fa-white-suit", "fa-coat", "fa-profile",
     "fa-black-coat", "cer-shelf", "arch-steps-teal", "st-tulip", "fa-yellow-sky", "ch-orange", "bk-red-fan", "sh-palm", "ab-waves-white", "hd-blue", "st-coffee", "dn-jump", "paint-knife", "paint-violet",
     "art-green-abstract-painting", "sc-kintsugi", "mu-blue-spotlight-stage", "ab-pastel-spheres", "paint-grey", "art-red-brown-abstract", "mu-stage-greyscale", "tx-blue-stain", "paint-green", "paint-white"];
-  function build(photos, plan) {
+  /* ---------- the works page of a graduation template ----------
+     A graduation template with a Works link opens a page of its own: pictures no other page shows, its own titles and names,
+     laid out one of twelve ways in one of five looks (kind x look is never the same twice). The pictures come from the
+     ones the templates left over and from assets/img/samples/gw-*.jpg (WORKPICS in photos.js: [file, major, w, h]). */
+  var WK_KINDS = [["index", 6, 7], ["sheet", 6, 8], ["strip", 5, 6], ["table", 5, 6], ["filter", 6, 7], ["stepper", 4, 5], ["rooms", 5, 5], ["alphabet", 6, 6], ["mosaic", 5, 5], ["stack", 4, 4], ["accordion", 5, 5], ["masonry", 6, 7]];
+  var WK_SUR = [["Kim", "김"], ["Lee", "이"], ["Park", "박"], ["Choi", "최"], ["Jung", "정"], ["Kang", "강"], ["Cho", "조"], ["Yoon", "윤"], ["Jang", "장"], ["Lim", "임"], ["Han", "한"], ["Oh", "오"], ["Seo", "서"], ["Shin", "신"],
+    ["Kwon", "권"], ["Hwang", "황"], ["Ahn", "안"], ["Song", "송"], ["Yoo", "유"], ["Hong", "홍"]];
+  var WK_GIVEN = [["Haneul", "하늘"], ["Seoyun", "서윤"], ["Dohyun", "도현"], ["Jiwoo", "지우"], ["Minseo", "민서"], ["Yuna", "유나"], ["Junseo", "준서"], ["Sion", "시온"], ["Harin", "하린"], ["Yejun", "예준"], ["Areum", "아름"], ["Nuri", "누리"],
+    ["Sora", "소라"], ["Hayan", "하얀"], ["Byeol", "별"], ["Rami", "라미"], ["Gaon", "가온"], ["Dami", "다미"], ["Eunchae", "은채"], ["Jian", "지안"], ["Siwoo", "시우"], ["Taeyang", "태양"], ["Bora", "보라"], ["Hanbit", "한빛"],
+    ["Narae", "나래"], ["Sol", "솔"], ["Iseul", "이슬"], ["Doha", "도하"], ["Yeoreum", "여름"], ["Maru", "마루"]];
+  /* what a work is made of, by kind of object (the kind comes with the picture); photographs are prints */
+  var WK_MATK = {
+    ceramic: [["Stoneware, ash glaze", "석기, 재유"], ["Porcelain, celadon glaze", "백자, 청자 유약"], ["Earthenware, slip", "도기, 슬립"]],
+    glass: [["Blown glass", "불어 만든 유리"], ["Cut crystal", "크리스털 커팅"], ["Cast glass", "캐스트 글라스"]],
+    enamel: [["Enamel on copper", "구리에 에나멜"], ["Cloisonné enamel", "칠보"]],
+    textile: [["Wool, hand-woven", "양모, 수직"], ["Linen, natural dye", "린넨, 천연 염색"], ["Silk and cotton, embroidery", "실크, 면, 자수"]],
+    basket: [["Woven grass and bark", "풀과 나무껍질 엮기"], ["Coiled willow", "버들 코일 엮기"]],
+    metal: [["Cast bronze", "청동 주조"], ["Hammered brass", "황동 단조"], ["Patinated copper", "녹청 입힌 구리"]],
+    sculpt: [["Cast bronze", "청동 주조"], ["Carved stone", "돌 조각"], ["Plaster, patinated", "석고, 착색"]],
+    jewel: [["Silver and glass", "은, 유리"], ["Gold leaf on brass", "황동에 금박"], ["Carved stone and thread", "깎은 돌, 실"]],
+    paint: [["Acrylic on canvas", "캔버스에 아크릴"], ["Oil on linen", "린넨에 유채"], ["Gouache on paper", "종이에 구아슈"]],
+    print: [["Linocut, edition of 12", "리노컷, 12부"], ["Etching, edition of 8", "에칭, 8부"]],
+    photo: [["Archival pigment print", "피그먼트 프린트"], ["Gelatin silver print", "젤라틴 실버 프린트"], ["Chromogenic print", "크로모제닉 프린트"]]
+  };
+  /* the leftover photographs keep the name they have in photos.js; this is the same name in English */
+  var WK_PHOTO_EN = { "강": "River", "사막 나무": "Desert Tree", "필름": "Film", "빛 입자": "Light Particles", "벚꽃": "Cherry Blossom", "흰색 꽃": "White Flower", "벚꽃길": "Blossom Road", "폭포": "Waterfall", "공원의 벚꽃": "Blossom in the Park",
+    "벚꽃나무": "Blossom Tree", "노란색 나비": "Yellow Butterfly", "보름달": "Full Moon", "눈": "Snow", "새끼 고양이": "Kitten", "흑백 나비": "Black and White Butterfly", "흰 하늘 사구": "Dune, White Sky", "검은색 카메라": "Black Camera",
+    "갈색 사막": "Brown Desert", "흑백 개": "Black and White Dog", "초록 잔디": "Green Lawn", "달": "Moon", "슈나우저": "Schnauzer", "청록색 호수": "Turquoise Lake", "별 아래 소나무": "Pine Under Stars", "눈 풍경": "Snow Landscape",
+    "사암": "Sandstone", "필름 카메라": "Film Camera", "달의 여섯 단계": "Six Phases of the Moon", "노란 꽃 위 나비": "Butterfly on a Yellow Flower", "꽃이 만발한 나무": "Tree in Bloom", "초승달": "Crescent Moon", "별": "Stars",
+    "해변 위에서": "On the Beach", "줄무늬 고양이": "Striped Cat", "나비": "Butterfly", "눈 들판": "Snow Field", "밀밭": "Wheat Field", "사막 풍경": "Desert Landscape", "고양이": "Cat", "눈 산": "Snow Mountain", "모나크 나비": "Monarch Butterfly",
+    "개": "Dog", "사막": "Desert", "갈색 개": "Brown Dog", "해변": "Beach", "분홍 벚꽃": "Pink Blossom", "강가 나무": "Tree by the River", "회색 고양이": "Grey Cat", "큰 개": "Large Dog", "얼룩 고양이": "Spotted Cat", "모래 언덕": "Dunes",
+    "달과 구름": "Moon and Clouds", "주황색 고양이": "Orange Cat", "전구": "Light Bulbs", "나무 선착장": "Wooden Jetty", "흰색 강아지": "White Puppy", "눈 나무": "Snow Tree", "비디오 카메라": "Video Camera", "벚꽃 나무": "Blossom Tree",
+    "낮의 보름달": "Full Moon by Day", "호수": "Lake", "꽃밭": "Flower Field", "개 두 마리": "Two Dogs", "숲 속 폭포": "Waterfall in the Forest", "호숫가 나무": "Tree by the Lake", "네온": "Neon", "달의 위상": "Phases of the Moon",
+    "카메라": "Camera", "운해": "Sea of Clouds", "사막 골짜기": "Desert Valley", "자전거": "Bicycle", "사막 산": "Desert Mountain", "달 실루엣": "Moon Silhouette", "필름 릴": "Film Reel", "큰 폭포": "Large Waterfall", "푸른 사막": "Blue Desert",
+    "푸른 하늘의 달": "Moon in a Blue Sky", "흐르는 물": "Flowing Water", "공작나비": "Peacock Butterfly", "봄": "Spring", "흰 꽃": "White Flower", "흰 벚꽃": "White Blossom", "흰색 벚꽃": "White Blossom" };
+  var WK_ROMAN = ["", " II", " III", " IV", " V", " VI", " VII", " VIII", " IX", " X", " XI", " XII", " XIII", " XIV", " XV"];
+  var WK_ROOM = ["A", "B", "C", "D", "E", "A", "D", "B"];
+  /* a size that fits what the picture shows: flat things low and wide, tall things tall, flat works in their picture's proportion */
+  function wkDim(p, x, z) {
+    var nm = p.nm[0], flat = /Bowl|Dish|Basin|Mirror|Bell|Burner|Box|Caddy|Cup/.test(nm), long_ = 30 + (x * 7 + z) % 90;
+    if (p.kind === "jewel") return "W " + (3 + x % 10) + " × H " + (3 + z % 12) + " cm";
+    if (p.kind === "basket") return "H " + (12 + x % 22) + " × Ø " + (16 + z % 24) + " cm";
+    if (p.kind === "ceramic" || p.kind === "glass" || p.kind === "metal" || p.kind === "enamel" || p.kind === "sculpt") {
+      if (flat) return "H " + (6 + x % 12) + " × Ø " + (16 + z % 24) + " cm";
+      var hh = 16 + x % 30; return "H " + hh + " × W " + Math.round(hh * (0.4 + (z % 40) / 100)) + " cm";
+    }
+    var r = p.w / p.h; return r >= 1 ? long_ + " × " + Math.round(long_ / r) + " cm" : Math.round(long_ * r) + " × " + long_ + " cm";
+  }
+  function worksFor(specs, photos, extra, used, hand) {
+    var pages = (hand || []).map(function (n) { return n; });
+    specs.forEach(function (s) { if (s.cat === "grad" && s.feats.indexOf("index") >= 0) pages.push(s.no); });
+    pages.sort(function (a, b) { return a - b; });
+    var out = { by: {}, taken: {} };
+    if (!pages.length) return out;
+    /* the pictures: what no template shows + the works pictures, grouped by major */
+    var pool = [], sh = {};
+    SHARED.forEach(function (f) { sh[f] = 1; });
+    photos.forEach(function (p) {
+      if (used[p[0]] || sh[p[0]] || (p[3] && Math.min(p[3], p[4]) < 600)) return;
+      pool.push({ f: p[0], m: 6, w: p[3] || 1200, h: p[4] || 900, kind: "photo", nm: [WK_PHOTO_EN[p[1]] || enName(p[0]), p[1]] });
+    });
+    (extra || []).forEach(function (p) { pool.push({ f: p[0], m: p[1], w: p[2], h: p[3], kind: p[4], nm: [p[5] + " " + p[7], p[6] + " " + p[8]] }); });
+    var r0 = rng(20260601), groups = [[], [], [], [], [], [], [], []];
+    pool.forEach(function (p) { groups[p.m].push(p); });
+    /* a mix of majors all the way through, so every page shows several kinds of work */
+    var seq = [], q = groups.map(function (g) { return shuffled(r0, g); }), left = pool.length;
+    while (left > 0) {
+      var at0 = r0() * left, m0 = 0;
+      for (; m0 < q.length - 1 && at0 >= q[m0].length; m0++) at0 -= q[m0].length;
+      if (!q[m0].length) { m0 = q.findIndex(function (g) { return g.length; }); }
+      seq.push(q[m0].shift()); left--;
+    }
+    /* how many works each page shows: inside its kind's range, trimmed until the pictures suffice */
+    var cnt = pages.map(function (n, i) { return WK_KINDS[i % 12][2]; }), total = function () { return cnt.reduce(function (a, b) { return a + b; }, 0); };
+    for (var g = 0; total() > seq.length && g < 400; g++) {
+      var big = -1; cnt.forEach(function (c, i) { if (c > WK_KINDS[i % 12][1] && (big < 0 || c - WK_KINDS[i % 12][1] > cnt[big] - WK_KINDS[big % 12][1])) big = i; });
+      if (big < 0) break; cnt[big]--;
+    }
+    /* pages are dealt in a shuffled order so neighbours do not get the same major */
+    var order = shuffled(rng(77), pages.map(function (n, i) { return i; })), at = 0, slice = {};
+    order.forEach(function (i) { slice[i] = seq.slice(at, at + cnt[i]); at += cnt[i]; });
+    /* names nobody else has (titles come from the pictures; a second one of the same thing gets a number) */
+    var al = [], tc = {};
+    WK_SUR.forEach(function (a) { WK_GIVEN.forEach(function (n) { al.push([a, n]); }); });
+    al = shuffled(rng(32), al);
+    var ai = 0;
+    pages.forEach(function (no, i) {
+      var kind = WK_KINDS[i % 12], r = rng(no * 977 + 3), items = slice[i].map(function (p, k) {
+        var a = al[ai++ % al.length], mat = pick(r, WK_MATK[p.kind]), y = chance(r, .68) ? 2026 : chance(r, .6) ? 2025 : 2024, n = tc[p.nm[0]] = (tc[p.nm[0]] || 0) + 1,
+          x = 20 + Math.floor(r() * 90), z = 20 + Math.floor(r() * 90), small = p.kind === "jewel", vessel = p.kind === "ceramic" || p.kind === "glass" || p.kind === "metal" || p.kind === "enamel";
+        out.taken[p.f] = 1;
+        return { f: p.f, w: p.w, h: p.h, m: p.m, r: WK_ROOM[p.m], y: y, t: [p.nm[0] + (n > 1 ? WK_ROMAN[n - 1] || " " + n : ""), p.nm[1] + (n > 1 ? " " + n : "")], a: [a[0][0] + " " + a[1][0], a[0][1] + a[1][1]], mat: mat,
+          dim: wkDim(p, x, z) };
+      });
+      out.by[no] = { d: kind[0], v: Math.floor(i / 12) % 5, items: items };
+    });
+    return out;
+  }
+  function build(photos, plan, extra, handWorks) {
     var specs = [], used = {}, skeys = {}, fkeys = {}, feat1 = {}, mkeys = {}, lkeys = {}; /* feat1: no two templates share the same set of features */
     /* plan: [[cat, fam-list, count, firstNo], …] */
     plan.forEach(function (p) {
@@ -1015,17 +1113,18 @@
       }
       s.photos = got.map(function (p) { used[p.f] = (used[p.f] || 0) + 1; return p.f; });
     });
+    var W = worksFor(specs, photos, extra, used, handWorks); /* the works pages take the pictures nothing else shows */
     /* basic templates draw from the whole pool, least used first (pictures no other template shows
        come first), so each looks different; never the same picture twice within one */
     var BP = photos.filter(OK).map(function (p, i) { return { f: p[0], i: i, w: p[3] || 0, h: p[4] || 0 }; }), bused = {};
-    BP.forEach(function (p) { bused[p.f] = used[p.f] ? 1 : 0; });
+    BP.forEach(function (p) { bused[p.f] = W.taken[p.f] ? 99 : used[p.f] ? 1 : 0; });
     specs.forEach(function (s) {
       if (s.cat !== "basic") return;
       var nb = Math.min(L[s.layout].need(s, boxOf(s)) || 0, 60, BP.length), off = (s.no * 37) % BP.length;
       s.photos = (L[s.layout].bleed ? BP.filter(WIDE) : BP).slice().sort(function (x, y) { return (bused[x.f] || 0) - (bused[y.f] || 0) || ((x.i - off + BP.length) % BP.length) - ((y.i - off + BP.length) % BP.length); })
         .slice(0, nb).map(function (p) { bused[p.f] = (bused[p.f] || 0) + 1; return p.f; });
     });
-    specs.basicPool = BP.length;
+    specs.basicPool = BP.length; specs.works = W.by; specs.worksTaken = W.taken;
     specs.strict = strict; specs.demand = demand; specs.pool = P0.length;
     return specs;
   }
@@ -1165,11 +1264,13 @@
     return out;
   }
   /* how many hand-made templates templates.js has per section (the tools use this; the page counts its own) */
-  var HAND = { feed: 6, grid: 6, slide: 6, grad: 12, graphic: 27, blank: 12, populated: 12 };
-  function catalogue(photos, hand) {
+  var HAND = { feed: 6, grid: 6, slide: 6, grad: 11, graphic: 27, blank: 12, populated: 12 };
+  /* the hand-made graduation templates that have a Works link: the first eleven of the section */
+  function handWorksNos(pl) { var g = pl.filter(function (p) { return p.fam === "grad"; })[0], out = []; for (var i = 0; i < Math.min(11, g.hand); i++) out.push(g.first + i); return out; }
+  function catalogue(photos, hand, extra) {
     hand = hand || HAND;
     var pl = plan(hand);
-    return { plan: pl, specs: build(photos, pl.map(function (p) { return [p.cat, p.lays, p.gen, p.first + p.hand]; })) };
+    return { plan: pl, specs: build(photos, pl.map(function (p) { return [p.cat, p.lays, p.gen, p.first + p.hand]; }), extra, handWorksNos(pl)) };
   }
 
   var API = { MORE: { blocks: MORE_BLOCKS, foots: MORE_FOOTS, en: MORE_EN }, featuresFor: featuresFor, lookKey: lookKey, bigPic: bigPic, SHARED: SHARED, HAND_USED: HAND_USED, icon: icon, renderMobile: renderMobile, build: build, plan: plan, catalogue: catalogue, SECTIONS: SECTIONS, HAND: HAND, render: render, describe: describe, FAMS: FAMS, FACES: FACES, FEAT_KO: FEAT_KO, enName: enName, layouts: L };
