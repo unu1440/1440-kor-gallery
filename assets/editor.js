@@ -1002,7 +1002,7 @@
     ov.hidden = false; d3on = true;
     LYS.forEach(function (l, i) { /* a 3D object shows its own picture */
       if (!l.mv || !l.mv.toDataURL) return;
-      try { l.mv.toDataURL().then(function (u) { var c = $('.d3-c[data-i="' + i + '"]', ov); if (c && u) { c.style.background = "transparent"; c.innerHTML = '<img src="' + u + '" alt="" style="object-fit:contain">'; } }, function () {}); } catch (e) {}
+      try { Promise.resolve(l.mv.toDataURL()).then(function (u) { var c = $('.d3-c[data-i="' + i + '"]', ov); if (c && u) { c.style.background = "transparent"; c.innerHTML = '<img src="' + u + '" alt="" style="object-fit:contain">'; } }, function () {}); } catch (e) {}
     });
     var scene = $(".d3-scene", ov), stage = $(".d3-stage", ov), tag = $(".d3-tag", ov), fit = Math.min(ov.clientWidth / pw, (ov.clientHeight - 150) / ph) * 0.8 || 0.2, drag = null;
     function apply() { stage.style.setProperty("--gap", d3s.gap + "px"); stage.style.transform = "translate(-50%,-46%) scale(" + fit * d3s.zm + ") rotateX(" + d3s.rx + "deg) rotateY(" + d3s.ry + "deg)"; }
