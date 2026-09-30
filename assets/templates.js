@@ -521,7 +521,7 @@
       wrap.addEventListener("pointerenter", function () { idle = false; });
       (function sweep(t) { if (!document.body.contains(cv)) return; if (idle) { var a = (t - t0) / 1600; draw(Math.cos(a) * .9, Math.sin(a * .7) * .6); } requestAnimationFrame(sweep); })(t0);
     };
-    img.src = src(cv.dataset.img);
+    img.src = cv.dataset.src || src(cv.dataset.img);
   }
 
   /* before / after: drag to compare the underdrawing with the finished piece */
@@ -1634,7 +1634,7 @@
   }
   /* list of graduates: a name brings up that person's work */
   function roster(root, live) {
-    var names = $$(root, "[data-rf]"); if (!names.length || !live || root.dataset.roster) return;
+    var names = $$(root, "[data-rf]"); if (!names.length || !live || root.dataset.roster || root.dataset.edit) return;
     root.dataset.roster = 1;
     var im = root.querySelector("[data-rimg] img"), lab = root.querySelector("[data-rlab]");
     names.forEach(function (n) {

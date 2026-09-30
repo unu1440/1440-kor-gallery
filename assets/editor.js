@@ -198,6 +198,8 @@
     canvas.classList.toggle("ed-edit", mode === "edit"); canvas.classList.toggle("ed-try", mode === "try");
     var view = viewOf();
     var other = swapPage(view, mob);
+    view.dataset.edit = mode === "edit" ? "1" : "";
+    $$("canvas.rake", view).forEach(function (cv) { var u = photoUrl(cv.dataset.img); if (u) cv.dataset.src = u; });
     T.bringToLife(view, b, mob);
     if (mode === "edit") T.clearTimers(); /* nothing moves while it is being changed */
     if (!other) decorate(view);
@@ -243,7 +245,12 @@
     function bars(el) { return el.children.length > 0 && [].every.call(el.children, function (c) { return c.classList.contains("wl"); }); }
     (function walk(el) {
       if (el.matches(".mq")) { el.classList.add("ed-mq"); return; } /* the moving line of news: changed as a whole */
-      if (el.matches("[data-drag], svg, script, style, model-viewer, canvas, [data-clock], [data-hours], [data-until]") || (el !== top && el.matches(".lv-layer")) || (top === tp && el.matches(".lv-layer"))) return;
+      if (el.matches("canvas.rake")) { el.dataset.pk = el.dataset.img; el.classList.add("ed-p"); return; } /* the painting the light moves over */
+      if (el.namespaceURI && el.namespaceURI.indexOf("svg") >= 0) { /* the words on a floor plan and the like */
+        if (el.tagName === "svg") [].forEach.call(el.querySelectorAll("text"), function (t) { if (!t.children.length && t.textContent.trim() && !t.closest("[data-clock], [data-hours]")) { if (t.dataset.orig === undefined) { t.dataset.orig = t.textContent; t.dataset.fs = parseFloat(getComputedStyle(t).fontSize) || 16; } t.classList.add("ed-t"); } });
+        return;
+      }
+      if (el.matches("[data-drag], script, style, model-viewer, canvas, [data-clock], [data-hours], [data-until]") || (el !== top && el.matches(".lv-layer")) || (top === tp && el.matches(".lv-layer"))) return;
       if (el.classList.contains("wf")) { el.dataset.pk = "w" + (wi++); el.classList.add("ed-p"); return; }
       if (el.tagName === "IMG") { var f = (el.getAttribute("src") || "").replace(/^.*\//, "").replace(/\.jpg$/, ""), box = el.closest(".ph") || el; box.dataset.pk = f; box.classList.add("ed-p"); return; }
       if (el.classList.contains("wl") || bars(el)) { slot(el); return; } /* a wireframe's grey bars: a place where words can go */
@@ -291,6 +298,7 @@
     e.preventDefault(); e.stopPropagation();
     if (el) return select(el);
     select(null);
+    if (e.target.closest("model-viewer")) { hint("3D 모델은 아직 바꿀 수 없어요. 옆의 글과 사진은 바꿀 수 있어요"); return; }
     if (!phone.matches && !e.target.closest("a, button, input, select, textarea, label, [contenteditable], .lv-layer, " + SELF)) openBgTip({ x: e.clientX, y: e.clientY });
   }
   function select(el) {
@@ -395,7 +403,7 @@
     if (!phone.matches) setTimeout(function () { ta.focus(); }, 0);
   }
   function tipPhoto() {
-    var pk = sel.dataset.pk, mine = !!photoUrl(pk), pim = sel.tagName === "IMG" ? sel : sel.querySelector("img"), src = photoUrl(pk) || (pim ? pim.currentSrc || pim.src : ""), fit = S.fit[pk] || "";
+    var pk = sel.dataset.pk, mine = !!photoUrl(pk), pim = sel.tagName === "IMG" ? sel : sel.querySelector("img"), src = photoUrl(pk) || (pim ? pim.currentSrc || pim.src : sel.tagName === "CANVAS" ? T.photoUrl(pk) : ""), fit = S.fit[pk] || "";
     tipOpen("사진", layerNote() + '<div class="ed-box">' +
       (src ? '<img class="ed-thumb" src="' + esc(src) + '" alt="">' : '<p class="ed-p2">아직 사진이 없는 자리예요. 사진을 올리면 이 자리에 들어가요.</p>') +
       '<input type="file" accept="image/*" id="edFile" class="ed-sr"><button type="button" class="ed-btn" id="edPick">내 사진 올리기</button>' +
@@ -1225,6 +1233,55 @@
       cDone++; setTimeout(function () { cStep(n + 1); }, 0);
     };
     cStep(from);
+    return;
+  }
+
+  /* ---------- development check for the graduation-show templates: templates.html?edit=1&check=grad ----------
+     What a person meets in the editor on a page with its own working parts (light on paint, 3D, before/after, loupe,
+     daylight, scale, floor plan, roster, docent, guestbook): is every picture and every word on it changeable, and does a
+     changed picture show everywhere it is shown? Written into <body data-grad> as { checked, bad }. */
+  if (/[?&]check=grad/.test(location.search)) {
+    var gBad = [], gDone = 0, gN = 0;
+    (function () {
+      var all = []; for (var q = 1; q <= T.total; q++) if ((T.find(q) || {}).fam === "grad") all.push(q);
+      var TINY = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+      function note(n, why) { gBad.push(T.tag(n) + ": " + why); }
+      function one(n) {
+        use(n); mode = "edit";
+        ["desk", "mob"].forEach(function (d) {
+          dev = d; S = fresh(); curPage = "home";
+          try { render(); } catch (e) { return note(n, d + " draw failed: " + e.message); }
+          var view = viewOf(), tp = $(".tp", view); if (!tp) return note(n, d + " no page");
+          var W = [["canvas", "canvas"], ["model-viewer", "model-viewer"], [".ba", "before/after"], [".lp", "loupe"], [".daylight", "daylight"], [".sc-stage", "scale"], ["svg .room", "floor plan"], ["[data-rf]", "roster"], [".dc-play", "docent"], [".gb-form", "guestbook"]].filter(function (w) { return $(w[0], tp); }).map(function (w) { return w[1]; });
+          var dead = $$("img, canvas.rake", tp).filter(function (im) { return !im.closest(".ed-p") && !im.classList.contains("ed-p") && !im.closest(".lv-layer"); });
+          if (dead.length) note(n, d + " [" + W.join(",") + "] " + dead.length + " picture(s) that cannot be changed");
+          var own = function (e) { return [].filter.call(e.childNodes, function (x) { return x.nodeType === 3; }).map(function (x) { return x.textContent; }).join("").trim(); };
+          var words = $$("*", tp).filter(function (e) { var o = own(e); return o && !SKIP_TXT.test(o) && !e.closest(".ed-t") && !e.classList.contains("ed-t") && !e.closest(".ed-slot") && !e.closest(".ed-mq") && !e.closest(SELF) && !e.closest(".lv-layer") && e.tagName !== "SCRIPT" && e.tagName !== "STYLE"; });
+          if (words.length) note(n, d + " [" + W.join(",") + "] " + words.length + " word(s) that cannot be changed: " + words.slice(0, 3).map(function (e) { return own(e).slice(0, 18); }).join(" | "));
+          /* a changed picture must show wherever it is shown */
+          var pk = $$(".ed-p", tp).filter(function (e) { return e.querySelector("img") || e.tagName === "IMG"; })[0];
+          if (pk) {
+            var key = pk.dataset.pk, before = (pk.tagName === "IMG" ? pk : pk.querySelector("img")).currentSrc || "";
+            DATA["g-x"] = TINY; S.lib.push({ id: "g-x", name: "t" }); S.photos[key] = "g-x";
+            try { render(); } catch (e) { note(n, d + " draw after a new picture failed: " + e.message); }
+            var same = $$("img", $(".tp", viewOf())).filter(function (im) { return before && (im.currentSrc || im.src) === before; });
+            if (same.length) note(n, d + " [" + W.join(",") + "] the old picture still shows in " + same.length + " place(s) after it was changed");
+            delete DATA["g-x"]; S = fresh();
+          }
+          if (W.indexOf("canvas") >= 0 || W.indexOf("model-viewer") >= 0) {
+            try { LYS = layersNow(); open3d(); close3d(); } catch (e) { note(n, d + " layers/3D failed: " + e.message); }
+          }
+        });
+        S = fresh(); dev = "desk";
+      }
+      function step() {
+        if (gN >= all.length) { canvas.innerHTML = ""; T.clearTimers(); document.body.dataset.grad = JSON.stringify({ checked: gDone, bad: gBad }); return; }
+        var n = all[gN++]; document.body.dataset.gradAt = n;
+        try { one(n); } catch (e) { note(n, "error " + e.message); }
+        gDone++; setTimeout(step, 0);
+      }
+      step();
+    })();
     return;
   }
 

@@ -312,3 +312,7 @@ button.ed-pr.tool .nm em { margin-left: auto; padding-left: 0.5em; }
   .ed-totop { bottom: calc(var(--bar) + 0.8em); }
   .ed-meas { display: none; }
 }
+
+/* words drawn inside a picture of shapes (a floor plan): shown as chosen with an underline */
+.ed-edit text.ed-t { cursor: pointer; }
+.ed-edit text.ed-t:hover, .ed-edit text.ed-sel { text-decoration: underline; text-decoration-color: var(--accent, #0a5cff); text-decoration-thickness: 2px; }
