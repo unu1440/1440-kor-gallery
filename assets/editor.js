@@ -451,7 +451,8 @@
   var DESK_ONLY = { blocks: 1, bg: 1, type: 1, motion: 1, feat: 1 };
   function openPanel(id) {
     if (panel === id && !pop.hidden) return closePanel();
-    panel = id; pop.hidden = false; select(null);
+    panel = id; pop.hidden = false;
+    if (!(id === "images" && sel && sel.classList.contains("ed-p"))) select(null); /* the picture that was chosen stays chosen, so a picture from "my pictures" can go into it */
     $$(".ed [data-p]").forEach(function (x) { x.setAttribute("aria-pressed", x.dataset.p === id); });
     pop.innerHTML = '<div class="ed-ph"><b>' + TITLE[id] + '</b><button type="button" class="ed-x" id="edPopX" aria-label="닫기">' + IC.x + '</button></div><div class="ed-pb" id="edPb"></div>';
     $("#edPopX").addEventListener("click", closePanel);
@@ -804,10 +805,19 @@
   /* the small menu of one row */
   var pgMenu = document.createElement("div"); pgMenu.className = "ed-cm"; pgMenu.hidden = true; root.appendChild(pgMenu);
   function closeMenu() { pgMenu.hidden = true; }
+  function sibs(p) { return S.pages.filter(function (x) { return x.id !== "home" && x.parent === p.parent; }); }
+  function stepOk(p, d) { var a = sibs(p), i = a.indexOf(p); return i + d >= 0 && i + d < a.length; }
+  function stepPg(id, d) {
+    var p = pgById(id); if (!p || !stepOk(p, d)) return; var a = sibs(p), q = a[a.indexOf(p) + d], i = S.pages.indexOf(p), j = S.pages.indexOf(q);
+    S.pages[i] = q; S.pages[j] = p; commit(true); drawFiles();
+  }
+  function outPg(id) { var p = pgById(id); if (!p || !p.parent) return; S.pages = S.pages.filter(function (x) { return x !== p; }); delete p.parent; S.pages.push(p); commit(true); drawFiles(); }
   function openMenu(id, x, y) {
     var p = pgById(id); if (!p) return; var home = p.id === "home";
     var items = [["ren", "이름 바꾸기", home]];
     if (p.type === "page") { items.push(["dup", "복제", home]); items.push(["hide", p.hidden ? "보이기" : "숨기기 (초안)", home]); }
+    items.push(["up", "위로 옮기기", home || !stepOk(p, -1)], ["down", "아래로 옮기기", home || !stepOk(p, 1)]);
+    if (p.parent) items.push(["out", "세트 밖으로 꺼내기", false]);
     items.push(["del", "지우기", home]);
     pgMenu.innerHTML = items.map(function (i) { return '<button type="button" data-m="' + i[0] + '"' + (i[2] ? " disabled" : "") + '>' + i[1] + '</button>'; }).join("");
     pgMenu.hidden = false; var w = pgMenu.offsetWidth, h = pgMenu.offsetHeight;
@@ -815,7 +825,7 @@
     $$("[data-m]", pgMenu).forEach(function (b) {
       b.addEventListener("click", function () {
         var m = b.dataset.m; closeMenu();
-        if (m === "ren") { renaming = id; drawFiles(); } else if (m === "dup") dupPg(id); else if (m === "hide") hidePg(id); else if (m === "del") delPg(id);
+        if (m === "ren") { renaming = id; drawFiles(); } else if (m === "dup") dupPg(id); else if (m === "hide") hidePg(id); else if (m === "up") stepPg(id, -1); else if (m === "down") stepPg(id, 1); else if (m === "out") outPg(id); else if (m === "del") delPg(id);
       });
     });
   }
@@ -843,7 +853,7 @@
     var h = '<div class="ed-pr' + (on ? " on" : "") + (p.hidden ? " dim" : "") + '" draggable="' + (ren ? "false" : "true") + '" data-id="' + p.id + '" data-type="' + p.type + '" style="--d:' + depth + '">' +
       (set ? '<button type="button" class="tg' + (open ? " o" : "") + '" data-tg="' + p.id + '" aria-expanded="' + open + '" aria-label="펼치기">' + XI.chev + '</button>' : '<span class="tg"></span>') +
       '<span class="ic">' + (set ? (open ? XI.dirOpen : XI.dir) : (home ? XI.home : XI.file)) + '</span>' +
-      (ren ? '<input class="rn" type="text" maxlength="40" value="' + esc(p.name) + '" aria-label="이름">' : '<button type="button" class="nm" data-open="' + p.id + '" title="' + esc(p.name) + '"><span>' + esc(p.name) + '</span>' + (p.hidden ? '<em>초안</em>' : "") + (set ? '<em>' + kids.length + '</em>' : "") + '</button>') +
+      (ren ? '<input class="rn" type="text" maxlength="40" value="' + esc(p.name) + '" aria-label="이름">' : '<span class="nm" role="button" tabindex="0" data-open="' + p.id + '" title="' + esc(p.name) + '"><span>' + esc(p.name) + '</span>' + (p.hidden ? '<em>초안</em>' : "") + (set ? '<em>' + kids.length + '</em>' : "") + '</span>') +
       (home ? "" : '<button type="button" class="dots" data-dots="' + p.id + '" aria-label="' + esc(p.name) + ' 메뉴">⋯</button>') + '</div>';
     if (set && open) h += kids.map(function (k) { return pgRow(k, depth + 1); }).join("") + (kids.length ? "" : '<p class="ed-fe" style="--d:' + (depth + 1) + '">비어 있음</p>');
     return h;
@@ -857,9 +867,9 @@
   function layersNow() {
     var view = viewOf(), tp = view && $(".tp", view); if (!tp) return [];
     var any = hidL[0] || hidL[1] || hidL[2];
-    $$("*", tp).forEach(function (e) { if (e.style.visibility) e.style.visibility = ""; }); /* measure with everything showing */
+    $$("[data-lyv]", tp).forEach(function (e) { e.style.visibility = ""; e.removeAttribute("data-lyv"); }); /* measure with everything showing */
     var L = collectLayers(tp, view);
-    L.forEach(function (l) { if (!l.page) l.el.style.visibility = hidL[l.layer] ? "hidden" : (any ? "visible" : ""); });
+    if (any) L.forEach(function (l) { if (l.page) return; l.el.dataset.lyv = "1"; l.el.style.visibility = hidL[l.layer] ? "hidden" : "visible"; });
     return L;
   }
   function collectLayers(tp, view) {
@@ -957,22 +967,25 @@
     if (!pgById(curPage)) curPage = "home";
     var st = starsNow(), fav = Object.keys(st).map(Number).filter(function (n) { return n >= 1 && n <= T.total; }).sort(function (a, z) { return a - z; }), mine = !!st[N];
     var roots = S.pages.filter(function (p) { return !p.parent; });
-    var h = '<div class="ed-fh"><button type="button" class="sh' + (openS.pages === false ? '' : ' o') + '" data-sec="pages">' + XI.chev + '탐색기</button><span class="ed-fa"><button type="button" id="edAddPg" title="새 페이지" aria-label="새 페이지">' + XI.newPage + '</button><button type="button" id="edAddSet" title="새 세트(폴더)" aria-label="새 세트">' + XI.newDir + '</button></span></div>' +
-      '<div class="ed-pr root" data-id="base" data-type="base" style="--d:0"><button type="button" class="tg' + (openF.base !== false ? " o" : "") + '" data-tg="base" aria-expanded="' + (openF.base !== false) + '" aria-label="펼치기">' + XI.chev + '</button><span class="nm"><span>' + esc(T.site || T.defName) + '</span></span></div>';
-    if (openF.base !== false) {
-      h += '<div class="ed-pr fav" style="--d:1"><button type="button" class="tg' + (openF.fav !== false ? " o" : "") + '" data-tg="fav" aria-expanded="' + (openF.fav !== false) + '" aria-label="펼치기">' + XI.chev + '</button><span class="ic">' + XI.star + '</span><span class="nm"><span>즐겨찾기</span><em>' + fav.length + '</em></span>' +
-        '<button type="button" class="dots" id="edStarMe" aria-pressed="' + mine + '" title="이 템플릿을 즐겨찾기에 ' + (mine ? "서 빼기" : "넣기") + '">' + (mine ? "★" : "☆") + '</button></div>';
-      if (openF.fav !== false) h += fav.length ? fav.map(function (n) {
-        var b0 = T.find(n) || {};
-        return '<div class="ed-pr star' + (n === N ? " on" : "") + '" style="--d:2"><span class="tg"></span><span class="ic">' + XI.tpl + '</span><button type="button" class="nm" data-go="' + n + '" title="' + esc(b0.label || "") + '"><span>' + T.tag(n) + '</span><em>' + esc(b0.label || "") + '</em></button><button type="button" class="dots" data-unstar="' + n + '" aria-label="' + T.tag(n) + ' 즐겨찾기 빼기">×</button></div>';
-      }).join("") : '<p class="ed-fe" style="--d:2">☆를 누른 템플릿이 여기에 모여요</p>';
-      h += roots.map(function (p) { return pgRow(p, 1); }).join("");
+    var h = '<div class="ed-fh"><button type="button" class="sh' + (openS.pages === false ? '' : ' o') + '" data-sec="pages">' + XI.chev + '폴더</button><span class="ed-fa"><button type="button" id="edAddPg" title="새 페이지" aria-label="새 페이지">' + XI.newPage + '</button><button type="button" id="edAddSet" title="새 세트(폴더)" aria-label="새 세트">' + XI.newDir + '</button></span></div>' +
+      '<div class="ed-pr root" style="--d:0"><button type="button" class="tg' + (openF.home !== false ? " o" : "") + '" data-tg="home" aria-expanded="' + (openF.home !== false) + '" aria-label="펼치기">' + XI.chev + '</button><span class="nm"><span>홈</span></span></div>';
+    /* under 홈: the site being made now, with its pages */
+    if (openF.home !== false) {
+      h += '<div class="ed-pr site' + (curPage === "home" ? " on" : "") + '" data-id="base" data-type="base" style="--d:1"><button type="button" class="tg' + (openF.base !== false ? " o" : "") + '" data-tg="base" aria-expanded="' + (openF.base !== false) + '" aria-label="펼치기">' + XI.chev + '</button><span class="ic">' + XI.tpl + '</span><button type="button" class="nm" data-open="home" title="첫 페이지"><span>' + T.tag(N) + '</span><em>편집 중</em></button></div>';
+      if (openF.base !== false) h += roots.filter(function (p) { return p.id !== "home"; }).map(function (p) { return pgRow(p, 2); }).join("");
     }
+    /* and apart from it, the starred templates */
+    h += '<div class="ed-pr fav" style="--d:0"><button type="button" class="tg' + (openF.fav !== false ? " o" : "") + '" data-tg="fav" aria-expanded="' + (openF.fav !== false) + '" aria-label="펼치기">' + XI.chev + '</button><span class="ic">' + XI.star + '</span><span class="nm"><span>즐겨찾기</span><em>' + fav.length + '</em></span>' +
+      '<button type="button" class="dots" id="edStarMe" aria-pressed="' + mine + '" title="이 템플릿을 즐겨찾기에 ' + (mine ? "서 빼기" : "넣기") + '">' + (mine ? "★" : "☆") + '</button></div>';
+    if (openF.fav !== false) h += fav.length ? fav.map(function (n) {
+      var b0 = T.find(n) || {};
+      return '<div class="ed-pr fvrow' + (n === N ? " on" : "") + '" style="--d:1"><span class="tg"></span><span class="ic">' + XI.tpl + '</span><button type="button" class="nm" data-go="' + n + '" title="' + esc(b0.label || "") + '"><span>' + T.tag(n) + '</span><em>' + esc(b0.label || "") + '</em></button><button type="button" class="dots" data-unstar="' + n + '" aria-label="' + T.tag(n) + ' 즐겨찾기 빼기">×</button></div>';
+    }).join("") : '<p class="ed-fe" style="--d:1">☆를 누른 템플릿이 여기에 모여요</p>';
     var pdo = openS.pages !== false;
     h = '<section class="ed-sec' + (pdo ? "" : " c") + '">' + h + '</section>';
     h += '<section class="ed-sec' + (openS.tools === false ? " c" : "") + '"><div class="ed-fh"><button type="button" class="sh' + (openS.tools === false ? "" : " o") + '" data-sec="tools">' + XI.chev + '도구</button></div>' +
-      TOOLS.map(function (t) { return '<button type="button" class="ed-pr tool' + (panel === t[0] && !pop.hidden ? " on" : "") + '" data-p="' + t[0] + '" style="--d:1"><span class="tg"></span><span class="ic">' + t[3] + '</span><span class="nm"><span>' + t[1] + '</span><em>' + t[2] + '</em></span></button>'; }).join("") + '</section>';
-    h += '<section class="ed-sec' + (openS.layers === false ? " c" : "") + '"><div class="ed-fh"><button type="button" class="sh' + (openS.layers === false ? "" : " o") + '" data-sec="layers">' + XI.chev + '레이어</button><span class="ed-fa"><button type="button" id="ed3d3" title="3D로 보기" aria-label="레이어를 3D로 보기" aria-pressed="' + d3on + '">' + XI.cube + '</button></span></div>' + (openS.layers === false ? "" : layerRows(1)) + '</section>';
+      TOOLS.filter(function (t) { return !phone.matches || !DESK_ONLY[t[0]]; }).map(function (t) { return '<button type="button" class="ed-pr tool' + (panel === t[0] && !pop.hidden ? " on" : "") + '" data-p="' + t[0] + '" style="--d:1"><span class="tg"></span><span class="ic">' + t[3] + '</span><span class="nm"><span>' + t[1] + '</span><em>' + t[2] + '</em></span></button>'; }).join("") + (phone.matches ? '<p class="ed-fe" style="--d:1">구성 · 배경 · 글꼴·색 · 스크롤 · 기능은 컴퓨터에서 바꿀 수 있어요</p>' : "") + '</section>';
+    if (!phone.matches) h += '<section class="ed-sec' + (openS.layers === false ? " c" : "") + '"><div class="ed-fh"><button type="button" class="sh' + (openS.layers === false ? "" : " o") + '" data-sec="layers">' + XI.chev + '레이어</button><span class="ed-fa"><button type="button" id="ed3d3" title="3D로 보기" aria-label="레이어를 3D로 보기" aria-pressed="' + d3on + '">' + XI.cube + '</button></span></div>' + (openS.layers === false ? "" : layerRows(1)) + '</section>';
     el.innerHTML = h;
     $$("[data-sec]", el).forEach(function (x) { x.addEventListener("click", function () { openS[x.dataset.sec] = openS[x.dataset.sec] === false; drawFiles(); }); });
     $$("[data-eye]", el).forEach(function (x) { x.addEventListener("click", function (e) { e.stopPropagation(); var k = +x.dataset.eye; hidL[k] = !hidL[k]; applyLayerVis(); drawFiles(); }); });
@@ -980,6 +993,7 @@
     var b3 = $("#ed3d3", el); if (b3) b3.addEventListener("click", function () { if (d3on) close3d(); else open3d(); });
     $$("[data-tg]", el).forEach(function (x) { x.addEventListener("click", function () { openF[x.dataset.tg] = openF[x.dataset.tg] === false; drawFiles(); }); });
     $$("[data-open]", el).forEach(function (x) {
+      x.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); x.click(); } });
       x.addEventListener("click", function () { var p = pgById(x.dataset.open); if (!p) return; if (p.type === "set") { openF[p.id] = openF[p.id] === false; drawFiles(); } else if (p.id !== curPage) gotoPage(p.id); });
       x.addEventListener("dblclick", function () { if (x.dataset.open !== "home") { renaming = x.dataset.open; drawFiles(); } });
     });
@@ -1091,7 +1105,7 @@
       try { localStorage.setItem("1440-site-name", v); } catch (e) {}
       m.textContent = v + ".kor.gallery 주소를 저장했어요. 가입·공개는 준비 중이에요."; T.setHost(v); render();
     });
-    dlg.addEventListener("click", function (e) { if (e.target === dlg) closeDlg(); }, { once: true });
+    if (!dlg._out) { dlg._out = 1; dlg.addEventListener("click", function (e) { if (e.target === dlg) closeDlg(); }); }
     setTimeout(function () { inp.focus(); }, 0);
   }
   $("#edPub").addEventListener("click", publish);
@@ -1106,7 +1120,10 @@
     else if (key === "x" && e.shiftKey) { e.preventDefault(); setDev(dev === "mob" ? "desk" : "mob"); }
     else if (key === "p") { e.preventDefault(); publish(); }
   });
-  phone.addEventListener && phone.addEventListener("change", function () { if (phone.matches && dev !== "mob") setDev("mob"); else { render(); } });
+  phone.addEventListener && phone.addEventListener("change", function () {
+    if (phone.matches) { close3d(); closePanel(); setFiles(false); } else setFiles(true);
+    if (phone.matches && dev !== "mob") setDev("mob"); else { render(); }
+  });
 
   /* ---------- development check: templates.html?edit=1&check=editor[&deep=1][&from=1&to=1440] ----------
      Opens every template in the editor, on a computer and on a phone, the way a person would: the page is drawn and

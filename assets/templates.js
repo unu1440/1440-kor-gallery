@@ -1951,7 +1951,7 @@
 
   /* ---------- stars ---------- */
   document.addEventListener("click", function (e) {
-    var sb = e.target.closest(".star");
+    var sb = e.target.closest(".tpl .star");
     if (sb) {
       var n = +sb.closest(".tpl").dataset.n;
       if (stars[n]) delete stars[n]; else stars[n] = 1;
