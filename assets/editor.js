@@ -982,7 +982,10 @@
     var view = viewOf(), tp = view && $(".tp", view), ov = $("#ed3d"); if (!tp || !ov) return;
     LYS = layersNow(); if (!LYS.length) return;
     var pw = tp.offsetWidth, ph = tp.offsetHeight, pbg = LYS[0].bg || "#fff";
-    var planes = [0, 1, 2].map(function (k) { return '<div class="d3-p k' + k + '" style="width:' + pw + 'px;height:' + ph + 'px;--z:' + (k - 1) + (k === 0 ? ";background:" + pbg : "") + '" data-k="' + k + '"><span class="d3-l">' + LNAME[k][0] + '<small>' + LNAME[k][1] + '</small></span></div>'; }).join("");
+    var planes = [0, 1, 2].map(function (k) {
+      var walls = ""; for (var w = 1; w <= 14; w++) walls += '<div class="d3-f" style="width:' + pw + 'px;height:' + ph + 'px;--z:' + (k - 1) + ';--t:' + (w * 2) + '"></div>'; /* the thickness of the sheet: frames one behind the other */
+      return '<div class="d3-p k' + k + '" style="width:' + pw + 'px;height:' + ph + 'px;--z:' + (k - 1) + (k === 0 ? ";background:" + pbg : "") + '" data-k="' + k + '"><span class="d3-l">' + LNAME[k][0] + '<small>' + LNAME[k][1] + '</small></span></div>' + walls;
+    }).join("");
     var cards = LYS.map(function (l, i) {
       if (l.page) return "";
       var st = "left:" + l.x.toFixed(1) + "px;top:" + l.y.toFixed(1) + "px;width:" + l.w.toFixed(1) + "px;height:" + l.h.toFixed(1) + "px;--z:" + (l.layer - 1), inner = "", cls = "d3-c k-" + l.kind;

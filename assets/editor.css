@@ -100,7 +100,7 @@ button.ed-pr.tool .nm em { margin-left: auto; padding-left: 0.5em; }
 .d3-scene { position: absolute; inset: 0; perspective: 3200px; cursor: grab; touch-action: none; }
 .d3-scene:active { cursor: grabbing; }
 .d3-stage { position: absolute; left: 50%; top: 50%; transform-style: preserve-3d; transform-origin: 50% 50%; }
-.d3-p { position: absolute; left: 0; top: 0; box-sizing: border-box; border: 1px solid rgba(0, 0, 0, .16); background: rgba(255, 255, 255, .16); box-shadow: 0 50px 90px -50px rgba(0, 0, 0, .3); transform: translateZ(calc(var(--z, 0) * var(--gap, 240px))); }
+.d3-p { position: absolute; left: 0; top: 0; box-sizing: border-box; border-radius: 30px; outline: 1px solid transparent; border: 1px solid rgba(0, 0, 0, .16); background: rgba(255, 255, 255, .16); box-shadow: 0 50px 90px -50px rgba(0, 0, 0, .3); transform: translateZ(calc(var(--z, 0) * var(--gap, 240px))); }
 .d3-p:hover { border-color: rgba(0, 0, 0, .45); }
 .d3-l { position: absolute; left: 0; top: -3.4em; font: 500 34px/1 Inter, "Pretendard Variable", sans-serif; color: rgba(0, 0, 0, .7); white-space: nowrap; }
 .d3-l small { margin-left: 0.7em; font-size: 0.6em; font-weight: 400; color: rgba(0, 0, 0, .4); }
@@ -322,3 +322,11 @@ button.ed-pr.tool .nm em { margin-left: auto; padding-left: 0.5em; }
 .ed-edit model-viewer.ed-sel { outline: 3px solid var(--accent, #0a5cff); outline-offset: -3px; }
 .ed-edit g.ed-room { cursor: pointer; }
 .ed-edit g.ed-room:hover > rect, .ed-edit g.ed-room.ed-sel > rect { stroke: var(--accent, #0a5cff); stroke-width: 4; }
+
+/* the 3D view: sheets with thickness and softly rounded corners; the transparent outline makes the browser smooth the edges of turned pieces */
+.d3-f { position: absolute; left: 0; top: 0; box-sizing: border-box; border-radius: 30px; border: 3px solid rgba(96, 96, 92, .34); outline: 1px solid transparent; transform: translateZ(calc(var(--z, 0) * var(--gap, 240px) - var(--t, 2) * 1px)); pointer-events: none; }
+.d3-c { border-radius: 8px; outline: 1px solid transparent; }
+.d3-c.bar { border-radius: 4px; }
+.d3-c.k-text { border-radius: 0; }
+.d3-c.pg { border-radius: 30px; }
+.d3-stage, .d3-scene { -webkit-font-smoothing: antialiased; text-rendering: geometricPrecision; }
