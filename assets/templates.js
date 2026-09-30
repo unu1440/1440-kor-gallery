@@ -907,12 +907,6 @@
   document.getElementById("basicN").textContent = range(["feed", "grid", "slide"]);
   document.querySelectorAll("[data-count]").forEach(function (el) { el.textContent = range([el.dataset.count]); });
 
-  /* about 1440 */
-  var about = document.getElementById("about");
-  document.getElementById("aboutLink").addEventListener("click", function (e) { e.preventDefault(); about.hidden = false; document.body.style.overflow = "hidden"; about.querySelector(".pv-close").focus(); });
-  about.addEventListener("click", function (e) { if (e.target === about || e.target.closest(".pv-close")) { about.hidden = true; document.body.style.overflow = ""; document.getElementById("aboutLink").focus(); } });
-  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !about.hidden) { about.hidden = true; document.body.style.overflow = ""; } });
-
   /* ---------- shuffle ---------- */
   var stage = document.getElementById("shuffleStage");
   var cur = 1 + Math.floor(Math.random() * TOTAL);

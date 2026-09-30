@@ -92,7 +92,7 @@
 
   /* ---------- what was there in the template, and what the person changed ---------- */
   var KEY, orig, S, DATA = {}; /* DATA: pictures added by the person: key → data URL */
-  function fresh() { return { texts: {}, tstyle: {}, slots: {}, photos: {}, fit: {}, lib: [], libN: 0, bg: null, bgImg: null, bgFit: "cover", bgDim: 0, motion: null, fav: null, ink: null, face: null, feats: null, more: null, hours: null, until: null, marquee: null, extra: null, title: "", desc: "" }; }
+  function fresh() { return { texts: {}, tstyle: {}, slots: {}, photos: {}, fit: {}, lib: [], libN: 0, pages: [{ id: "home", type: "page", name: "홈" }], bg: null, bgImg: null, bgFit: "cover", bgDim: 0, motion: null, fav: null, ink: null, face: null, feats: null, more: null, hours: null, until: null, marquee: null, extra: null, title: "", desc: "" }; }
   /* the template being changed (the check at the end changes it again and again) */
   function use(n) {
     N = n; b = T.find(n); gen = b.gen; KEY = "1440-edit-" + n + "-" + (T.site || T.defName);
@@ -130,22 +130,26 @@
     '<header class="ed-top">' +
       '<div class="ed-l"><button type="button" class="ed-home" id="edBack" aria-label="템플릿 다시 고르기">← 1440</button><span class="ed-no">' + T.tag(N) + '</span>' +
       '<img class="ed-fav" id="edFav" alt="" hidden></div>' +
+    '<nav class="ed-rail" id="edRail" aria-label="편집 도구">' +
+      '<button type="button" id="edFilesBtn" data-tip="패널" aria-label="탐색기·도구·레이어" aria-pressed="false">탐색기 · 도구 · 레이어</button>' +
+      '<button type="button" data-p="blocks" data-tip="페이지 구성" aria-label="페이지 구성" aria-pressed="false">구성</button>' +
+      '<button type="button" data-p="texts" data-tip="글 · 사진 목록" aria-label="글 · 사진 목록" aria-pressed="false">글·사진</button>' +
+      '<button type="button" data-p="images" data-tip="내 사진" aria-label="내 사진" aria-pressed="false">내 사진</button>' +
+      '<button type="button" data-p="bg" data-tip="배경" aria-label="배경" aria-pressed="false">배경</button>' +
+      '<button type="button" data-p="type" data-tip="글꼴 · 색" aria-label="글꼴 · 색" aria-pressed="false">글꼴·색</button>' +
+      '<button type="button" data-p="motion" data-tip="스크롤 효과" aria-label="스크롤 효과" aria-pressed="false">스크롤</button>' +
+      '<button type="button" data-p="feat" data-tip="기능" aria-label="기능" aria-pressed="false">기능</button>' +
+      '<button type="button" data-p="site" data-tip="사이트 설정" aria-label="사이트 설정" aria-pressed="false">설정</button>' +
+    '</nav>' +
       '<div class="ed-r"><button type="button" class="ed-ic" id="edUndo" aria-label="되돌리기 ' + CMD + 'Z" title="되돌리기 ' + CMD + 'Z">' + IC.undo + '</button><button type="button" class="ed-ic" id="edRedo" aria-label="다시 하기" title="다시 하기 ' + CMD + '⇧Z">' + IC.redo + '</button><span class="ed-sep"></span>' +
         '<button type="button" class="ed-ic" id="edPreview" aria-pressed="false" aria-label="미리보기 ' + CMD + '\\" title="미리보기 ' + CMD + '\\">' + IC.point + '</button>' +
         '<button type="button" class="ed-ic ed-dev-desk" id="edDevice" aria-pressed="false" aria-label="폰 화면으로 보기" title="폰 화면 ' + CMD + '⇧X">' + IC.mob + '</button>' +
         '<span class="ed-state" id="edState" role="status"></span><button type="button" class="ed-pub" id="edPub" title="공개하기 ' + CMD + 'P">공개하기</button></div>' +
     '</header>' +
+    '<aside class="ed-files" id="edFiles" aria-label="폴더"></aside>' +
+    '<div class="ed-3d" id="ed3d" hidden></div>' +
+    '<div class="ed-rs" id="edRs" role="separator" aria-orientation="vertical" aria-label="폭 조절" tabindex="0"></div>' +
     '<div class="ed-canvas ed-edit" id="edCanvas"></div>' +
-    '<nav class="ed-rail" id="edRail" aria-label="편집 도구">' +
-      '<button type="button" data-p="blocks" data-tip="페이지 구성" aria-label="페이지 구성" aria-pressed="false"><i class="ico" style="--a:#5ac8fa;--b:#0a84ff">' + IC.blocks + '</i></button>' +
-      '<button type="button" data-p="texts" data-tip="글 · 사진 목록" aria-label="글 · 사진 목록" aria-pressed="false"><i class="ico" style="--a:#ffb340;--b:#ff7a00">' + IC.texts + '</i></button>' +
-      '<button type="button" data-p="images" data-tip="내 사진" aria-label="내 사진" aria-pressed="false"><i class="ico" style="--a:#6be08a;--b:#1f9d45">' + IC.images + '</i></button>' +
-      '<button type="button" data-p="bg" data-tip="배경" aria-label="배경" aria-pressed="false"><i class="ico" style="--a:#ff8fa3;--b:#e5386d">' + IC.bg + '</i></button>' +
-      '<button type="button" data-p="type" data-tip="글꼴 · 색" aria-label="글꼴 · 색" aria-pressed="false"><i class="ico" style="--a:#c987f7;--b:#7a3bd6">' + '<b>Aa</b>' + '</i></button>' +
-      '<button type="button" data-p="motion" data-tip="스크롤 효과" aria-label="스크롤 효과" aria-pressed="false"><i class="ico" style="--a:#64d2c8;--b:#16897f">' + IC.motion + '</i></button>' +
-      '<button type="button" data-p="feat" data-tip="기능" aria-label="기능" aria-pressed="false"><i class="ico" style="--a:#ff7a70;--b:#d92f2f">' + IC.feat + '</i></button>' +
-      '<button type="button" data-p="site" data-tip="사이트 설정" aria-label="사이트 설정" aria-pressed="false"><i class="ico" style="--a:#a4a4ad;--b:#5b5b66">' + IC.site + '</i></button>' +
-    '</nav>' +
     '<aside class="ed-pop" id="edPop" hidden></aside><aside class="ed-tip" id="edTip" hidden></aside>' +
     '<div class="ed-dlg" id="edDlg" hidden role="dialog" aria-modal="true" aria-labelledby="edDlgT"><div class="ed-dlg-box"></div></div>';
   document.body.appendChild(root);
@@ -157,6 +161,7 @@
   var hist = [JSON.stringify(S)], hp = 0, saveT = 0;
   function persist() {
     if (CHECK) return;
+    drawFiles();
     try { localStorage.setItem(KEY, JSON.stringify(S)); state.textContent = "초안 · 저장됨"; } catch (e) { state.textContent = "저장하지 못했어요"; }
   }
   function commit(now) {
@@ -192,9 +197,11 @@
     canvas.innerHTML = '<div class="ed-page' + (mob ? " is-mob" : "") + '"><div class="mac-view"' + (mob ? ' data-w="390"' : "") + '><div class="canvas' + (mob ? " mob" : "") + '">' + T.pageFor(b, mob) + '</div></div></div>';
     canvas.classList.toggle("ed-edit", mode === "edit"); canvas.classList.toggle("ed-try", mode === "try");
     var view = viewOf();
+    var other = swapPage(view, mob);
     T.bringToLife(view, b, mob);
     if (mode === "edit") T.clearTimers(); /* nothing moves while it is being changed */
-    decorate(view); applyEdits(view); applyBg(view); applyMotion(view); applyFav(); measureBind(view);
+    if (!other) decorate(view);
+    applyEdits(view); applyBg(view); applyMotion(view); applyFav(); measureBind(view);
     view.addEventListener("click", onClick, true);
     view.addEventListener("scroll", function () { if (sel) placeTip(); }, { passive: true });
     view.addEventListener("dragover", function (e) { if (mode === "edit" && e.dataTransfer && /Files|text\/plain/.test([].join.call(e.dataTransfer.types || [], ","))) e.preventDefault(); });
@@ -209,6 +216,8 @@
     if (mode === "edit") $$("form", view).forEach(function (f) { f.addEventListener("submit", function (e) { e.preventDefault(); }); });
     if (mode === "try") canvas.insertAdjacentHTML("beforeend", '<div class="ed-flag">미리보기 중 · 눌러서 써 보세요 (' + CMD + '\\ 로 돌아가기)</div>');
     refreshPanel(); if (sel || bgTip) select(null);
+    if (hidL[0] || hidL[1] || hidL[2]) applyLayerVis();
+    drawFiles();
   }
   window.addEventListener("resize", function () { var v = viewOf(); if (v) { T.scale(v); T.fitHeight(v); } placeTip(); });
 
@@ -276,12 +285,13 @@
 
   /* ---------- choosing a piece: a small window opens next to it ---------- */
   function onClick(e) {
+    var lk = e.target.closest("[data-pg]"); if (lk) { e.preventDefault(); e.stopPropagation(); gotoPage(lk.dataset.pg); return; }
     if (mode !== "edit" || bypass) return;
     var el = e.target.closest(".ed-t, .ed-p, .ed-mq");
     e.preventDefault(); e.stopPropagation();
     if (el) return select(el);
     select(null);
-    if (!phone.matches && !e.target.closest("a, button, input, select, textarea, label, .lv-layer, " + SELF)) openBgTip({ x: e.clientX, y: e.clientY });
+    if (!phone.matches && !e.target.closest("a, button, input, select, textarea, label, [contenteditable], .lv-layer, " + SELF)) openBgTip({ x: e.clientX, y: e.clientY });
   }
   function select(el) {
     bgTip = false;
@@ -295,8 +305,8 @@
   function tipOpen(title, html) { tip.innerHTML = tipHead(title) + '<div class="ed-pb" id="edTipB">' + html + '</div>'; tip.hidden = false; $("#edTipX").addEventListener("click", function () { select(null); }); placeTip(); }
   function placeTip() {
     if ((!sel && !bgTip) || tip.hidden || phone.matches) return;
-    var r = sel ? sel.getBoundingClientRect() : { left: bgPt.x, right: bgPt.x, top: bgPt.y, bottom: bgPt.y }, w = tip.offsetWidth, h = tip.offsetHeight, vw = window.innerWidth, vh = window.innerHeight, rail = 24, top = $(".ed-top").offsetHeight;
-    var lim = vh - $(".ed-rail").offsetHeight - 22, y = r.bottom + 10; if (y + h > lim) y = r.top - h - 10; if (y < top + 8) y = Math.max(top + 8, Math.min(lim - h, top + 12));
+    var r = sel ? sel.getBoundingClientRect() : { left: bgPt.x, right: bgPt.x, top: bgPt.y, bottom: bgPt.y }, w = tip.offsetWidth, h = tip.offsetHeight, vw = window.innerWidth, vh = window.innerHeight, rail = 24 + (filesOpen && !phone.matches ? $("#edFiles").offsetWidth : 0), top = $(".ed-top").offsetHeight;
+    var lim = vh - 22, y = r.bottom + 10; if (y + h > lim) y = r.top - h - 10; if (y < top + 8) y = Math.max(top + 8, Math.min(lim - h, top + 12));
     var x = Math.min(Math.max(8, r.left), vw - rail - w - 10);
     tip.style.left = x + "px"; tip.style.top = y + "px"; tip.style.right = "auto";
   }
@@ -442,19 +452,19 @@
   function openPanel(id) {
     if (panel === id && !pop.hidden) return closePanel();
     panel = id; pop.hidden = false; select(null);
-    $$("#edRail button").forEach(function (x) { x.setAttribute("aria-pressed", x.dataset.p === id); });
+    $$(".ed [data-p]").forEach(function (x) { x.setAttribute("aria-pressed", x.dataset.p === id); });
     pop.innerHTML = '<div class="ed-ph"><b>' + TITLE[id] + '</b><button type="button" class="ed-x" id="edPopX" aria-label="닫기">' + IC.x + '</button></div><div class="ed-pb" id="edPb"></div>';
     $("#edPopX").addEventListener("click", closePanel);
-    refreshPanel();
+    refreshPanel(); drawFiles();
   }
-  function closePanel() { panel = null; pop.hidden = true; pop.innerHTML = ""; $$("#edRail button").forEach(function (x) { x.setAttribute("aria-pressed", "false"); }); }
+  function closePanel() { panel = null; pop.hidden = true; pop.innerHTML = ""; $$(".ed [data-p]").forEach(function (x) { x.setAttribute("aria-pressed", "false"); }); drawFiles(); }
   function refreshPanel() {
     if (!panel || pop.hidden) return;
     var pb = $("#edPb"); if (!pb) return;
     if (phone.matches && DESK_ONLY[panel]) { pb.innerHTML = '<div class="ed-box"><h3 class="ed-h">컴퓨터에서 바꿀 수 있어요</h3><p class="ed-p2">폰에서는 글과 사진을 고치고 공개할 수 있어요. 페이지 구성, 배경, 글꼴과 색, 스크롤 효과, 기능 켜고 끄기는 컴퓨터로 들어와서 해 주세요.</p></div>'; return; }
     ({ blocks: panelBlocks, texts: panelTexts, images: panelImages, bg: panelBg, type: panelType, motion: panelMotion, feat: panelFeat, site: panelSite })[panel](pb);
   }
-  $$("#edRail button").forEach(function (x) { x.addEventListener("click", function () { openPanel(x.dataset.p); }); });
+  root.addEventListener("click", function (e) { var b = e.target.closest("[data-p]"); if (b) openPanel(b.dataset.p); });
 
   /* -- the page's parts, in order (Cargo calls this the pages list): add, remove, move -- */
   function moreParts() { var m = (S.more || orig.more || []).slice(), foot = m.length && /^f-/.test(m[m.length - 1]) ? m.pop().slice(2) : "line"; return { blocks: m, foot: foot }; }
@@ -747,17 +757,312 @@
     view.addEventListener("scroll", function () { if (mEl && !mRaf) mRaf = requestAnimationFrame(measShow); }, { passive: true });
   }
 
-  /* -- the dock: a name appears over the icon under the pointer; pressing one makes it hop once, as in the Mac's Dock -- */
-  (function () {
-    var dock = $("#edRail"), dt = document.createElement("div");
-    dt.className = "ed-dtip"; dt.hidden = true; root.appendChild(dt);
-    $$("button", dock).forEach(function (x) {
-      x.addEventListener("pointerenter", function (e) { if (e.pointerType === "touch") return; var r = x.getBoundingClientRect(); dt.textContent = x.dataset.tip; dt.style.left = r.left + r.width / 2 + "px"; dt.style.top = r.top - 10 + "px"; dt.hidden = false; });
-      x.addEventListener("pointerleave", function () { dt.hidden = true; });
-      x.addEventListener("click", function () { dt.hidden = true; x.classList.remove("hop"); void x.offsetWidth; x.classList.add("hop"); });
-      x.addEventListener("animationend", function () { x.classList.remove("hop"); });
+  /* -- the left panel, as in Cargo's editor: the site's pages and sets (folders). Make pages and sets, rename (double-click),
+        drag to put in order or into a set, and a menu (right-click or "⋯") to duplicate, hide or delete. The default folder,
+        "기본", also holds the starred templates. A new page is one screen: a title and some words. -- */
+  var FILES_KEY = "1440-edit-files-open", filesOpen = false, openF = { base: true, fav: true }, renaming = null, dragId = null, curPage = "home";
+  function starsNow() { try { return JSON.parse(localStorage.getItem("1440-stars") || "{}"); } catch (e) { return {}; } }
+  function saveStarsNow(o) { try { localStorage.setItem("1440-stars", JSON.stringify(o)); } catch (e) {} }
+  function siteQ() { return T.site ? "&site=" + encodeURIComponent(T.site) : ""; }
+  function pgById(id) { return (S.pages || []).filter(function (p) { return p.id === id; })[0]; }
+  function pgNew() { return "p-" + Date.now().toString(36) + Math.floor(Math.random() * 46656).toString(36); }
+  function setFiles(on) {
+    filesOpen = on; root.classList.toggle("files-open", on);
+    var b = $("#edFilesBtn"); if (b) b.setAttribute("aria-pressed", String(on));
+    try { localStorage.setItem(FILES_KEY, on ? "1" : "0"); } catch (e) {}
+    drawFiles(); setTimeout(function () { window.dispatchEvent(new Event("resize")); }, 40);
+  }
+  function gotoPage(id) { if (!pgById(id)) id = "home"; curPage = id; select(null); render(); drawFiles(); }
+  function addPg(type) {
+    var p = { id: pgNew(), type: type, name: type === "set" ? "새 세트" : "새 페이지", body: "" };
+    S.pages.push(p); renaming = p.id; commit(true); if (type === "page") { curPage = p.id; select(null); render(); } drawFiles();
+  }
+  function movePg(id, targetId, into) {
+    var it = pgById(id), tg = pgById(targetId); if (!it || !tg || it === tg || it.id === "home" && tg.type === "set" && into) return;
+    if (it.type === "set" && (into || tg.parent)) return; /* a set stays at the top level */
+    S.pages = S.pages.filter(function (p) { return p !== it; });
+    if (into && tg.type === "set") { it.parent = tg.id; S.pages.push(it); }
+    else { if (tg.parent) it.parent = tg.parent; else delete it.parent; S.pages.splice(S.pages.indexOf(tg), 0, it); }
+    commit(true); drawFiles();
+  }
+  function delPg(id) {
+    var p = pgById(id); if (!p || p.id === "home") return;
+    var kids = S.pages.filter(function (x) { return x.parent === id; });
+    if (p.type === "set" && kids.length && !confirm("이 세트 안의 페이지 " + kids.length + "개는 '기본' 폴더로 옮겨요. 세트를 지울까요?")) return;
+    if (p.type === "page" && ((p.body || "").trim() || p.name !== "새 페이지") && !confirm("'" + p.name + "' 페이지를 지울까요?")) return;
+    kids.forEach(function (k) { delete k.parent; });
+    S.pages = S.pages.filter(function (x) { return x !== p; });
+    if (curPage === id) curPage = "home";
+    commit(true); render(); drawFiles();
+  }
+  function dupPg(id) {
+    var p = pgById(id); if (!p || p.type !== "page" || p.id === "home") return;
+    var c = { id: pgNew(), type: "page", name: p.name + " 복사", body: p.body || "" }; if (p.parent) c.parent = p.parent; if (p.hidden) c.hidden = 1;
+    S.pages.splice(S.pages.indexOf(p) + 1, 0, c); commit(true); drawFiles();
+  }
+  function hidePg(id) { var p = pgById(id); if (!p || p.id === "home" || p.type !== "page") return; if (p.hidden) delete p.hidden; else p.hidden = 1; commit(true); if (curPage !== "home") render(); drawFiles(); }
+  /* the small menu of one row */
+  var pgMenu = document.createElement("div"); pgMenu.className = "ed-cm"; pgMenu.hidden = true; root.appendChild(pgMenu);
+  function closeMenu() { pgMenu.hidden = true; }
+  function openMenu(id, x, y) {
+    var p = pgById(id); if (!p) return; var home = p.id === "home";
+    var items = [["ren", "이름 바꾸기", home]];
+    if (p.type === "page") { items.push(["dup", "복제", home]); items.push(["hide", p.hidden ? "보이기" : "숨기기 (초안)", home]); }
+    items.push(["del", "지우기", home]);
+    pgMenu.innerHTML = items.map(function (i) { return '<button type="button" data-m="' + i[0] + '"' + (i[2] ? " disabled" : "") + '>' + i[1] + '</button>'; }).join("");
+    pgMenu.hidden = false; var w = pgMenu.offsetWidth, h = pgMenu.offsetHeight;
+    pgMenu.style.left = Math.max(6, Math.min(x, window.innerWidth - w - 6)) + "px"; pgMenu.style.top = Math.max(6, Math.min(y, window.innerHeight - h - 6)) + "px";
+    $$("[data-m]", pgMenu).forEach(function (b) {
+      b.addEventListener("click", function () {
+        var m = b.dataset.m; closeMenu();
+        if (m === "ren") { renaming = id; drawFiles(); } else if (m === "dup") dupPg(id); else if (m === "hide") hidePg(id); else if (m === "del") delPg(id);
+      });
     });
+  }
+  document.addEventListener("click", function (e) { if (!pgMenu.hidden && !e.target.closest(".ed-cm") && !e.target.closest("[data-dots]")) closeMenu(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeMenu(); });
+  /* small line icons, the kind a code editor's explorer uses */
+  var XI = {
+    chev: '<svg viewBox="0 0 16 16"><path d="m6 4 4 4-4 4"/></svg>',
+    file: '<svg viewBox="0 0 16 16"><path d="M4 1.8h5l3 3v9.4H4z"/><path d="M9 1.8v3h3"/></svg>',
+    home: '<svg viewBox="0 0 16 16"><path d="M2.5 7.5 8 2.8l5.5 4.7"/><path d="M4 6.6v6.6h8V6.6"/></svg>',
+    dir: '<svg viewBox="0 0 16 16"><path d="M1.8 4.2h4.2l1.4 1.6h6.8v7.2H1.8z"/></svg>',
+    dirOpen: '<svg viewBox="0 0 16 16"><path d="M1.8 4.2h4.2l1.4 1.6h5.4v1.6"/><path d="M1.8 13h10.6l1.8-5.6H3.6z"/></svg>',
+    star: '<svg viewBox="0 0 16 16"><path d="m8 2 1.8 3.8 4.1.5-3 2.8.8 4.1L8 11.2l-3.7 2 .8-4.1-3-2.8 4.1-.5z"/></svg>',
+    tpl: '<svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M2 6h12"/></svg>',
+    newPage: '<svg viewBox="0 0 16 16"><path d="M4 1.8h5l3 3v9.4H4z"/><path d="M9 1.8v3h3M8 8v3.6M6.2 9.8h3.6"/></svg>',
+    newDir: '<svg viewBox="0 0 16 16"><path d="M1.8 4.2h4.2l1.4 1.6h6.8v7.2H1.8z"/><path d="M8 7.6v3.6M6.2 9.4h3.6"/></svg>',
+    fold: '<svg viewBox="0 0 16 16"><path d="M2.5 3.5h11M2.5 8h11M5 12.5h6"/></svg>',
+    eye: '<svg viewBox="0 0 16 16"><path d="M1.5 8s2.4-4.2 6.5-4.2S14.5 8 14.5 8s-2.4 4.2-6.5 4.2S1.5 8 1.5 8z"/><circle cx="8" cy="8" r="1.8"/></svg>',
+    eyeOff: '<svg viewBox="0 0 16 16"><path d="M1.5 8s2.4-4.2 6.5-4.2S14.5 8 14.5 8s-2.4 4.2-6.5 4.2S1.5 8 1.5 8z"/><path d="M2.5 13.5 13.5 2.5"/></svg>',
+    cube: '<svg viewBox="0 0 16 16"><path d="M8 1.8 13.8 5v6L8 14.2 2.2 11V5z"/><path d="M2.2 5 8 8.2 13.8 5M8 8.2v6"/></svg>'
+  };
+  function pgRow(p, depth) {
+    var on = p.id === curPage, ren = renaming === p.id, set = p.type === "set", kids = set ? S.pages.filter(function (x) { return x.parent === p.id; }) : [], open = openF[p.id] !== false;
+    var home = p.id === "home";
+    var h = '<div class="ed-pr' + (on ? " on" : "") + (p.hidden ? " dim" : "") + '" draggable="' + (ren ? "false" : "true") + '" data-id="' + p.id + '" data-type="' + p.type + '" style="--d:' + depth + '">' +
+      (set ? '<button type="button" class="tg' + (open ? " o" : "") + '" data-tg="' + p.id + '" aria-expanded="' + open + '" aria-label="펼치기">' + XI.chev + '</button>' : '<span class="tg"></span>') +
+      '<span class="ic">' + (set ? (open ? XI.dirOpen : XI.dir) : (home ? XI.home : XI.file)) + '</span>' +
+      (ren ? '<input class="rn" type="text" maxlength="40" value="' + esc(p.name) + '" aria-label="이름">' : '<button type="button" class="nm" data-open="' + p.id + '" title="' + esc(p.name) + '"><span>' + esc(p.name) + '</span>' + (p.hidden ? '<em>초안</em>' : "") + (set ? '<em>' + kids.length + '</em>' : "") + '</button>') +
+      (home ? "" : '<button type="button" class="dots" data-dots="' + p.id + '" aria-label="' + esc(p.name) + ' 메뉴">⋯</button>') + '</div>';
+    if (set && open) h += kids.map(function (k) { return pgRow(k, depth + 1); }).join("") + (kids.length ? "" : '<p class="ed-fe" style="--d:' + (depth + 1) + '">비어 있음</p>');
+    return h;
+  }
+  /* -- layers, as in Photoshop's Layers panel: the page as three layers (front, middle, back), with an eye for each; and a 3D view, opened only from
+        here, that shows the three layers one behind the other and can be turned -- */
+  var LYS = [], hidL = { 0: false, 1: false, 2: false };
+  var LNAME = [["아래", "배경"], ["중간", "사진 · 블록"], ["위", "글 · 메뉴"]];
+  /* the page is three layers: at the back its backdrop, in the middle its pictures and blocks, at the front its words
+     and whatever floats (menus, windows). Every piece of the page belongs to one of them. */
+  function layersNow() {
+    var view = viewOf(), tp = view && $(".tp", view); if (!tp) return [];
+    var any = hidL[0] || hidL[1] || hidL[2];
+    $$("*", tp).forEach(function (e) { if (e.style.visibility) e.style.visibility = ""; }); /* measure with everything showing */
+    var L = collectLayers(tp, view);
+    L.forEach(function (l) { if (!l.page) l.el.style.visibility = hidL[l.layer] ? "hidden" : (any ? "visible" : ""); });
+    return L;
+  }
+  function collectLayers(tp, view) {
+    var out = [];
+    var z = zoomOf(view), t0 = tp.getBoundingClientRect(), pw = tp.offsetWidth, ph = tp.offsetHeight;
+    function rel(el) { var r = el.getBoundingClientRect(); return { x: (r.left - t0.left) / z, y: (r.top - t0.top) / z, w: r.width / z, h: r.height / z }; }
+    out.push({ el: tp, kind: "box", name: "배경", layer: 0, x: 0, y: 0, w: pw, h: ph, bg: getComputedStyle(tp).backgroundColor, page: true });
+    (function walk(el, front) {
+      [].slice.call(el.children).forEach(function (c) {
+        if (out.length > 260 || (c.namespaceURI || "").indexOf("svg") >= 0) return;
+        var cs = getComputedStyle(c); if (cs.display === "none" || cs.visibility === "hidden" || parseFloat(cs.opacity) === 0) return;
+        var r = rel(c); if (r.w < 2 || r.h < 2) { walk(c, front); return; }
+        var floats = front || cs.position === "fixed" || cs.position === "sticky" || c.classList.contains("lv-layer") || c.classList.contains("mq") || c.classList.contains("tp-row");
+        var photo = c.tagName === "IMG" || c.classList.contains("ph") || c.classList.contains("wf") || c.tagName === "CANVAS" || c.tagName === "MODEL-VIEWER";
+        var own = [].filter.call(c.childNodes, function (n) { return n.nodeType === 3 && n.textContent.trim(); }).map(function (n) { return n.textContent.trim(); }).join(" ");
+        var bgOn = !/^rgba\(0, 0, 0, 0\)$|^transparent$/.test(cs.backgroundColor) || cs.backgroundImage !== "none", bd = parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.borderBottomWidth) > 0;
+        var kind = photo ? "photo" : own ? "text" : (bgOn || bd) ? "box" : "";
+        if (!kind) { walk(c, floats); return; }
+        var big = r.w >= pw * 0.9 && r.h >= ph * 0.9 || c.classList.contains("bd");
+        var L = { el: c, kind: kind, layer: floats ? 2 : big ? 0 : kind === "text" ? 2 : 1, x: r.x, y: r.y, w: r.w, h: r.h };
+        if (kind === "text") { L.name = own.slice(0, 26); L.txt = own; L.fs = cs.fontSize; L.color = cs.color; L.fw = cs.fontWeight; L.lh = cs.lineHeight; L.ta = cs.textAlign; L.ff = cs.fontFamily; L.ls = cs.letterSpacing; }
+        else if (kind === "photo") { var im = c.tagName === "IMG" ? c : c.querySelector("img"); L.name = "사진"; L.src = im ? (im.currentSrc || im.src) : ""; L.fit = im ? getComputedStyle(im).objectFit : "cover"; L.bg = cs.backgroundColor; }
+        else { L.name = "블록"; L.bg = cs.backgroundColor; }
+        out.push(L);
+        if (kind !== "photo") walk(c, floats);
+      });
+    })(tp, false);
+    return out;
+  }
+  /* hiding a whole layer for a moment (the eye), kept when the page is drawn again */
+  function applyLayerVis() { layersNow(); }
+  function layerRows() {
+    LYS = layersNow();
+    var ico = { 2: '<b>T</b>', 1: XI.tpl, 0: XI.dir };
+    return [2, 1, 0].map(function (k) {
+      var n = LYS.filter(function (L) { return L.layer === k && !L.page; }).length, hid = hidL[k];
+      return '<div class="ed-pr ly' + (hid ? " dim" : "") + '" data-ly="' + k + '" style="--d:1"><button type="button" class="tg eye" data-eye="' + k + '" aria-label="' + LNAME[k][0] + ' 층 ' + (hid ? "보이기" : "숨기기") + '">' + (hid ? XI.eyeOff : XI.eye) + '</button><span class="ic">' + ico[k] + '</span><button type="button" class="nm" data-lyo="' + k + '"><span>' + LNAME[k][0] + '</span><em>' + LNAME[k][1] + '</em><em class="n">' + n + '</em></button></div>';
+    }).join("");
+  }
+  function flashLayer(L) {
+    if (!L || !L.el.isConnected) return;
+    try { L.el.scrollIntoView({ block: "center", behavior: "auto" }); } catch (e) {}
+    mView = viewOf(); mEl = L.el; measShow();
+  }
+  /* the 3D view: opened by the cube button of the layers section, it takes the place of the page on the main editing area.
+     Three sheets, one behind the other, kept plain: only what is big enough to read is drawn (small words become soft bars,
+     small boxes are left out). Drag to turn, wheel to come closer. The turn is kept while the view is open. */
+  var d3on = false, d3s = { rx: -10, ry: 38, zm: 1, gap: 240 };
+  function open3d() {
+    var view = viewOf(), tp = view && $(".tp", view), ov = $("#ed3d"); if (!tp || !ov) return;
+    LYS = layersNow(); if (!LYS.length) return;
+    var pw = tp.offsetWidth, ph = tp.offsetHeight, pbg = LYS[0].bg || "#fff";
+    var planes = [0, 1, 2].map(function (k) { return '<div class="d3-p k' + k + '" style="width:' + pw + 'px;height:' + ph + 'px;--z:' + (k - 1) + (k === 0 ? ";background:" + pbg : "") + '" data-k="' + k + '"><span class="d3-l">' + LNAME[k][0] + '<small>' + LNAME[k][1] + '</small></span></div>'; }).join("");
+    var cards = LYS.map(function (l, i) {
+      if (l.page) return "";
+      var st = "left:" + l.x.toFixed(1) + "px;top:" + l.y.toFixed(1) + "px;width:" + l.w.toFixed(1) + "px;height:" + l.h.toFixed(1) + "px;--z:" + (l.layer - 1), inner = "", cls = "d3-c k-" + l.kind;
+      if (l.kind === "text") {
+        var fs = parseFloat(l.fs) || 16;
+        if (fs < 15) { var bh = Math.max(5, fs * 0.42); st = "left:" + l.x.toFixed(1) + "px;top:" + (l.y + (l.h - bh) / 2).toFixed(1) + "px;width:" + Math.max(8, Math.min(l.w, (l.txt || "").length * fs * 0.55)).toFixed(1) + "px;height:" + bh.toFixed(1) + "px;--z:" + (l.layer - 1); cls += " bar"; }
+        else { st += ";color:" + l.color + ";font-size:" + l.fs + ";font-weight:" + l.fw + ";line-height:" + l.lh + ";text-align:" + l.ta + ";font-family:" + l.ff.replace(/"/g, "'") + ";letter-spacing:" + l.ls; inner = esc(l.txt); }
+      } else if (l.kind === "photo") { inner = l.src ? '<img src="' + esc(l.src) + '" alt="" style="object-fit:' + l.fit + '">' : ""; st += ";background:" + (l.src ? "transparent" : "#dcdcd8"); }
+      else { if (l.w < 24 || l.h < 24) return ""; var solid = !/^rgba\(0, 0, 0, 0\)$/.test(l.bg); st += ";background:" + (solid ? l.bg : "transparent"); if (!solid) cls += " ln"; }
+      return '<div class="' + cls + '" data-i="' + i + '" style="' + st + '">' + inner + '</div>';
+    }).join("");
+    ov.innerHTML = '<div class="d3-bar"><b>3D 레이어</b><label class="d3-r"><span>간격</span><input type="range" class="d3-gap" min="0" max="520" value="' + d3s.gap + '"></label><button type="button" class="d3-reset">처음 각도</button><button type="button" class="d3-close" aria-label="닫기">' + IC.x + '</button></div>' +
+      '<div class="d3-hint">위 · 중간 · 아래 세 층 — 끌어서 돌리고, 휠로 확대해요</div><div class="d3-scene"><div class="d3-stage" style="width:' + pw + 'px;height:' + ph + 'px">' + planes + cards + '</div></div><div class="d3-tag" hidden></div>';
+    ov.hidden = false; d3on = true;
+    var scene = $(".d3-scene", ov), stage = $(".d3-stage", ov), tag = $(".d3-tag", ov), fit = Math.min(ov.clientWidth / pw, (ov.clientHeight - 150) / ph) * 0.8 || 0.2, drag = null;
+    function apply() { stage.style.setProperty("--gap", d3s.gap + "px"); stage.style.transform = "translate(-50%,-46%) scale(" + fit * d3s.zm + ") rotateX(" + d3s.rx + "deg) rotateY(" + d3s.ry + "deg)"; }
+    apply();
+    scene.addEventListener("pointerdown", function (e) { drag = { x: e.clientX, y: e.clientY, rx: d3s.rx, ry: d3s.ry }; try { scene.setPointerCapture(e.pointerId); } catch (z) {} });
+    scene.addEventListener("pointermove", function (e) {
+      if (drag) { d3s.ry = drag.ry + (e.clientX - drag.x) * 0.4; d3s.rx = Math.max(-85, Math.min(85, drag.rx - (e.clientY - drag.y) * 0.4)); apply(); tag.hidden = true; return; }
+      var c = e.target.closest(".d3-c"), pl = e.target.closest(".d3-p");
+      if (c) { var l = LYS[+c.dataset.i]; tag.textContent = LNAME[l.layer][0] + " · " + l.name; }
+      else if (pl) tag.textContent = LNAME[+pl.dataset.k][0] + " 층 · " + LNAME[+pl.dataset.k][1];
+      else { tag.hidden = true; return; }
+      var b = ov.getBoundingClientRect(); tag.hidden = false; tag.style.left = e.clientX - b.left + 14 + "px"; tag.style.top = e.clientY - b.top + 14 + "px";
+    });
+    scene.addEventListener("pointerup", function () { drag = null; });
+    scene.addEventListener("pointerleave", function () { tag.hidden = true; });
+    scene.addEventListener("wheel", function (e) { e.preventDefault(); d3s.zm = Math.max(0.3, Math.min(8, d3s.zm * (e.deltaY < 0 ? 1.1 : 0.9))); apply(); }, { passive: false });
+    $(".d3-gap", ov).addEventListener("input", function (e) { d3s.gap = +e.target.value; apply(); });
+    $(".d3-reset", ov).addEventListener("click", function () { d3s.rx = -10; d3s.ry = 38; d3s.zm = 1; d3s.gap = 240; $(".d3-gap", ov).value = 240; apply(); });
+    $(".d3-close", ov).addEventListener("click", close3d);
+    var bt = $("#ed3d3"); if (bt) bt.setAttribute("aria-pressed", "true");
+  }
+  function close3d() { var ov = $("#ed3d"); if (ov) { ov.hidden = true; ov.innerHTML = ""; } d3on = false; var bt = $("#ed3d3"); if (bt) bt.setAttribute("aria-pressed", "false"); }
+
+  var openS = {}, TOOLS = [["blocks", "구성", "페이지 아래 블록", IC.blocks], ["texts", "글·사진", "모든 글과 사진 목록", IC.texts], ["images", "내 사진", "올려 둔 사진", IC.images], ["bg", "배경", "색과 배경 사진", IC.bg], ["type", "글꼴·색", "글꼴과 글자색", "<b>Aa</b>"], ["motion", "스크롤", "나타나는 방식", IC.motion], ["feat", "기능", "메뉴와 기능 켜고 끄기", IC.feat], ["site", "설정", "이름·파비콘·검색 제목", IC.site]];
+  function drawFiles() {
+    var el = $("#edFiles"); if (!el) return;
+    if (!filesOpen) { el.innerHTML = ""; return; }
+    if (renaming && $(".rn", el)) return;
+    if (!pgById(curPage)) curPage = "home";
+    var st = starsNow(), fav = Object.keys(st).map(Number).filter(function (n) { return n >= 1 && n <= T.total; }).sort(function (a, z) { return a - z; }), mine = !!st[N];
+    var roots = S.pages.filter(function (p) { return !p.parent; });
+    var h = '<div class="ed-fh"><button type="button" class="sh' + (openS.pages === false ? '' : ' o') + '" data-sec="pages">' + XI.chev + '탐색기</button><span class="ed-fa"><button type="button" id="edAddPg" title="새 페이지" aria-label="새 페이지">' + XI.newPage + '</button><button type="button" id="edAddSet" title="새 세트(폴더)" aria-label="새 세트">' + XI.newDir + '</button></span></div>' +
+      '<div class="ed-pr root" data-id="base" data-type="base" style="--d:0"><button type="button" class="tg' + (openF.base !== false ? " o" : "") + '" data-tg="base" aria-expanded="' + (openF.base !== false) + '" aria-label="펼치기">' + XI.chev + '</button><span class="nm"><span>' + esc(T.site || T.defName) + '</span></span></div>';
+    if (openF.base !== false) {
+      h += '<div class="ed-pr fav" style="--d:1"><button type="button" class="tg' + (openF.fav !== false ? " o" : "") + '" data-tg="fav" aria-expanded="' + (openF.fav !== false) + '" aria-label="펼치기">' + XI.chev + '</button><span class="ic">' + XI.star + '</span><span class="nm"><span>즐겨찾기</span><em>' + fav.length + '</em></span>' +
+        '<button type="button" class="dots" id="edStarMe" aria-pressed="' + mine + '" title="이 템플릿을 즐겨찾기에 ' + (mine ? "서 빼기" : "넣기") + '">' + (mine ? "★" : "☆") + '</button></div>';
+      if (openF.fav !== false) h += fav.length ? fav.map(function (n) {
+        var b0 = T.find(n) || {};
+        return '<div class="ed-pr star' + (n === N ? " on" : "") + '" style="--d:2"><span class="tg"></span><span class="ic">' + XI.tpl + '</span><button type="button" class="nm" data-go="' + n + '" title="' + esc(b0.label || "") + '"><span>' + T.tag(n) + '</span><em>' + esc(b0.label || "") + '</em></button><button type="button" class="dots" data-unstar="' + n + '" aria-label="' + T.tag(n) + ' 즐겨찾기 빼기">×</button></div>';
+      }).join("") : '<p class="ed-fe" style="--d:2">☆를 누른 템플릿이 여기에 모여요</p>';
+      h += roots.map(function (p) { return pgRow(p, 1); }).join("");
+    }
+    var pdo = openS.pages !== false;
+    h = '<section class="ed-sec' + (pdo ? "" : " c") + '">' + h + '</section>';
+    h += '<section class="ed-sec' + (openS.tools === false ? " c" : "") + '"><div class="ed-fh"><button type="button" class="sh' + (openS.tools === false ? "" : " o") + '" data-sec="tools">' + XI.chev + '도구</button></div>' +
+      TOOLS.map(function (t) { return '<button type="button" class="ed-pr tool' + (panel === t[0] && !pop.hidden ? " on" : "") + '" data-p="' + t[0] + '" style="--d:1"><span class="tg"></span><span class="ic">' + t[3] + '</span><span class="nm"><span>' + t[1] + '</span><em>' + t[2] + '</em></span></button>'; }).join("") + '</section>';
+    h += '<section class="ed-sec' + (openS.layers === false ? " c" : "") + '"><div class="ed-fh"><button type="button" class="sh' + (openS.layers === false ? "" : " o") + '" data-sec="layers">' + XI.chev + '레이어</button><span class="ed-fa"><button type="button" id="ed3d3" title="3D로 보기" aria-label="레이어를 3D로 보기" aria-pressed="' + d3on + '">' + XI.cube + '</button></span></div>' + (openS.layers === false ? "" : layerRows(1)) + '</section>';
+    el.innerHTML = h;
+    $$("[data-sec]", el).forEach(function (x) { x.addEventListener("click", function () { openS[x.dataset.sec] = openS[x.dataset.sec] === false; drawFiles(); }); });
+    $$("[data-eye]", el).forEach(function (x) { x.addEventListener("click", function (e) { e.stopPropagation(); var k = +x.dataset.eye; hidL[k] = !hidL[k]; applyLayerVis(); drawFiles(); }); });
+    $$("[data-lyo]", el).forEach(function (x) { x.addEventListener("click", function () { var k = +x.dataset.lyo, L = LYS.filter(function (l) { return l.layer === k && !l.page; })[0]; flashLayer(L); }); });
+    var b3 = $("#ed3d3", el); if (b3) b3.addEventListener("click", function () { if (d3on) close3d(); else open3d(); });
+    $$("[data-tg]", el).forEach(function (x) { x.addEventListener("click", function () { openF[x.dataset.tg] = openF[x.dataset.tg] === false; drawFiles(); }); });
+    $$("[data-open]", el).forEach(function (x) {
+      x.addEventListener("click", function () { var p = pgById(x.dataset.open); if (!p) return; if (p.type === "set") { openF[p.id] = openF[p.id] === false; drawFiles(); } else if (p.id !== curPage) gotoPage(p.id); });
+      x.addEventListener("dblclick", function () { if (x.dataset.open !== "home") { renaming = x.dataset.open; drawFiles(); } });
+    });
+    $$(".ed-pr[data-id]", el).forEach(function (row) {
+      var id = row.dataset.id; if (id === "base") return;
+      row.addEventListener("contextmenu", function (e) { e.preventDefault(); openMenu(id, e.clientX, e.clientY); });
+      row.addEventListener("dragstart", function (e) { dragId = id; try { e.dataTransfer.setData("text/plain", id); e.dataTransfer.effectAllowed = "move"; } catch (z) {} row.classList.add("drag"); });
+      row.addEventListener("dragend", function () { dragId = null; row.classList.remove("drag"); $$(".ed-pr.over, .ed-pr.into", el).forEach(function (r) { r.classList.remove("over", "into"); }); });
+    });
+    $$(".ed-pr[data-id]", el).forEach(function (row) {
+      var id = row.dataset.id;
+      row.addEventListener("dragover", function (e) {
+        if (!dragId || dragId === id) return; e.preventDefault();
+        var into = row.dataset.type === "set" || row.dataset.type === "base";
+        row.classList.toggle("into", into); row.classList.toggle("over", !into);
+      });
+      row.addEventListener("dragleave", function () { row.classList.remove("over", "into"); });
+      row.addEventListener("drop", function (e) {
+        e.preventDefault(); row.classList.remove("over", "into"); if (!dragId) return;
+        if (id === "base") { var it = pgById(dragId); if (it) { S.pages = S.pages.filter(function (p) { return p !== it; }); delete it.parent; S.pages.push(it); commit(true); drawFiles(); } }
+        else movePg(dragId, id, row.dataset.type === "set");
+        dragId = null;
+      });
+    });
+    $$("[data-dots]", el).forEach(function (x) { x.addEventListener("click", function (e) { e.stopPropagation(); var r = x.getBoundingClientRect(); openMenu(x.dataset.dots, r.left, r.bottom + 4); }); });
+    var rn = $(".rn", el);
+    if (rn) {
+      rn.focus(); rn.select();
+      var done = false, id0 = renaming;
+      var fin = function (ok) {
+        if (done) return; done = true; renaming = null;
+        var v = rn.value.trim(), p = pgById(id0);
+        if (ok && v && p && v !== p.name) { p.name = v; commit(true); if (curPage === id0 || S.pages.length) { var v0 = viewOf(); if (curPage !== "home" && v0) render(); } }
+        drawFiles();
+      };
+      rn.addEventListener("keydown", function (e) { if (e.key === "Enter") fin(true); else if (e.key === "Escape") { e.stopPropagation(); fin(false); } });
+      rn.addEventListener("blur", function () { fin(true); });
+    }
+    $("#edAddPg", el).addEventListener("click", function () { addPg("page"); });
+    $("#edAddSet", el).addEventListener("click", function () { addPg("set"); });
+    $$("[data-go]", el).forEach(function (x) { x.addEventListener("click", function () { if (+x.dataset.go !== N) location.href = "templates.html?edit=" + x.dataset.go + siteQ(); }); });
+    $$("[data-unstar]", el).forEach(function (x) { x.addEventListener("click", function () { var o = starsNow(); delete o[x.dataset.unstar]; saveStarsNow(o); drawFiles(); }); });
+    var me = $("#edStarMe", el); if (me) me.addEventListener("click", function () { var o = starsNow(); if (o[N]) delete o[N]; else o[N] = 1; saveStarsNow(o); drawFiles(); });
+  }
+  (function () {
+    var rs = $("#edRs"), W_KEY = "1440-edit-files-w", raf = 0;
+    function setW(w) { var mx = Math.min(620, window.innerWidth * 0.55); w = Math.max(190, Math.min(mx, w)); root.style.setProperty("--fw", w + "px"); if (!raf) raf = requestAnimationFrame(function () { raf = 0; window.dispatchEvent(new Event("resize")); }); return w; }
+    try { var w0 = +localStorage.getItem(W_KEY); if (w0) root.style.setProperty("--fw", w0 + "px"); } catch (e) {}
+    rs.addEventListener("pointerdown", function (e) {
+      e.preventDefault(); try { rs.setPointerCapture(e.pointerId); } catch (z) {} root.classList.add("resizing");
+      var move = function (ev) { setW(window.innerWidth - ev.clientX); }, up = function () { rs.removeEventListener("pointermove", move); rs.removeEventListener("pointerup", up); root.classList.remove("resizing"); try { localStorage.setItem(W_KEY, String(Math.round($("#edFiles").offsetWidth))); } catch (z) {} };
+      rs.addEventListener("pointermove", move); rs.addEventListener("pointerup", up);
+    });
+    rs.addEventListener("keydown", function (e) { if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return; e.preventDefault(); var cur = $("#edFiles").offsetWidth; var w = setW(cur + (e.key === "ArrowLeft" ? 24 : -24)); try { localStorage.setItem(W_KEY, String(Math.round(w))); } catch (z) {} });
   })();
+  window.addEventListener("storage", function (e) { if (e.key === "1440-stars") drawFiles(); });
+  window.addEventListener("focus", function () { if (!renaming) drawFiles(); });
+
+  /* a page other than the first is one screen of its own: the site's name and the pages along the top, a title and some words */
+  function pageMarkup(pg, mob) {
+    var name = esc(S.texts[T.site || T.defName] !== undefined ? S.texts[T.site || T.defName] : (T.site || T.defName)), nav = S.pages.filter(function (p) { return p.type === "page" && !p.hidden; });
+    var links = nav.map(function (p) { return '<a href="#" data-pg="' + p.id + '" class="lv-a' + (p.id === pg.id ? " on" : "") + '">' + esc(p.name) + '</a>'; }).join(" · ");
+    return '<div class="tp-row"><span class="tp-name">' + name + '</span><span>' + links + '</span><span></span></div>' +
+      '<div class="pg-body" style="position:absolute;left:28px;right:28px;top:' + (mob ? 96 : 130) + 'px;bottom:56px;display:grid;align-content:start;gap:' + (mob ? 20 : 34) + 'px;overflow:hidden">' +
+      '<h1 class="big pg-t" data-pgf="title" data-ph="제목" style="position:static;font-size:' + (mob ? 46 : 110) + 'px;margin:0">' + esc(pg.name) + '</h1>' +
+      '<div class="pg-b" data-pgf="body" data-ph="여기에 글을 써 보세요" style="font-size:' + (mob ? 17 : 24) + 'px;line-height:1.5;max-width:' + (mob ? 340 : 780) + 'px;white-space:pre-wrap">' + esc(pg.body || "") + '</div></div>' +
+      (pg.hidden ? '<div class="tp-foot"><span>초안 · 메뉴에 나오지 않아요</span><span></span></div>' : "");
+  }
+  function swapPage(view, mob) {
+    var pg = pgById(curPage), tp = $(".tp", view); if (!pg || pg.id === "home" || !tp) return false;
+    tp.classList.remove("tp-reflow"); tp.innerHTML = pageMarkup(pg, mob);
+    $$("[data-pgf]", tp).forEach(function (f) {
+      var key = f.dataset.pgf;
+      if (mode === "edit") f.setAttribute("contenteditable", "plaintext-only");
+      f.addEventListener("input", function () {
+        var v = key === "title" ? f.textContent.replace(/\n/g, " ") : f.innerText.replace(/\n$/, "");
+        if (key === "title") pg.name = v || "이름 없음"; else pg.body = v;
+        commit(); drawFiles();
+      });
+      f.addEventListener("keydown", function (e) { if (key === "title" && e.key === "Enter") e.preventDefault(); });
+    });
+    return true;
+  }
 
   /* a short line at the bottom that goes away by itself */
   function hint(t) { var f = document.createElement("div"); f.className = "ed-flag"; f.textContent = t; canvas.appendChild(f); setTimeout(function () { f.remove(); }, 4500); }
@@ -794,7 +1099,7 @@
   /* ---------- keys, as in the tools people already know ---------- */
   document.addEventListener("keydown", function (e) {
     var meta = e.metaKey || e.ctrlKey, key = (e.key || "").toLowerCase(), typing = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target.tagName || ""));
-    if (e.key === "Escape") { if (!dlg.hidden) closeDlg(); else if (sel || bgTip) select(null); else if (panel) closePanel(); return; }
+    if (e.key === "Escape") { if (d3on) close3d(); else if (!dlg.hidden) closeDlg(); else if (sel || bgTip) select(null); else if (panel) closePanel(); return; }
     if (!meta) return;
     if (key === "z" && !typing) { e.preventDefault(); travel(e.shiftKey ? 1 : -1); }
     else if (key === "\\") { e.preventDefault(); setMode(mode === "edit" ? "try" : "edit"); }
@@ -812,8 +1117,22 @@
   if (CHECK) {
     var DEEP = /[?&]deep=1/.test(location.search), cBad = [], cDone = 0, from = +qs.get("from") || 1, to = +qs.get("to") || T.total;
     var cNote = function (n, why) { cBad.push(T.tag(n) + ": " + why); };
+    var cFiles = function (n) {
+      try {
+        filesOpen = true; root.classList.add("files-open"); S = fresh(); curPage = "home";
+        S.pages.push({ id: "t-set", type: "set", name: "세트" }, { id: "t-pg", type: "page", name: "시험 페이지", body: "글", parent: "t-set" });
+        drawFiles(); var el = $("#edFiles");
+        if (!$('[data-p="bg"]', el) || !$("#ed3d3", el)) cNote(n, "the tools or layers are missing from the side panel");
+        if (!$("#edAddPg", el) || !$("#edAddSet", el) || !$('[data-open="t-pg"]', el) || !$("#edStarMe", el)) cNote(n, "the page list is missing its parts");
+        movePg("t-pg", "home", false); if (pgById("t-pg").parent) cNote(n, "a page does not move out of a set");
+        movePg("t-pg", "t-set", true); if (pgById("t-pg").parent !== "t-set") cNote(n, "a page does not move into a set");
+        dupPg("t-pg"); if (S.pages.length !== 4) cNote(n, "a page is not duplicated");
+        ["desk", "mob"].forEach(function (d) { dev = d; curPage = "t-pg"; render(); var t = $(".pg-t", canvas); if (!t || t.textContent !== "시험 페이지") cNote(n, d + " another page is not drawn"); });
+        curPage = "home"; filesOpen = false; root.classList.remove("files-open"); el.innerHTML = ""; S = fresh(); dev = "desk";
+      } catch (e) { cNote(n, "page list failed: " + e.message); }
+    };
     var cOne = function (n) {
-      use(n); mode = "edit";
+      use(n); mode = "edit"; if (n === from) cFiles(n);
       ["desk", "mob"].forEach(function (d) {
         dev = d; S = fresh(); select(null);
         try { render(); } catch (e) { cNote(n, d + " draw failed: " + e.message); return; }
@@ -837,6 +1156,7 @@
         select(null);
         ["blocks", "texts", "images", "bg", "type", "motion", "feat", "site"].forEach(function (id) { try { panel = null; openPanel(id); if (!$("#edPb").children.length) cNote(n, d + " panel " + id + " is empty"); } catch (e) { cNote(n, d + " panel " + id + " failed: " + e.message); } });
         closePanel();
+        try { open3d(); if (!$(".d3-p", root) || !$(".d3-c", root)) cNote(n, d + " the 3D view is empty"); close3d(); if (!layersNow().length) cNote(n, d + " no layers"); } catch (e) { cNote(n, d + " 3D view failed: " + e.message); }
         if (d === "desk") {
           if (gen) {
             var groups = GEN.featuresFor(gen); if (!DEEP) groups = groups.slice(0, 3);
@@ -893,5 +1213,8 @@
 
   /* start: the pictures the person added before, then the page */
   undoState();
-  openDb(function () { dbLoad(function () { render(); state.textContent = Object.keys(S.texts).length || Object.keys(S.photos).length || S.feats || S.more || S.bg || S.ink || S.face ? "초안 · 저장됨" : "초안"; hint("글이나 사진을 눌러서 고쳐 보세요"); }); });
+  var wasOpen = true; try { wasOpen = localStorage.getItem(FILES_KEY) !== "0"; } catch (e) {}
+  if (!CHECK) $("#edFilesBtn").addEventListener("click", function () { setFiles(!filesOpen); });
+  if (!CHECK && !phone.matches) setFiles(true); /* on a computer the panel is always open */
+  openDb(function () { dbLoad(function () { drawFiles(); render(); state.textContent = Object.keys(S.texts).length || Object.keys(S.photos).length || S.feats || S.more || S.bg || S.ink || S.face ? "초안 · 저장됨" : "초안"; hint("글이나 사진을 눌러서 고쳐 보세요"); }); });
 })();

@@ -174,7 +174,7 @@
   }, true);
   document.addEventListener("click", function (e) {
     if (!introDone) { finishIntro(); return; }
-    if (e.target.closest("a, button, input, select, textarea, label")) return;
+    if (infoOpen() || e.target.closest("a, button, input, select, textarea, label")) return;
     if (e.target.closest(".claim")) {
       if (!form.classList.contains("editing")) invite(input.value ? "" : HINT);
       return;
@@ -182,7 +182,7 @@
     if (wasEditing) stopEditing();
     else invite(HINT);
   });
-  var HINT = "원하는 주소를 입력하세요. 영문 소문자, 숫자, 하이픈(-)을 쓸 수 있습니다.";
+  var HINT = "원하는 주소를 입력하세요 · 영문 소문자, 숫자, 하이픈(-)";
 
   /* once the visitor stops typing a valid name, the → starts blinking */
   var nudgeTimer = null;
@@ -196,6 +196,7 @@
     if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
     var t = e.target;
     if (t === input || t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+    if (infoOpen()) return;
     if (!introDone) finishIntro();
     if (e.key.length !== 1 || !/[a-z0-9-]/i.test(e.key)) return;
     e.preventDefault();
@@ -227,6 +228,29 @@
     form.classList.remove("nudge");
     location.href = "templates.html?site=" + encodeURIComponent(v);
   });
+
+
+  /* 정보: comes up over this page (nothing is loaded), goes away with the same link, Esc, or a press on the empty left half */
+  var infoOv = document.getElementById("infoOv"), aboutLink = document.getElementById("aboutLink");
+  function infoOpen() { return infoOv.classList.contains("open"); }
+  function setInfo(on) {
+    infoOv.classList.toggle("open", on); infoOv.setAttribute("aria-hidden", String(!on)); aboutLink.setAttribute("aria-expanded", String(on));
+    if (on) { if (document.activeElement === input) input.blur(); infoOv.scrollTop = 0; }
+  }
+  aboutLink.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); setInfo(!infoOpen()); });
+  infoOv.addEventListener("click", function (e) {
+    if (e.target.closest("[data-close]")) { e.preventDefault(); setInfo(false); return; }
+    if (!e.target.closest(".info-half")) setInfo(false);
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && infoOpen()) setInfo(false); });
+  (function () {
+    var links = [].slice.call(infoOv.querySelectorAll(".info-side [data-to]")), pages = [].slice.call(infoOv.querySelectorAll(".info-page"));
+    function show(id) {
+      pages.forEach(function (p) { p.classList.toggle("on", p.id === id); });
+      links.forEach(function (a) { a.classList.toggle("on", a.dataset.to === id); });
+    }
+    links.forEach(function (a) { a.addEventListener("click", function (e) { e.preventDefault(); show(a.dataset.to); }); });
+  })();
 
   fit();
   runIntro();

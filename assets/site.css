@@ -1,12 +1,16 @@
-/* 1440 — Inter (Latin) + Pretendard (Hangul), Geist Mono for numbers */
+/* 1440 — Inter (Latin) + Pretendard (Hangul), Geist Mono for numbers.
+   Cargo's plain type, kept quiet: paper, ink, hairlines, a grain you barely see, and a light that follows the
+   time of day (common.js). Things arrive slowly out of a blur and say little until they are asked. */
 
 :root {
-  --bg: #fcfcfc;
-  --ink: rgba(0, 0, 0, 0.88);
-  --ink-2: rgba(0, 0, 0, 0.6);
-  --ink-3: rgba(0, 0, 0, 0.36);
-  --ink-4: rgba(0, 0, 0, 0.12);
+  --bg: #f8f8f6;
+  --ink: rgba(8, 8, 8, 0.9);
+  --ink-2: rgba(8, 8, 8, 0.58);
+  --ink-3: rgba(8, 8, 8, 0.34);
+  --ink-4: rgba(8, 8, 8, 0.1);
   --accent: #0a5cff;
+  --veil: color-mix(in srgb, var(--bg) 78%, transparent);
+  --slow: cubic-bezier(.2, .7, .2, 1);
 
   --sans: "Inter", "Pretendard Variable", "Pretendard", system-ui, sans-serif;
   --mono: "Geist Mono", ui-monospace, "SFMono-Regular", monospace;
@@ -14,8 +18,8 @@
   --fs-xl: clamp(32px, 7.2vw, 104px);
   --gutter: clamp(16px, 1.6vw, 24px);
   --bar-h: clamp(44px, 1.2vw + 38px, 56px);
-  --fs-body: clamp(14px, 0.3vw + 13px, 16px);
-  --fs-small: clamp(11px, 0.2vw + 10.5px, 13px);
+  --fs-body: clamp(13px, 0.22vw + 12.2px, 15px);
+  --fs-small: clamp(11px, 0.14vw + 10.5px, 12.5px);
 }
 
 * { box-sizing: border-box; }
@@ -36,8 +40,27 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* behind everything: a fine grain, and a soft light whose place and colour follow the minute of the day */
+body::before, body::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+body::before {
+  background: radial-gradient(var(--sun-r, 70vmax) circle at var(--sun-x, 50%) var(--sun-y, 110%), var(--sun-c, transparent), transparent 70%);
+}
+body::after {
+  opacity: 0.075;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
 a { color: inherit; text-decoration: none; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
+::selection { background: #0b0b0b; color: #f8f8f6; }
+html { scrollbar-width: thin; scrollbar-color: var(--ink-4) transparent; }
+
+/* moving between pages: the old one sinks into a blur, the new one comes out of it */
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: vtOut .4s ease both; }
+::view-transition-new(root) { animation: vtIn .8s var(--slow) both; }
+@keyframes vtOut { to { opacity: 0; filter: blur(6px); } }
+@keyframes vtIn { from { opacity: 0; filter: blur(8px); } }
 
 /* header: 1440 on the left, menu on the right */
 .bar {
@@ -46,12 +69,20 @@ a { color: inherit; text-decoration: none; }
   align-items: center;
   height: var(--bar-h);
   padding-inline: var(--gutter);
-  /* header type scales with the screen: 12px on phones up to 14px on wide screens */
-  font-size: clamp(12px, 0.25vw + 11px, 14px);
+  /* header type scales with the screen: 12px on phones up to 13.5px on wide screens */
+  font-size: clamp(12px, 0.18vw + 11.2px, 13.5px);
 }
-.bar .home { justify-self: start; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.bar .menu { grid-column: 3; justify-self: end; display: flex; gap: 1.15em; }
-.bar .menu a { color: var(--ink-2); transition: color .15s; }
+/* "1440" — pointed at, the letters melt away and the tab icon (a circle) takes their place */
+.bar .home { justify-self: start; display: inline-grid; align-items: center; justify-items: center; font-weight: 500; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.bar .home > span { grid-area: 1 / 1; transition: opacity .8s ease, filter .9s var(--slow); }
+.bar .home .mid { display: grid; place-items: center; opacity: 0; filter: blur(5px); }
+.bar .home .mid svg { width: 1.6em; height: 1.6em; }
+@media (hover: hover) {
+  .bar .home:hover .t, .bar .home:focus-visible .t { opacity: 0; filter: blur(5px); }
+  .bar .home:hover .mid, .bar .home:focus-visible .mid { opacity: 1; filter: none; }
+}
+.bar .menu { grid-column: 3; justify-self: end; display: flex; gap: 1.4em; }
+.bar .menu a { color: var(--ink-3); transition: color .4s; }
 .bar .menu a:hover, .bar .menu a[aria-current="page"] { color: var(--ink); }
 
 /* first screen */
@@ -71,9 +102,9 @@ a { color: inherit; text-decoration: none; }
 .tagline {
   margin: 0;
   font-size: var(--fs-xl);
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.08;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.05em;
 }
 
 /* ---------- first-visit intro ----------
@@ -99,35 +130,32 @@ html.intro-typing .real { display: none; }
 .line2 > .claim { grid-area: 1 / 1; }
 .tagline {
   opacity: 0;
-  transform: translateY(0.12em);
+  filter: blur(10px);
   pointer-events: none;
-  transition: opacity .5s ease, transform .6s cubic-bezier(.22, 1, .36, 1);
+  transition: opacity .9s ease, filter 1.1s var(--slow);
 }
-.line2.show-tagline .tagline { opacity: 1; transform: none; }
+.line2.show-tagline .tagline { opacity: 1; filter: none; }
 
-.claim, .bar, .biz, .minute { transition: opacity .8s ease; }
+.claim, .bar, .biz, .minute { transition: opacity 1.2s ease, filter 1.4s var(--slow); }
 html.intro .claim,
 html.intro .bar,
 html.intro .biz,
-html.intro .minute { opacity: 0; visibility: hidden; }
+html.intro .minute { opacity: 0; visibility: hidden; filter: blur(8px); }
 
 /* rotating word after 나만의 */
 .rot {
   display: inline-grid;
   vertical-align: bottom;
-  overflow: hidden;
-  padding-bottom: 0.1em;
-  margin-bottom: -0.1em;
 }
 .rot .w {
   grid-area: 1 / 1;
   white-space: nowrap;
-  transform: translateY(105%);
   opacity: 0;
-  transition: transform .6s cubic-bezier(.7, 0, .2, 1), opacity .6s;
+  filter: blur(14px);
+  transition: opacity 1.1s ease, filter 1.3s var(--slow);
 }
-.rot .w.is-on { transform: translateY(0); opacity: 1; }
-.rot .w.is-out { transform: translateY(-105%); opacity: 0; }
+.rot .w.is-on { opacity: 1; filter: none; transition-delay: .35s; }
+.rot .w.is-out { opacity: 0; filter: blur(14px); transition-duration: .8s, 1s; }
 
 /* examples always fit on one line (JS sizes the type for the longest one);
    a longer name typed by the visitor pushes ".kor.gallery →" to the next line */
@@ -270,17 +298,20 @@ html.intro .minute { opacity: 0; visibility: hidden; }
   letter-spacing: 0.08em;
   color: var(--ink-3);
   white-space: nowrap;
+  animation: breathe 7s ease-in-out infinite;
 }
+@keyframes breathe { 50% { color: var(--ink-4); } }
+html.intro .minute { animation: none; }
 
 /* business information */
 .biz {
   padding: clamp(14px, 1.2vw, 22px) var(--gutter) max(clamp(16px, 1.4vw, 26px), env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid var(--ink-4);
-  font-size: var(--fs-small);
+  font-size: clamp(10.5px, 0.1vw + 10.2px, 11.5px);
   color: var(--ink-2);
+  letter-spacing: 0;
 }
-.biz dl { margin: 0; display: flex; flex-wrap: wrap; gap: 0.3em 2.2em; }
-.biz dl div { display: flex; gap: 0.6em; }
+.biz dl { margin: 0; display: flex; flex-wrap: wrap; gap: 0.25em 2em; }
+.biz dl div { display: flex; gap: 0.7em; }
 .biz dt { color: var(--ink-3); }
 .biz dd { margin: 0; min-width: 0; font-variant-numeric: tabular-nums; }
 .biz dt { flex: 0 0 auto; }
@@ -291,6 +322,78 @@ html.intro .minute { opacity: 0; visibility: hidden; }
   .biz dl { flex-direction: column; }
 }
 
+/* ---------- 정보: comes up over the first page, laid out like Cargo's information page ----------
+   The screen is cut in two. The left half stays empty (the page shows through a veil). The right half holds a grey
+   list on its left (the chosen one dark) and the text on its right. One size of type; the only ranking is how dark
+   it is. Sections are told apart by hairlines, and the page title sits a little inside the column. */
+.page-home .bar { position: relative; z-index: 50; }
+.page-home .minute { z-index: 45; }
+.bar .menu a[aria-expanded="true"] { color: var(--ink); }
+.info-ov {
+  --t: clamp(12.5px, 0.22vw + 11.4px, 14.5px);
+  position: fixed; inset: var(--bar-h) 0 0 0; z-index: 40;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-content: start;
+  overflow-y: auto;
+  font-size: var(--t);
+  background: transparent; /* nothing behind the words: only the words */
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity .9s ease, visibility 0s linear .9s;
+}
+.info-ov::before { content: ""; position: fixed; top: var(--bar-h); left: 50%; right: 0; border-top: 1px solid var(--ink-4); }
+.info-side { position: sticky; top: 1.05em; }
+.info-ov.open { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity .9s ease, visibility 0s; }
+.info-half { grid-column: 2; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); padding: 1.05em calc(clamp(8px, 1.5vw, 28px) + clamp(10px, 0.55vw + 7px, 15px) + 14px) clamp(48px, 9vh, 120px) 0; }
+.info-ov .info-half > * { filter: blur(8px); opacity: 0; transition: opacity 1.1s ease .15s, filter 1.3s var(--slow) .15s; }
+.info-ov.open .info-half > * { filter: none; opacity: 1; }
+.info-side { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.18; align-self: start; }
+.info-side a { color: var(--ink-3); transition: color .5s; }
+.info-side a.on { color: var(--ink); }
+@media (hover: hover) { .info-side a:hover { color: var(--ink); } }
+.info-side .gap { height: 1.3em; }
+
+.info-body { min-width: 0; }
+.info-page { display: none; }
+.info-page.on { display: grid; gap: 1.3em; align-content: start; animation: riseIn 1.1s var(--slow) both; }
+@keyframes riseIn { from { opacity: 0; filter: blur(10px); } }
+.info-page p, .info-page li, .info-page h2 { margin: 0; font-size: 1em; font-weight: 400; line-height: 1.32; letter-spacing: -0.005em; color: var(--ink); }
+.info-page .dim { color: var(--ink-3); }
+.info-page a { transition: color .5s; }
+@media (hover: hover) { .info-page a:hover { color: var(--ink-3); } }
+.info-title { padding-left: 2.4em; }
+.sq, .no { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.15em; }
+.sq li { display: grid; grid-template-columns: 1.3em 1fr; }
+.sq li::before { content: ""; width: 0.42em; height: 0.42em; margin-top: 0.5em; background: currentColor; }
+.no li { display: grid; grid-template-columns: 2.4em 1fr; gap: 0; padding: 0.35em 0; }
+.no li > span:first-child { font-family: var(--mono); font-size: 0.92em; color: var(--ink-3); padding-top: 0.05em; }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.3em 1.6em; border-top: 1px solid var(--ink-4); padding-top: 1.2em; margin-top: 0.6em; }
+.two section { display: grid; gap: 1em; align-content: start; }
+.two h2 { padding-left: 2.4em; }
+/* a price list: a small empty box, the name, the price at the end (Cargo's billing choices) */
+.ck { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.35em; }
+.ck li { display: grid; grid-template-columns: 1.3em 1fr auto; align-items: baseline; gap: 0 0.4em; }
+.ck .b { width: 0.72em; height: 0.72em; border: 1px solid currentColor; align-self: center; }
+.ck em { font-style: normal; color: var(--ink-3); margin-left: 0.5em; }
+.ck .v { text-align: right; }
+/* documents: articles set one under the other, each with its short title */
+.doc { gap: 1.1em; }
+.doc section { display: grid; gap: 0.4em; align-content: start; }
+.doc h2 { color: var(--ink); }
+.doc section p, .doc section li { color: var(--ink-2); }
+.doc section .sq { margin-top: 0.1em; }
+@media (max-width: 760px) {
+  .info-ov::before { display: none; }
+  .info-side { position: static; }
+  /* one column: the words would sit right on top of the first page, so here (only here) a paper veil goes behind them */
+  .info-ov { display: block; background: color-mix(in srgb, var(--bg) 94%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+  .info-half { display: block; padding: 1.4em calc(clamp(8px, 1.5vw, 28px) + clamp(10px, 0.55vw + 7px, 15px) + 14px) 3em var(--gutter); }
+  .info-side { flex-direction: row; flex-wrap: wrap; gap: 0.2em 1.2em; margin-bottom: 1.8em; }
+  .info-side .gap { display: none; }
+  .info-title { padding-left: 0; }
+  .two h2 { padding-left: 0; }
+  .two { grid-template-columns: minmax(0, 1fr); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
+  @view-transition { navigation: none; }
 }
