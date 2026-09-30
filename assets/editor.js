@@ -1341,6 +1341,26 @@
     return;
   }
 
+  /* development check: templates.html?edit=1&check=layerpics — every picture layer of all 1440 templates has something to show in the 3D view */
+  if (/[?&]check=layerpics/.test(location.search)) {
+    var lpBad = [], lpN = 0, lpPics = 0, lpBlank = 0;
+    (function step() {
+      if (lpN >= T.total) { canvas.innerHTML = ""; T.clearTimers(); document.body.dataset.layerpics = JSON.stringify({ pics: lpPics, blank: lpBlank, bad: lpBad.slice(0, 60), badCount: lpBad.length }); return; }
+      var n = ++lpN; document.body.dataset.layerpicsAt = n;
+      try {
+        use(n); mode = "edit"; dev = "desk"; S = fresh(); curPage = "home"; render();
+        layersNow().forEach(function (l) {
+          if (l.kind !== "photo") return; lpPics++;
+          var empty = l.el.classList.contains("wf") && !l.el.querySelector("img"); /* a wireframe's empty picture is meant to be blank */
+          if (empty) { lpBlank++; return; }
+          if (!l.src && l.el.tagName !== "MODEL-VIEWER") lpBad.push(T.tag(n) + ": " + l.el.tagName + "." + (l.el.className || "").toString().slice(0, 30));
+        });
+      } catch (e) { lpBad.push(T.tag(n) + ": error " + e.message); }
+      setTimeout(step, 0);
+    })();
+    return;
+  }
+
   /* start: the pictures the person added before, then the page */
   undoState();
   var wasOpen = true; try { wasOpen = localStorage.getItem(FILES_KEY) !== "0"; } catch (e) {}
