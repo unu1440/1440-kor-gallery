@@ -951,7 +951,7 @@
         var big = r.w >= pw * 0.9 && r.h >= ph * 0.9 || c.classList.contains("bd");
         var L = { el: c, kind: kind, layer: floats ? 2 : big ? 0 : kind === "text" ? 2 : 1, x: r.x, y: r.y, w: r.w, h: r.h };
         if (kind === "text") { L.name = own.slice(0, 26); L.txt = own; L.fs = cs.fontSize; L.color = cs.color; L.fw = cs.fontWeight; L.lh = cs.lineHeight; L.ta = cs.textAlign; L.ff = cs.fontFamily; L.ls = cs.letterSpacing; }
-        else if (kind === "photo") { var im = c.tagName === "IMG" ? c : c.querySelector("img"); L.name = "사진"; L.src = im ? (im.currentSrc || im.src) : ""; L.fit = im ? getComputedStyle(im).objectFit : "cover"; L.bg = cs.backgroundColor; }
+        else if (kind === "photo") { var im = c.tagName === "IMG" ? c : c.querySelector("img"); L.name = c.tagName === "MODEL-VIEWER" ? "3D 모델" : "사진"; L.src = im ? (im.currentSrc || im.src) : ""; if (!im && c.tagName === "CANVAS") { try { L.src = c.toDataURL("image/jpeg", 0.7); } catch (e) {} } if (c.tagName === "MODEL-VIEWER") L.mv = c; L.fit = im ? getComputedStyle(im).objectFit : "cover"; L.bg = cs.backgroundColor; }
         else { L.name = "블록"; L.bg = cs.backgroundColor; }
         out.push(L);
         if (kind !== "photo") walk(c, floats);
@@ -997,6 +997,10 @@
     ov.innerHTML = '<div class="d3-bar"><b>3D 레이어</b><label class="d3-r"><span>간격</span><input type="range" class="d3-gap" min="0" max="520" value="' + d3s.gap + '"></label><button type="button" class="d3-reset">처음 각도</button><button type="button" class="d3-close" aria-label="닫기">' + IC.x + '</button></div>' +
       '<div class="d3-hint">위 · 중간 · 아래 세 층 — 끌어서 돌리고, 휠로 확대해요</div><div class="d3-scene"><div class="d3-stage" style="width:' + pw + 'px;height:' + ph + 'px">' + planes + cards + '</div></div><div class="d3-tag" hidden></div>';
     ov.hidden = false; d3on = true;
+    LYS.forEach(function (l, i) { /* a 3D object shows its own picture */
+      if (!l.mv || !l.mv.toDataURL) return;
+      try { l.mv.toDataURL().then(function (u) { var c = $('.d3-c[data-i="' + i + '"]', ov); if (c && u) { c.style.background = "transparent"; c.innerHTML = '<img src="' + u + '" alt="" style="object-fit:contain">'; } }, function () {}); } catch (e) {}
+    });
     var scene = $(".d3-scene", ov), stage = $(".d3-stage", ov), tag = $(".d3-tag", ov), fit = Math.min(ov.clientWidth / pw, (ov.clientHeight - 150) / ph) * 0.8 || 0.2, drag = null;
     function apply() { stage.style.setProperty("--gap", d3s.gap + "px"); stage.style.transform = "translate(-50%,-46%) scale(" + fit * d3s.zm + ") rotateX(" + d3s.rx + "deg) rotateY(" + d3s.ry + "deg)"; }
     apply();
