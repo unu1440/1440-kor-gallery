@@ -48,7 +48,7 @@ body.editing > :not(.ed):not(script):not(link):not(style) { display: none !impor
 
 /* what can be clicked, and what is chosen (page pixels: the page is scaled, the outline scales with it) */
 .ed-edit .ed-t, .ed-edit .ed-p, .ed-edit .ed-mq { cursor: pointer; }
-@media (hover: hover) { .ed-edit .ed-t:hover, .ed-edit .ed-p:hover, .ed-edit .ed-mq:hover { outline: 2px solid rgba(10, 92, 255, .55); outline-offset: 3px; } }
+@media (hover: hover) { .ed-edit .ed-t:hover, .ed-edit .ed-p:hover, .ed-edit .ed-mq:hover, .ed-edit .ed-m:hover { outline: 2px solid rgba(10, 92, 255, .55); outline-offset: 3px; } }
 .ed-edit .ed-sel { outline: 3px solid var(--accent, #0a5cff) !important; outline-offset: 3px; }
 .ed-edit .ed-sel-wf { box-shadow: inset 0 0 0 5px var(--accent, #0a5cff); }
 .ed-edit .ed-slot:not(.ed-filled) { min-height: 1.2em; }
@@ -316,3 +316,9 @@ button.ed-pr.tool .nm em { margin-left: auto; padding-left: 0.5em; }
 /* words drawn inside a picture of shapes (a floor plan): shown as chosen with an underline */
 .ed-edit text.ed-t { cursor: pointer; }
 .ed-edit text.ed-t:hover, .ed-edit text.ed-sel { text-decoration: underline; text-decoration-color: var(--accent, #0a5cff); text-decoration-thickness: 2px; }
+
+/* a 3D object and a room of a floor plan: chosen with an outline */
+.ed-edit model-viewer.ed-m { cursor: pointer; }
+.ed-edit model-viewer.ed-sel { outline: 3px solid var(--accent, #0a5cff); outline-offset: -3px; }
+.ed-edit g.ed-room { cursor: pointer; }
+.ed-edit g.ed-room:hover > rect, .ed-edit g.ed-room.ed-sel > rect { stroke: var(--accent, #0a5cff); stroke-width: 4; }

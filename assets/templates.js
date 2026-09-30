@@ -1623,11 +1623,13 @@
     rooms.forEach(function (g) {
       g.addEventListener("click", function (e) {
         e.stopPropagation();
-        var k = g.querySelector("text").textContent, imgs = (g.dataset.imgs || "").split(",").filter(Boolean), ts = g.querySelectorAll("text");
+        var k = g.querySelector("text").textContent, imgs = (g.dataset.imgs || "").split(",").filter(Boolean), ts = g.querySelectorAll("text"), over = [];
+        try { over = JSON.parse(g.dataset.over || "[]"); } catch (er) {}
+        var shown = []; for (var oi = 0; oi < Math.max(imgs.length, over.length); oi++) { if (over[oi] === "-") continue; var u = over[oi] || (imgs[oi] ? src(imgs[oi]) : ""); if (u) shown.push(u); }
         rooms.forEach(function (o) { o.querySelector("rect").style.fill = o === g ? "color-mix(in srgb, currentColor 16%, var(--t-bg, #fff))" : ""; });
         layer(tp, "lv-side", '<div class="lv-top"><span>Room ' + k + '</span><button type="button" class="lv-x">Close ✕</button></div><b class="lv-h">' + (ts[1] ? ts[1].textContent : "") + '</b>' +
           (ts[2] ? '<p>' + ts[2].textContent + '</p>' : "") +
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' + imgs.map(function (f) { return '<img src="' + src(f) + '" alt="" style="width:100%;aspect-ratio:3/4;object-fit:cover">'; }).join("") + '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' + shown.map(function (u) { return '<img src="' + u + '" alt="" style="width:100%;aspect-ratio:3/4;object-fit:cover">'; }).join("") + '</div>' +
           '<p class="ko" style="opacity:.6">' + k + '실' + (g.dataset.ko ? " — " + g.dataset.ko : "") + '</p>');
       });
     });

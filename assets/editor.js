@@ -92,7 +92,7 @@
 
   /* ---------- what was there in the template, and what the person changed ---------- */
   var KEY, orig, S, DATA = {}; /* DATA: pictures added by the person: key → data URL */
-  function fresh() { return { texts: {}, tstyle: {}, slots: {}, photos: {}, fit: {}, lib: [], libN: 0, pages: [{ id: "home", type: "page", name: "홈" }], bg: null, bgImg: null, bgFit: "cover", bgDim: 0, motion: null, fav: null, ink: null, face: null, feats: null, more: null, hours: null, until: null, marquee: null, extra: null, title: "", desc: "" }; }
+  function fresh() { return { texts: {}, tstyle: {}, slots: {}, photos: {}, fit: {}, lib: [], libN: 0, pages: [{ id: "home", type: "page", name: "홈" }], models: {}, rooms: {}, bg: null, bgImg: null, bgFit: "cover", bgDim: 0, motion: null, fav: null, ink: null, face: null, feats: null, more: null, hours: null, until: null, marquee: null, extra: null, title: "", desc: "" }; }
   /* the template being changed (the check at the end changes it again and again) */
   function use(n) {
     N = n; b = T.find(n); gen = b.gen; KEY = "1440-edit-" + n + "-" + (T.site || T.defName);
@@ -245,8 +245,10 @@
     function bars(el) { return el.children.length > 0 && [].every.call(el.children, function (c) { return c.classList.contains("wl"); }); }
     (function walk(el) {
       if (el.matches(".mq")) { el.classList.add("ed-mq"); return; } /* the moving line of news: changed as a whole */
+      if (el.matches("model-viewer")) { el.dataset.pk = "m:" + (el.getAttribute("src") || "").replace(/^.*\//, "").replace(/\.gltf$/, ""); el.classList.add("ed-m"); return; } /* a 3D object */
       if (el.matches("canvas.rake")) { el.dataset.pk = el.dataset.img; el.classList.add("ed-p"); return; } /* the painting the light moves over */
       if (el.namespaceURI && el.namespaceURI.indexOf("svg") >= 0) { /* the words on a floor plan and the like */
+        if (el.tagName === "svg") [].forEach.call(el.querySelectorAll("g.room"), function (g, i) { g.dataset.rk = "r" + i; g.classList.add("ed-room"); });
         if (el.tagName === "svg") [].forEach.call(el.querySelectorAll("text"), function (t) { if (!t.children.length && t.textContent.trim() && !t.closest("[data-clock], [data-hours]")) { if (t.dataset.orig === undefined) { t.dataset.orig = t.textContent; t.dataset.fs = parseFloat(getComputedStyle(t).fontSize) || 16; } t.classList.add("ed-t"); } });
         return;
       }
@@ -280,6 +282,8 @@
     $$(".ed-t:not(.ed-slot)", view).forEach(function (el) { var o = el.dataset.orig; if (o !== undefined && S.texts[o] !== undefined) el.textContent = S.texts[o]; if (o !== undefined && S.tstyle[o]) styleText(el); });
     $$(".ed-slot", view).forEach(function (el) { if (S.slots[el.dataset.sk]) fillSlot(el, S.slots[el.dataset.sk]); });
     if (S.marquee) $$(".ed-mq", view).forEach(function (mq) { mqSet(mq, S.marquee.split(NL).filter(function (x) { return x.trim(); })); });
+    $$(".ed-m", view).forEach(function (m) { var id = S.models[m.dataset.pk]; if (id && DATA[id]) m.setAttribute("src", DATA[id]); });
+    $$(".ed-room", view).forEach(function (g) { var a = S.rooms[g.dataset.rk]; if (a) g.dataset.over = JSON.stringify(a.map(function (id) { return id === "-" ? "-" : ((id && DATA[id]) || ""); })); });
     $$(".ed-p", view).forEach(function (el) {
       var pk = el.dataset.pk, url = photoUrl(pk), fit = S.fit[pk];
       if (url) {
@@ -294,11 +298,10 @@
   function onClick(e) {
     var lk = e.target.closest("[data-pg]"); if (lk) { e.preventDefault(); e.stopPropagation(); gotoPage(lk.dataset.pg); return; }
     if (mode !== "edit" || bypass) return;
-    var el = e.target.closest(".ed-t, .ed-p, .ed-mq");
+    var el = e.target.closest(".ed-t, .ed-p, .ed-mq, .ed-m, .ed-room");
     e.preventDefault(); e.stopPropagation();
     if (el) return select(el);
     select(null);
-    if (e.target.closest("model-viewer")) { hint("3D 모델은 아직 바꿀 수 없어요. 옆의 글과 사진은 바꿀 수 있어요"); return; }
     if (!phone.matches && !e.target.closest("a, button, input, select, textarea, label, [contenteditable], .lv-layer, " + SELF)) openBgTip({ x: e.clientX, y: e.clientY });
   }
   function select(el) {
@@ -322,6 +325,8 @@
     if (!sel) { if (bgTip) return; tip.hidden = true; tip.innerHTML = ""; return; }
     if (sel.classList.contains("ed-mq")) return tipMarquee();
     if (sel.classList.contains("ed-slot")) return tipSlot();
+    if (sel.classList.contains("ed-m")) return tipModel();
+    if (sel.classList.contains("ed-room")) return tipRoom();
     if (sel.classList.contains("ed-t")) return tipText();
     tipPhoto();
   }
@@ -392,6 +397,53 @@
   function mqSet(mq, words) {
     var inn = $(".mq-in", mq); if (!inn || !words.length) return;
     var line = words.map(esc).join(" &nbsp;✦&nbsp; ") + " &nbsp;✦&nbsp; "; inn.innerHTML = line + line + line + line;
+  }
+  /* a 3D object: the person's own model (a .glb file) in its place */
+  function tipModel() {
+    var pk = sel.dataset.pk, mine = !!(S.models[pk] && DATA[S.models[pk]]);
+    tipOpen("3D 모델", '<div class="ed-box"><p class="ed-p2">' + (mine ? "내 3D 모델이 들어 있어요." : "지금은 예시 모델이에요.") + ' 3D 프로그램에서 내보낸 <b style="color:#000">.glb</b> 파일을 올리면 이 자리에서 돌려 볼 수 있어요.</p>' +
+      '<input type="file" accept=".glb,model/gltf-binary" id="edModelFile" class="ed-sr"><button type="button" class="ed-btn" id="edModelPick">3D 파일(.glb) 올리기</button>' +
+      '<p class="ed-p2" id="edModelMsg">파일은 40MB까지 올릴 수 있어요. 이 브라우저에만 저장돼요.</p>' + (mine ? '<button type="button" class="ed-link" id="edModelReset">예시 모델로 되돌리기</button>' : "") + '</div>');
+    $("#edModelPick").addEventListener("click", function () { $("#edModelFile").click(); });
+    $("#edModelFile").addEventListener("change", function () {
+      var f = this.files && this.files[0]; if (!f) return; var msg = $("#edModelMsg");
+      if (f.size > 40 * 1048576) { msg.textContent = "파일이 너무 커요. 40MB 이하로 줄여 주세요."; return; }
+      msg.textContent = "파일을 읽고 있어요…";
+      var rd = new FileReader();
+      rd.onload = function () {
+        var url = String(rd.result || ""), head = ""; try { head = atob(url.split(",")[1].slice(0, 8)).slice(0, 4); } catch (e) {}
+        if (head !== "glTF") { msg.textContent = ".glb 파일이 아니에요. 3D 프로그램에서 'glb'로 내보낸 파일을 골라 주세요."; return; }
+        var id = "m-" + Date.now().toString(36); DATA[id] = url; dbPut(id, url); S.models[pk] = id; commit(true);
+        render(); var again = $('.ed-m[data-pk="' + pk + '"]', canvas); if (again) select(again);
+      };
+      rd.onerror = function () { msg.textContent = "파일을 읽지 못했어요."; };
+      rd.readAsDataURL(f);
+    });
+    var rs = $("#edModelReset"); if (rs) rs.addEventListener("click", function () { delete S.models[pk]; commit(true); render(); });
+  }
+  /* a room of a floor plan: the pictures shown when the room is pressed */
+  function roomPics(g) {
+    var orig = (g.dataset.imgs || "").split(",").filter(Boolean), a = (S.rooms[g.dataset.rk] || []).slice(), out = [], n = Math.max(orig.length, a.length);
+    for (var i = 0; i < n; i++) {
+      var id = a[i], url = id === "-" ? "" : ((id && DATA[id]) || (orig[i] ? T.photoUrl(orig[i]) : ""));
+      out.push({ i: i, id: id === undefined ? null : id, url: url, gone: id === "-" });
+    }
+    return out;
+  }
+  function tipRoom() {
+    var g = sel, rk = g.dataset.rk, list = roomPics(g), words = $$("text", g).map(function (t) { return t.textContent; }).slice(0, 2).join(" ");
+    tipOpen("방 사진", '<div class="ed-box"><p class="ed-p2">' + esc(words) + ' 방을 눌렀을 때 보이는 사진이에요. 방의 글자는 글자를 눌러서 고쳐요.</p><div class="ed-pics" id="edRoomPics">' +
+      list.map(function (o) { return '<div class="it"' + (o.gone ? ' style="opacity:.3"' : "") + '><button type="button" data-rp="' + o.i + '" aria-label="사진 ' + (o.i + 1) + ' 바꾸기">' + (o.url ? '<img src="' + esc(o.url) + '" alt="">' : "") + '</button><button type="button" class="del" data-rx="' + o.i + '" aria-label="' + (o.gone ? "다시 넣기" : "빼기") + '">' + (o.gone ? "+" : IC.x) + '</button></div>'; }).join("") + '</div>' +
+      '<input type="file" accept="image/*" id="edRoomFile" class="ed-sr"><button type="button" class="ed-btn ghost" id="edRoomAdd">사진 추가</button><p class="ed-p2" id="edRoomMsg">사진을 누르면 바꿀 수 있고, ×로 뺄 수 있어요.</p></div>');
+    var target = -1, fi = $("#edRoomFile");
+    function set(i, id) { var a = (S.rooms[rk] || []).slice(); while (a.length < list.length) a.push(null); a[i] = id; S.rooms[rk] = a; commit(true); render(); var again = $('.ed-room[data-rk="' + rk + '"]', canvas); if (again) select(again); }
+    $$("[data-rp]", tip).forEach(function (x) { x.addEventListener("click", function () { target = +x.dataset.rp; fi.click(); }); });
+    $$("[data-rx]", tip).forEach(function (x) { x.addEventListener("click", function () { var i = +x.dataset.rx; set(i, list[i].gone ? null : "-"); }); });
+    $("#edRoomAdd").addEventListener("click", function () { target = list.length; fi.click(); });
+    fi.addEventListener("change", function () {
+      var f = this.files && this.files[0]; if (!f) return; var msg = $("#edRoomMsg"); msg.textContent = "사진을 준비하고 있어요…";
+      addPhoto(f, function (id, err) { if (!id) { msg.textContent = err || "이 사진은 열 수 없어요. JPG나 PNG 사진을 골라 주세요."; return; } set(target, id); });
+    });
   }
   function tipMarquee() {
     var words = S.marquee ? S.marquee.split(NL).filter(function (x) { return x.trim(); }) : mqWords(sel);
@@ -1253,7 +1305,7 @@
           try { render(); } catch (e) { return note(n, d + " draw failed: " + e.message); }
           var view = viewOf(), tp = $(".tp", view); if (!tp) return note(n, d + " no page");
           var W = [["canvas", "canvas"], ["model-viewer", "model-viewer"], [".ba", "before/after"], [".lp", "loupe"], [".daylight", "daylight"], [".sc-stage", "scale"], ["svg .room", "floor plan"], ["[data-rf]", "roster"], [".dc-play", "docent"], [".gb-form", "guestbook"]].filter(function (w) { return $(w[0], tp); }).map(function (w) { return w[1]; });
-          var dead = $$("img, canvas.rake", tp).filter(function (im) { return !im.closest(".ed-p") && !im.classList.contains("ed-p") && !im.closest(".lv-layer"); });
+          var dead = $$("img, canvas.rake, model-viewer, g.room", tp).filter(function (im) { return !im.closest(".ed-p") && !im.classList.contains("ed-p") && !im.classList.contains("ed-m") && !im.classList.contains("ed-room") && !im.closest(".lv-layer"); });
           if (dead.length) note(n, d + " [" + W.join(",") + "] " + dead.length + " picture(s) that cannot be changed");
           var own = function (e) { return [].filter.call(e.childNodes, function (x) { return x.nodeType === 3; }).map(function (x) { return x.textContent; }).join("").trim(); };
           var words = $$("*", tp).filter(function (e) { var o = own(e); return o && !SKIP_TXT.test(o) && !e.closest(".ed-t") && !e.classList.contains("ed-t") && !e.closest(".ed-slot") && !e.closest(".ed-mq") && !e.closest(SELF) && !e.closest(".lv-layer") && e.tagName !== "SCRIPT" && e.tagName !== "STYLE"; });
