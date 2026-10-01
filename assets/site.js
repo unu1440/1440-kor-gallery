@@ -256,6 +256,12 @@
     links.forEach(function (a) { a.addEventListener("click", function (e) { e.preventDefault(); show(a.dataset.to); }); });
   })();
 
+  /* the Information and account layers stop where the business footer begins (it must stay readable), and scroll above it */
+  var biz = document.querySelector(".biz");
+  function bizH() { if (!biz) return; var t = biz.getBoundingClientRect().top; document.documentElement.style.setProperty("--biz-h", Math.max(0, Math.round(window.innerHeight - t)) + "px"); }
+  bizH(); window.addEventListener("resize", bizH); window.addEventListener("load", bizH);
+  if (window.ResizeObserver && biz) new ResizeObserver(bizH).observe(biz);
+
   fit();
   runIntro();
 })();

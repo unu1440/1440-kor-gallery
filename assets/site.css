@@ -321,7 +321,7 @@ html.intro .minute { animation: none; }
 .bar .menu a[aria-expanded="true"] { color: var(--ink); }
 .info-ov {
   --t: clamp(12.5px, 0.22vw + 11.4px, 14.5px);
-  position: fixed; inset: var(--bar-h) 0 0 0; z-index: 40;
+  position: fixed; inset: var(--bar-h) 0 var(--biz-h, 0px) 0; z-index: 40; /* ends above the business footer: the words scroll instead of running over it */
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-content: start;
   overflow-y: auto;
   font-size: var(--t);
