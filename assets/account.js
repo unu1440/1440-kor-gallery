@@ -155,7 +155,7 @@
       return api("POST", "/api/pay/order", { plan: plan }).then(function (o) {
         return loadPay().then(function () {
           return new Promise(function (done, no) {
-            window.AUTHNICE.requestPay({ clientId: o.clientId, method: "card", orderId: o.orderId, amount: o.amount, goodsName: o.goodsName, returnUrl: o.returnUrl, buyerEmail: o.buyerEmail, buyerName: o.buyerName,
+            window.AUTHNICE.requestPay({ clientId: o.clientId, method: "cardAndEasyPay", skinType: "gray", logoImgUrl: location.origin + "/assets/logo-pay.png", orderId: o.orderId, amount: o.amount, goodsName: o.goodsName, returnUrl: o.returnUrl, buyerEmail: o.buyerEmail, buyerName: o.buyerName,
               fnError: function (r) { no(err((r && r.errorMsg) || "결제창을 닫았어요.")); } });
             done();
           });
