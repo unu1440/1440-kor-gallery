@@ -33,30 +33,29 @@
   }
   window.ACCT_UI = { close: function () { if (isOpen()) setOpen(false); }, open: setOpen };
 
-  /* the header: Login, or the nickname with My hub under it */
+  /* the header: Login, or the person's e-mail (pressing it opens the account) */
   function header() {
     var me = A.user;
     ov.classList.toggle("in", !!me); ov.classList.toggle("is-admin", !!(me && me.admin));
+    /* Student only for someone who signed up with a school address and is not checked yet */
+    ov.classList.toggle("stu", !!(me && me.student !== "verified" && A.isUni(me.email)));
+    var hs = $('[data-v="hubSide"]'); if (hs) hs.href = A.hubUrl();
     if (!me) slot.innerHTML = '<a href="#" id="loginLink" aria-expanded="' + isOpen() + '" aria-controls="acctOv">Login</a>';
-    else slot.innerHTML = '<a href="#" id="nickLink" class="nick" aria-expanded="' + isOpen() + '" aria-controls="acctOv" title="계정">' + esc(me.email) + '</a><a class="hub" href="' + esc(A.hubUrl()) + '">My hub</a>';
+    else slot.innerHTML = '<a href="#" id="nickLink" class="nick" aria-expanded="' + isOpen() + '" aria-controls="acctOv" title="계정">' + esc(me.email) + '</a>';
     var l = slot.firstChild;
     l.addEventListener("click", function (e) {
       e.preventDefault(); e.stopPropagation();
-      /* a touch screen has no pointing: the first tap shows My hub, the next opens the account */
-      if (me && !matchMedia("(hover: hover)").matches && !slot.classList.contains("peek") && !isOpen()) { slot.classList.add("peek"); return; }
-      slot.classList.remove("peek"); setOpen(!isOpen());
+      setOpen(!isOpen());
     });
   }
-  document.addEventListener("click", function (e) { if (!e.target.closest("#acctSlot")) slot.classList.remove("peek"); });
 
   function fill() {
     var me = A.user; if (!me) return;
     $('[data-v="nick"]').textContent = me.email;
     $('[data-v="email"]').textContent = me.email;
-    $('[data-v="trial"]').textContent = trialText(me);
-    $('[data-v="student"]').textContent = STU[me.student] || "안 함";
-    $('[data-v="paid"]').textContent = me.paidUntil > Date.now() ? day(me.paidUntil) + "까지" : "없음";
-    $('[data-v="hub"]').href = A.hubUrl();
+    /* the pass now: paid days, else the free student month, else none */
+    var paid = me.paidUntil > Date.now(), free = me.trialUntil > Date.now();
+    $('[data-v="plan"]').textContent = paid ? day(me.paidUntil) + "까지" : free ? "무료 · " + day(me.trialUntil) + "까지" : "없음";
     var st = $('[data-v="stuState"]'), done = me.student === "verified", wait = me.student === "pending";
     st.textContent = done ? "확인했어요 (" + me.uniEmail + "). 무료 이용은 " + trialText(me) + "." : wait ? "관리자가 확인하고 있어요. 확인되면 한 달이 열려요." : "학교 메일로 코드를 받아 넣으면 첫 한 달이 무료예요. 학교 메일 하나로 한 번만 받을 수 있어요.";
     ov.querySelector('[data-f="send"]').hidden = done || wait;
@@ -154,7 +153,7 @@
   ov.addEventListener("click", function (e) {
     var to = e.target.closest("[data-to]"); if (to) { e.preventDefault(); show(to.dataset.to); return; }
     var inf = e.target.closest("[data-info]"); if (inf) { e.preventDefault(); setOpen(false); if (window.SITE_INFO) window.SITE_INFO.open(inf.dataset.info); return; }
-    if (e.target.closest("#logoutLink")) { e.preventDefault(); A.logout().then(function () { show("login"); }); return; }
+    if (e.target.closest("#logoutSide")) { e.preventDefault(); A.logout().then(function () { show("login"); }); return; }
     if (!e.target.closest(".info-half")) setOpen(false);
   });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && isOpen()) setOpen(false); });
