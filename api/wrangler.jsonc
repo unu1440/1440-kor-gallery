@@ -19,6 +19,6 @@
     "SITE_ORIGIN": "https://1440.kor.gallery"
   },
   "d1_databases": [
-    { "binding": "DB", "database_name": "kor-gallery-accounts", "database_id": "SET-AFTER-d1-create" }
+    { "binding": "DB", "database_name": "kor-gallery-accounts", "database_id": "80a56aed-83ec-4cf5-b9ff-44084b5e0df7" }
   ]
 }

@@ -1,4 +1,4 @@
-/* Template picker, laid out like Cargo's template page:
+/* Template picker:
    small type everywhere, large previews, sections by family, variants per family.
    Builds on site.css (tokens, header, clock, footer). */
 
@@ -227,7 +227,7 @@
 .gi span i { font-style: normal; opacity: 0.45; font-family: var(--mono); }
 .gi span em { font-style: normal; opacity: 0.45; }
 
-/* Cargo-style wireframe placeholder: grey box with an X */
+/* wireframe placeholder: grey box with an X */
 .wf {
   position: absolute;
   background:
@@ -521,7 +521,7 @@ body.solo > :not(.solo-page) { display: none !important; }
 @font-face { font-family: "Galmuri11"; src: url("fonts/Galmuri11.woff2") format("woff2"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "Galmuri11"; src: url("fonts/Galmuri11-Bold.woff2") format("woff2"); font-weight: 600 900; font-display: swap; }
 
-/* ---------- lists like Cargo's template site: pages only, divided by hairlines ---------- */
+/* ---------- lists of templates: pages only, divided by hairlines ---------- */
 .row { gap: 0; overflow: hidden; border-top: 1px solid var(--ink-4); }
 .row > .tpl { padding: clamp(14px, 1.6vw, 26px) clamp(12px, 1.4vw, 24px) clamp(16px, 1.8vw, 28px); box-shadow: 1px 0 0 var(--ink-4), 0 1px 0 var(--ink-4); }
 .shot .mac-view { aspect-ratio: 16 / 10; border-radius: 0; }
@@ -551,7 +551,7 @@ body.solo > :not(.solo-page) { display: none !important; }
 .row-toggle button span:last-child { display: inline-block; transition: transform .5s var(--slow); }
 @media (hover: hover) { .row-toggle button:hover { color: var(--ink); } .row-toggle button:hover span:last-child { transform: translateY(0.2em); } }
 
-/* basic: three columns (feed, grid, slideshow), each a single column of cards, as Cargo shows them */
+/* basic: three columns (feed, grid, slideshow), each a single column of cards */
 .basic { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--ink-4); }
 .bcol { min-width: 0; box-shadow: 1px 0 0 var(--ink-4); }
 .bcol:last-child { box-shadow: none; }

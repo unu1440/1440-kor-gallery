@@ -931,12 +931,12 @@
     if (cat === "basic") ok = ["top2", "top2", "top2", "top2", "top3", "top3", "burger", "bottom", "corners"].concat(L0.bleed ? [] : ["left", "right"]);
     return pick(r, ok);
   }
-  /* basic templates follow Cargo's basic sites: a light page, one plain face at reading size, small captions */
+  /* basic templates are plain: a light page, one plain face at reading size, small captions */
   var BASIC_PAL = [["#ffffff", "#111111"], ["#ffffff", "#111111"], ["#fcfcfc", "#111111"], ["#f7f7f5", "#161616"], ["#ffffff", "#1a1a1a"]];
   var BASIC_FACE = ["sans", "sans", "sans", "sans", "sans", "serif", "mono", "cond"];
   var BASIC_OUT = ["name-big", "sheet"]; /* too loud for a basic page */
 
-  /* basic templates share one set of pictures, as Cargo's basic templates do */
+  /* basic templates share one set of pictures */
   var SHARED = ["ld-lake-dusk", "ld-sea-deep", "ch-black-stage", "ld-dark-hill", "int-light-line", "arch-white-wall", "ld-dune-gold", "fm-street", "ld-sea-gradient", "pt-bw-studio",
     "st-pear", "st-bottles", "ld-sea-blue", "fm-water-sparkle", "arch-brutal-long", "ld-palm-beach", "arch-curve", "ld-blue-hills", "arch-window-sky", "cl-white-cloud", "ab-blue-gradient", "ch-white-curve", "gl-shadow", "st-light-flower"];
   /* pictures the hand-made graduation, graphic, blank and populated templates already show (tools/check-templates.js keeps this list honest) */

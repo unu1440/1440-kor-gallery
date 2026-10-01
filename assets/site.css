@@ -1,5 +1,5 @@
 /* 1440 — Inter (Latin) + Pretendard (Hangul), Geist Mono for numbers.
-   Cargo's plain type, kept quiet: paper, ink, hairlines and a grain you barely see. Things arrive slowly out of a blur and say little until they are asked. */
+   Plain type, kept quiet: paper, ink, hairlines and a grain you barely see. Things arrive slowly out of a blur and say little until they are asked. */
 
 :root {
   --bg: #f8f8f6;
@@ -312,7 +312,7 @@ html.intro .minute { animation: none; }
   .biz dl { flex-direction: column; }
 }
 
-/* ---------- 정보: comes up over the first page, laid out like Cargo's information page ----------
+/* ---------- 정보: comes up over the first page, laid out as a quiet two-column information page ----------
    The screen is cut in two. The left half stays empty (the page shows through a veil). The right half holds a grey
    list on its left (the chosen one dark) and the text on its right. One size of type; the only ranking is how dark
    it is. Sections are told apart by hairlines, and the page title sits a little inside the column. */
@@ -358,7 +358,7 @@ html.intro .minute { animation: none; }
 .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.3em 1.6em; border-top: 1px solid var(--ink-4); padding-top: 1.2em; margin-top: 0.6em; }
 .two section { display: grid; gap: 1em; align-content: start; }
 .two h2 { padding-left: 2.4em; }
-/* a price list: a small empty box, the name, the price at the end (Cargo's billing choices) */
+/* a price list: a small empty box, the name, the price at the end (a list of billing choices) */
 .ck { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.35em; }
 .ck li { display: grid; grid-template-columns: 1.3em 1fr auto; align-items: baseline; gap: 0 0.4em; }
 .ck .b { width: 0.72em; height: 0.72em; border: 1px solid currentColor; align-self: center; }

@@ -42,7 +42,7 @@
     ["fm-street", "Street", "2025"], ["sh-palm", "Palm Shadow", "2026"], ["ld-lake-dusk", "Lake", "2025"], ["fm-water-sparkle", "Water Light", "2026"]];
   var SPACE = [["int-light-line", "Line of Light", "2026"], ["arch-brutal-long", "Long Building", "2025"], ["int-m2", "M2", "2025"], ["arch-grid-facade", "Grid Facade", "2024"]];
   var SKY = [["ld-palm-beach", "Beach", "2026"], ["arch-curve", "Curve", "2025"], ["ld-blue-hills", "Blue Ridge", "2026"], ["ld-sea-gradient", "Horizon", "2024"], ["ld-dune-gold", "Gold Dune", "2025"], ["arch-window-sky", "Sky Window", "2026"]];
-  /* the menus of the basic pages: Cargo-like, the name on the left and a few words on the right */
+  /* the menus of the basic pages: the name on the left and a few words on the right */
   var SP = "&nbsp;&nbsp;&nbsp;";
   var MENU_A = "Information" + SP + "Instagram" + SP + "Email", MENU_B = "Information" + SP + "Index" + SP + "Email", MENU_C = "Index" + SP + "Information";
 
@@ -839,7 +839,7 @@
 
   /* ---------- sections ---------- */
   function famOf(f) { return BASES.filter(function (b) { return b.fam === f; }); }
-  /* basic, as Cargo shows it: feed, grid and slideshow side by side, each a column of cards */
+  /* basic: feed, grid and slideshow side by side, each a column of cards */
   var basic = document.getElementById("basicCols");
   basic.innerHTML = ["feed", "grid", "slide"].map(function (f) {
     return '<div class="bcol"><h3 class="bcol-t">' + FAM_KO[f] + ' <span class="m">' + famOf(f).length + '</span></h3><div class="row row-1" data-family="' + f + '"></div></div>';
@@ -975,7 +975,7 @@
       });
       t.replaceWith(document.createRange().createContextualFragment(html));
     });
-    /* like Cargo, the site name opens the information page when there is no link for it */
+    /* the site name opens the information page when there is no link for it */
     if (tp.querySelector('.lv-a[data-lv="info"]')) return;
     var name = (site || DEF).toLowerCase(), w2 = document.createTreeWalker(tp, NodeFilter.SHOW_TEXT);
     while ((t = w2.nextNode())) {

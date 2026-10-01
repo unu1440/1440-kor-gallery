@@ -19,7 +19,7 @@ jobs:
       - name: 템플릿 검사
         run: node tools/check-templates.js
       - name: 올릴 파일만 모으기 (research/ 등은 빠짐)
-        run: mkdir dist && cp -r index.html templates.html assets dist/
+        run: mkdir dist && cp -r index.html templates.html assets dist/ && find dist -name '*.md' -delete
       - name: 토큰 확인
         id: token
         env:

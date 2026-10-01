@@ -528,7 +528,7 @@
   }
   root.addEventListener("click", function (e) { var b = e.target.closest("[data-p]"); if (b) openPanel(b.dataset.p); });
 
-  /* -- the page's parts, in order (Cargo calls this the pages list): add, remove, move -- */
+  /* -- the page's parts, in order (the list of parts): add, remove, move -- */
   function moreParts() { var m = (S.more || orig.more || []).slice(), foot = m.length && /^f-/.test(m[m.length - 1]) ? m.pop().slice(2) : "line"; return { blocks: m, foot: foot }; }
   function setMore(blocks, foot) {
     var m = blocks.concat("f-" + foot); S.more = JSON.stringify(m) === JSON.stringify(orig.more) ? null : m;
@@ -819,7 +819,7 @@
     view.addEventListener("scroll", function () { if (mEl && !mRaf) mRaf = requestAnimationFrame(measShow); }, { passive: true });
   }
 
-  /* -- 폴더: a small file system, as in a code editor's explorer (and Cargo's Pages panel for what it holds).
+  /* -- 폴더: a small file system, as in a code editor's explorer (the site's pages and sets).
         The top line is the person: their nickname once logged in, else the site name they typed on the first page.
         Under it 홈 holds the forms they work on (the one being edited is open, with its pages and sets, which can sit
         one inside another), and 즐겨찾기 the starred templates. A click chooses a row (a page opens at once; another
