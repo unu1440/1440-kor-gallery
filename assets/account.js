@@ -60,16 +60,24 @@
     return crypto.subtle.importKey("raw", te.encode(pass), "PBKDF2", false, ["deriveBits"])
       .then(function (k) { return crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: te.encode(salt), iterations: 100000 }, k, 256); }).then(b64);
   }
+  /* the name in the header: the part of the e-mail before @, made unique */
+  function nickFrom(email, taken) {
+    var base = (String(email).split("@")[0].match(/[\p{L}\p{N}_.-]/gu) || []).join("").slice(0, 16); if (base.length < 2) base = "user";
+    for (var i = 1; i < 500; i++) { var x = i === 1 ? base : base + i; if (!taken(x)) return x; }
+    return base + Date.now().toString(36).slice(-4);
+  }
   function pub(u) { return { id: u.id, nick: u.nick, email: u.email, role: u.role || "user", student: u.student || "none", uniEmail: u.uniEmail || "", trialUntil: u.trialUntil || 0, paidUntil: 0, state: cleanState(u.state), admin: ADMIN.indexOf(u.email) >= 0 }; }
   function lme() { var id = get(SKEY, null), db = ldb(); return id && db.users[id] ? pub(db.users[id]) : null; }
   function need() { if (!me) throw err("로그인해 주세요."); }
   var L = {
     signup: function (d) {
-      var db = ldb(), email = String(d.email || "").trim().toLowerCase(), nick = String(d.nick || "").trim();
-      if (!NICK.test(nick)) return Promise.reject(err("닉네임은 2–20자, 글자·숫자·_ . - 만 쓸 수 있어요."));
+      var db = ldb(), email = String(d.email || "").trim().toLowerCase();
       if (!EMAIL.test(email)) return Promise.reject(err("이메일 주소를 확인해 주세요."));
+      if (d.student && !UNI.test(email.split("@")[1])) return Promise.reject(err("대학생은 학교 메일(.ac.kr, .edu 등)로만 가입할 수 있어요."));
+      var taken = {}; for (var k0 in db.users) taken[db.users[k0].nick.toLowerCase()] = 1;
+      var nick = nickFrom(email, function (x) { return taken[x.toLowerCase()]; });
       if (String(d.password || "").length < 8) return Promise.reject(err("비밀번호는 8자 이상이에요."));
-      for (var k in db.users) { if (db.users[k].email === email) return Promise.reject(err("이미 가입한 이메일이에요.")); if (db.users[k].nick.toLowerCase() === nick.toLowerCase()) return Promise.reject(err("이미 쓰는 닉네임이에요.")); }
+      for (var k in db.users) if (db.users[k].email === email) return Promise.reject(err("이미 가입한 이메일이에요."));
       var id = "u" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), salt = id;
       return hash(d.password, salt).then(function (h) {
         db = ldb(); db.users[id] = { id: id, email: email, nick: nick, pass: h, salt: salt, state: cleanState(d.state), created: Date.now() }; put(LKEY, db); put(SKEY, id);
@@ -136,7 +144,7 @@
     get user() { return me; },
     ready: null,
     on: function (f) { subs.push(f); },
-    signup: function (d) { var g = cleanState(get(GKEY, {})); d = { nick: d.nick, email: d.email, password: d.password, state: g }; return (mode === "server" ? api("POST", "/api/signup", d) : L.signup(d)).then(adopt); },
+    signup: function (d) { var g = cleanState(get(GKEY, {})); d = { email: d.email, password: d.password, student: !!d.student, state: g }; return (mode === "server" ? api("POST", "/api/signup", d) : L.signup(d)).then(adopt); },
     login: function (d) { return (mode === "server" ? api("POST", "/api/login", d) : L.login(d)).then(adopt); },
     logout: function () { return (mode === "server" ? api("POST", "/api/logout", {}) : L.logout()).then(function () { me = null; emit(); }); },
     refresh: function () { return (mode === "server" ? api("GET", "/api/me") : Promise.resolve({ user: lme() })).then(function (r) { me = r.user || null; emit(); return me; }); },

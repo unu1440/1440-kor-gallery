@@ -391,7 +391,7 @@ html.intro .minute { animation: none; }
    The layer is the Information layer again (words only, out of a blur). Fields are a hairline to write on,
    the one button a thin round outline, and every message one line of grey (red only for a mistake). */
 .bar .menu .acct { position: relative; display: inline-block; }
-.bar .menu .acct .nick { display: inline-block; max-width: 10em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; color: var(--ink); }
+.bar .menu .acct .nick { display: inline-block; max-width: 16em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; color: var(--ink); }
 .bar .menu .acct .hub { position: absolute; right: 0; top: 100%; padding-top: 0.45em; white-space: nowrap; color: var(--ink); opacity: 0; filter: blur(5px); pointer-events: none; transition: opacity .7s ease, filter .9s var(--slow); }
 .bar .menu .acct .hub::before { content: ""; display: inline-block; width: 0.42em; height: 0.42em; margin-right: 0.45em; vertical-align: 0.12em; background: currentColor; }
 @media (hover: hover) { .bar .menu .acct:hover .hub { opacity: 1; filter: none; pointer-events: auto; } }
@@ -408,8 +408,9 @@ html.intro .minute { animation: none; }
 .ckx { display: grid; grid-template-columns: 1.3em minmax(0, 1fr); align-items: start; cursor: pointer; }
 .ckx input { -webkit-appearance: none; appearance: none; width: 0.72em; height: 0.72em; margin: 0.42em 0 0; border: 1px solid var(--ink); border-radius: 0; background: transparent; cursor: pointer; }
 .ckx input:checked { background: var(--ink); }
-.acct-go { justify-self: start; font: inherit; color: var(--ink); background: transparent; border: 1px solid var(--ink); border-radius: 99px; padding: 0.3em 1.1em; cursor: pointer; transition: background .5s, color .5s; }
-@media (hover: hover) { .acct-go:not([disabled]):hover { background: var(--ink); color: var(--bg); } }
+.acct-go { justify-self: start; font: inherit; color: var(--ink); background: transparent; border: 0; border-radius: 0; padding: 0.2em 0; cursor: pointer; text-decoration: underline; text-decoration-color: transparent; text-decoration-thickness: 1px; text-underline-offset: 0.22em; transition: text-decoration-color .5s; }
+@media (hover: hover) { .acct-go:not([disabled]):hover { text-decoration-color: currentColor; } }
+.acct-go:focus-visible { text-decoration-color: currentColor; }
 .acct-go[disabled] { opacity: 0.35; cursor: default; }
 .acct-msg { margin: 0; min-height: 1.32em; color: var(--ink-2); }
 .acct-msg.err { color: #b8231a; }
@@ -424,7 +425,7 @@ html.intro .minute { animation: none; }
 .adm-r.dim { color: var(--ink-3); }
 .adm-b { display: flex; gap: 1em; white-space: nowrap; }
 @media (max-width: 760px) {
-  .bar .menu .acct .nick { max-width: 6.5em; }
+  .bar .menu .acct .nick { max-width: 9em; }
   .acct-f { max-width: none; }
 }
 .acct-ov .pay { display: grid; gap: 0.6em; border-top: 1px solid var(--ink-4); padding-top: 1.1em; margin-top: 0.6em; }

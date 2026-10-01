@@ -122,12 +122,16 @@ const routes = {
   "GET /api/me": async (env, req, u) => json({ user: u ? { ...publicUser(u), admin: isAdmin(env, u) } : null }),
 
   "POST /api/signup": async (env, req) => {
-    const d = await body(req), email = String(d.email || "").trim().toLowerCase(), nick = String(d.nick || "").trim(), pass = String(d.password || "");
-    if (!NICK.test(nick)) return fail("닉네임은 2–20자, 글자·숫자·_ . - 만 쓸 수 있어요.");
+    const d = await body(req), email = String(d.email || "").trim().toLowerCase(), pass = String(d.password || "");
     if (!EMAIL.test(email)) return fail("이메일 주소를 확인해 주세요.");
+    if (d.student && !uniDomain(email)) return fail("대학생은 학교 메일(.ac.kr, .edu 등)로만 가입할 수 있어요.");
     if (pass.length < 8) return fail("비밀번호는 8자 이상이에요.");
     if (await env.DB.prepare("SELECT 1 FROM users WHERE email = ?").bind(email).first()) return fail("이미 가입한 이메일이에요.", 409);
-    if (await env.DB.prepare("SELECT 1 FROM users WHERE nick = ?").bind(nick).first()) return fail("이미 쓰는 닉네임이에요.", 409);
+    /* the name in the header: the part of the e-mail before @, made unique */
+    let base = (email.split("@")[0].match(/[\p{L}\p{N}_.-]/gu) || []).join("").slice(0, 16), nick = "";
+    if (base.length < 2) base = "user";
+    for (let i = 1; i < 500 && !nick; i++) { const x = i === 1 ? base : base + i; if (!(await env.DB.prepare("SELECT 1 FROM users WHERE nick = ?").bind(x).first())) nick = x; }
+    if (!nick) nick = base + b64(rand(3));
     const id = b64(rand(12)), state = JSON.stringify(d.state && typeof d.state === "object" ? d.state : {}).slice(0, 8000);
     await env.DB.prepare("INSERT INTO users (id, email, nick, pass, state, created) VALUES (?, ?, ?, ?, ?, ?)").bind(id, email, nick, await hashPass(pass), state, Date.now()).run();
     const u = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(id).first();

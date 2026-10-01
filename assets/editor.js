@@ -1081,7 +1081,7 @@
     var hf = homeForms(), clip = clipGet(), cut = {};
     if (clip && clip.op === "cut" && clip.kind === "pages" && sameF(clip.from, ME)) clip.items.forEach(function (p) { cut[p.id] = 1; });
     var h = '<div class="ed-tree" role="tree" tabindex="0" aria-label="폴더">';
-    h += row({ k: "root", d: 0, tg: openF.root !== false, ic: me ? XI.user : XI.globe, name: me ? me.nick : (T.site || T.defName), em: me ? "" : "로그인 전", cls: "root", title: me ? "로그인한 계정" : "처음에 적은 사이트 이름" });
+    h += row({ k: "root", d: 0, tg: openF.root !== false, ic: me ? XI.user : XI.globe, name: me ? me.email : (T.site || T.defName), em: me ? "" : "로그인 전", cls: "root", title: me ? "로그인한 계정" : "처음에 적은 사이트 이름" });
     if (openF.root !== false) {
       h += row({ k: "home", d: 1, tg: openF.home !== false, ic: XI.home, name: "홈", em: hf.length, cls: "homeh" });
       if (openF.home !== false) hf.forEach(function (f) {

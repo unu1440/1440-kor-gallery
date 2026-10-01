@@ -38,7 +38,7 @@
     var me = A.user;
     ov.classList.toggle("in", !!me); ov.classList.toggle("is-admin", !!(me && me.admin));
     if (!me) slot.innerHTML = '<a href="#" id="loginLink" aria-expanded="' + isOpen() + '" aria-controls="acctOv">Login</a>';
-    else slot.innerHTML = '<a href="#" id="nickLink" class="nick" aria-expanded="' + isOpen() + '" aria-controls="acctOv" title="계정">' + esc(me.nick) + '</a><a class="hub" href="' + esc(A.hubUrl()) + '">My hub</a>';
+    else slot.innerHTML = '<a href="#" id="nickLink" class="nick" aria-expanded="' + isOpen() + '" aria-controls="acctOv" title="계정">' + esc(me.email) + '</a><a class="hub" href="' + esc(A.hubUrl()) + '">My hub</a>';
     var l = slot.firstChild;
     l.addEventListener("click", function (e) {
       e.preventDefault(); e.stopPropagation();
@@ -51,7 +51,7 @@
 
   function fill() {
     var me = A.user; if (!me) return;
-    $('[data-v="nick"]').textContent = me.nick;
+    $('[data-v="nick"]').textContent = me.email;
     $('[data-v="email"]').textContent = me.email;
     $('[data-v="trial"]').textContent = trialText(me);
     $('[data-v="student"]').textContent = STU[me.student] || "안 함";
@@ -73,9 +73,15 @@
   var FORMS = {
     login: function (f) { run(f, A.login({ email: f.email.value, password: f.password.value }), function () { f.reset(); show("account"); }); },
     signup: function (f) {
+      var stu = f.student.checked, email = f.email.value.trim();
+      if (stu && !A.isUni(email)) { msg(f, "대학생은 학교 메일(.ac.kr, .edu 등)로만 가입할 수 있어요.", true); f.email.focus(); return; }
       if (!f.agree.checked) { msg(f, "약관과 개인정보 보호정책에 동의해 주세요.", true); return; }
-      var stu = f.student.checked;
-      run(f, A.signup({ nick: f.nick.value, email: f.email.value, password: f.password.value }), function () { f.reset(); show(stu ? "student" : "account"); });
+      run(f, A.signup({ email: email, password: f.password.value, student: stu }), function () {
+        f.reset(); studentMode(f);
+        if (!stu) { show("account"); return; }
+        /* a student signed up with the school address: the code goes there at once */
+        show("student"); var s = ov.querySelector('[data-f="send"]'); s.uni.value = email; FORMS.send(s);
+      });
     },
     send: function (f) {
       var uni = f.uni.value.trim();
@@ -89,6 +95,14 @@
     verify: function (f) { run(f, A.verifyCode(f.code.value), function () { f.reset(); f.hidden = true; msg(ov.querySelector('[data-f="send"]'), ""); fill(); }); },
     request: function (f) { run(f, A.request({ school: f.school.value, uniEmail: f.uni.value }), function () { f.reset(); fill(); }); }
   };
+  /* "대학생입니다": the e-mail field then takes only a university address */
+  function studentMode(f) {
+    var on = f.student.checked, lbl = f.querySelector('[data-v="emailLbl"]');
+    lbl.innerHTML = on ? '학교 메일 <em>.ac.kr · .edu 등</em>' : "이메일";
+    f.email.placeholder = on ? "name@school.ac.kr" : "";
+    if (on && f.email.value && !A.isUni(f.email.value)) msg(f, "학교 메일 주소를 적어 주세요.", true); else msg(f, "");
+  }
+  (function () { var f = ov.querySelector('[data-f="signup"]'); f.student.addEventListener("change", function () { studentMode(f); f.email.focus(); }); f.email.addEventListener("input", function () { if (f.student.checked) studentMode(f); }); })();
   [].forEach.call(ov.querySelectorAll("form[data-f]"), function (f) { f.addEventListener("submit", function (e) { e.preventDefault(); FORMS[f.dataset.f](f); }); });
 
   /* paying: the window is NICEPAY's; when it is done NICEPAY brings the person back here with ?pay=ok or ?pay=fail */
@@ -119,12 +133,12 @@
     if (!LIST) return;
     var q = ($('[data-v="q"]').value || "").trim().toLowerCase(), pend = LIST.requests.filter(function (x) { return x.status === "pending"; }), past = LIST.requests.filter(function (x) { return x.status !== "pending"; }).slice(0, 8);
     $('[data-v="reqs"]').innerHTML = (pend.length ? pend.map(function (x) {
-      return '<div class="adm-r"><span><b>' + esc(x.nick) + '</b> <em>' + esc(x.email) + '</em><br>' + esc(x.school) + ' · ' + esc(x.uni_email) + ' <em>' + day(x.created) + '</em></span><span class="adm-b"><button type="button" class="u" data-ok="' + esc(x.id) + '">받기</button><button type="button" class="u" data-no="' + esc(x.id) + '">거절</button></span></div>';
-    }).join("") : '<p class="dim">기다리는 요청이 없어요.</p>') + past.map(function (x) { return '<div class="adm-r dim"><span>' + esc(x.nick) + ' · ' + esc(x.school) + '</span><span>' + (x.status === "approved" ? "받음" : "거절") + '</span></div>'; }).join("");
+      return '<div class="adm-r"><span><b>' + esc(x.email) + '</b><br>' + esc(x.school) + ' · ' + esc(x.uni_email) + ' <em>' + day(x.created) + '</em></span><span class="adm-b"><button type="button" class="u" data-ok="' + esc(x.id) + '">받기</button><button type="button" class="u" data-no="' + esc(x.id) + '">거절</button></span></div>';
+    }).join("") : '<p class="dim">기다리는 요청이 없어요.</p>') + past.map(function (x) { return '<div class="adm-r dim"><span>' + esc(x.email) + ' · ' + esc(x.school) + '</span><span>' + (x.status === "approved" ? "받음" : "거절") + '</span></div>'; }).join("");
     var users = LIST.users.filter(function (x) { return !q || (x.nick + " " + x.email + " " + (x.uni_email || "")).toLowerCase().indexOf(q) >= 0; }).slice(0, 60);
     $('[data-v="users"]').innerHTML = users.length ? users.map(function (x) {
       var on = x.trial_until > Date.now();
-      return '<div class="adm-r"><span><b>' + esc(x.nick) + '</b> <em>' + esc(x.email) + '</em><br>' + (x.student === "verified" ? "대학생 · " + esc(x.uni_email) : x.student === "pending" ? "확인 요청 중" : "일반") + ' · 무료 ' + (on ? day(x.trial_until) + "까지" : "없음") + '</span>' +
+      return '<div class="adm-r"><span><b>' + esc(x.email) + '</b><br>' + (x.student === "verified" ? "대학생 · " + esc(x.uni_email) : x.student === "pending" ? "확인 요청 중" : "일반") + ' · 무료 ' + (on ? day(x.trial_until) + "까지" : "없음") + '</span>' +
         '<span class="adm-b"><button type="button" class="u" data-grant="' + esc(x.id) + '">+30일</button>' + (on ? '<button type="button" class="u" data-revoke="' + esc(x.id) + '">거두기</button>' : "") + '</span></div>';
     }).join("") : '<p class="dim">없어요.</p>';
   }
@@ -147,5 +161,5 @@
 
   A.on(function () { header(); if (isOpen()) { var on = pages.filter(function (p) { return p.classList.contains("on"); })[0]; show(on ? on.id.slice(2) : "login"); } });
   header();
-  A.ready.then(function () { $(".acct-local").hidden = A.mode !== "local"; header(); });
+  A.ready.then(function () { header(); });
 })();

@@ -26,7 +26,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="assets/site.css?v=36">
+  <link rel="stylesheet" href="assets/site.css?v=38">
 </head>
 <body class="page-home">
 
@@ -191,21 +191,18 @@
           <button class="acct-go" type="submit">Log in →</button>
           <p class="acct-msg" role="status"></p>
         </form>
-        <p class="dim">처음이신가요? <a href="#" data-to="signup" class="u">Sign up</a></p>
       </article>
 
       <article class="info-page" id="a-signup">
         <p class="info-title">Sign up</p>
         <form class="acct-f" data-f="signup" novalidate>
-          <label class="fld"><span>닉네임 <em>헤더에 보이는 이름 · 2–20자</em></span><input name="nick" type="text" autocomplete="nickname" maxlength="20" required></label>
-          <label class="fld"><span>이메일</span><input name="email" type="email" autocomplete="email" required></label>
+          <label class="fld"><span data-v="emailLbl">이메일</span><input name="email" type="email" autocomplete="email" required></label>
           <label class="fld"><span>비밀번호 <em>8자 이상</em></span><input name="password" type="password" autocomplete="new-password" minlength="8" required></label>
-          <label class="ckx"><input type="checkbox" name="student"><span>대학생이에요 <em>학교 메일을 확인하면 첫 한 달 무료</em></span></label>
+          <label class="ckx"><input type="checkbox" name="student"><span>대학생입니다 <em>학교 메일로 가입하면 첫 한 달 무료</em></span></label>
           <label class="ckx"><input type="checkbox" name="agree" required><span><a href="#terms" data-info="terms" class="u">서비스 약관</a>과 <a href="#privacy" data-info="privacy" class="u">개인정보 보호정책</a>에 동의합니다</span></label>
           <button class="acct-go" type="submit">Sign up →</button>
           <p class="acct-msg" role="status"></p>
         </form>
-        <p class="dim">이미 계정이 있나요? <a href="#" data-to="login" class="u">Log in</a></p>
       </article>
 
       <article class="info-page" id="a-account">
@@ -268,7 +265,6 @@
         <p class="acct-msg" role="status" data-v="admMsg"></p>
       </article>
 
-      <p class="dim acct-local" hidden>계정 서버가 아직 열리지 않아, 지금은 이 브라우저 안에서만 가입·로그인돼요. 학교 메일 코드도 메일 대신 이 화면에 보여요.</p>
     </div>
   </div>
 </div>
@@ -287,7 +283,7 @@
 
 <script src="assets/common.js?v=5"></script>
 <script src="assets/site.js?v=18"></script>
-<script src="assets/account.js?v=3"></script>
-<script src="assets/acct-ui.js?v=2"></script>
+<script src="assets/account.js?v=4"></script>
+<script src="assets/acct-ui.js?v=4"></script>
 </body>
 </html>
