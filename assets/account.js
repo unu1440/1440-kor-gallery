@@ -39,12 +39,26 @@
   /* the editor calls this whenever a form is opened */
   function touch(n, site, c) {
     var s = stateNow(), f = { n: +n, site: site || "", c: c || "", t: Date.now() };
-    s.last = f;
+    s.last = f; put(BKEY, f);
     if (!s.home.some(function (x) { return sameForm(x, f); })) s.home.unshift({ n: f.n, site: f.site, c: f.c });
     saveState(s);
   }
   function formUrl(f) { return "templates.html?edit=" + f.n + (f.site ? "&site=" + encodeURIComponent(f.site) : "") + (f.c ? "&c=" + encodeURIComponent(f.c) : ""); }
-  function hubUrl() { var l = stateNow().last; return l ? formUrl(l) : "templates.html"; }
+  /* My hub: the form edited last. The account remembers it; this browser remembers it too (the last form opened here, and
+     when each draft was last saved), so a person who logs in after editing still lands in the editor. Only someone who has
+     never opened a form goes to the list of forms. */
+  var BKEY = "1440-last", EKEY = "1440-edited", DEFNAME = "loremipsum";
+  function fromKey(k) { var m = /^1440-edit-(\d+)-(.+?)(?:~([a-z0-9]+))?$/i.exec(k); if (!m || !(+m[1] >= 1 && +m[1] <= 1440)) return null; return { n: +m[1], site: m[2] === DEFNAME ? "" : m[2], c: m[3] || "" }; }
+  function browserLast() {
+    var ed = get(EKEY, {}), best = null, bt = -1, k;
+    for (k in ed) { var f = fromKey(k); if (f && ed[k] > bt && localStorage.getItem(k) != null) { best = f; bt = ed[k]; f.t = ed[k]; } }
+    var b = get(BKEY, null); if (b && +b.n && (!best || (b.t || 0) >= bt)) best = b;
+    if (best) return best;
+    try { for (var i = 0; i < localStorage.length; i++) { var f2 = fromKey(localStorage.key(i)); if (f2) return f2; } } catch (e) {}
+    return null;
+  }
+  function lastForm() { var a = stateNow().last, b = browserLast(); return !a ? b : !b ? a : (b.t || 0) > (a.t || 0) ? b : a; }
+  function hubUrl() { var l = lastForm(); return l ? formUrl(l) : "templates.html"; }
 
   /* ---------- the server ---------- */
   function api(method, path, data) {

@@ -163,6 +163,7 @@
     if (CHECK) return;
     drawFiles();
     try { localStorage.setItem(KEY, JSON.stringify(S)); state.textContent = "초안 · 저장됨"; } catch (e) { state.textContent = "저장하지 못했어요"; }
+    try { var ed = JSON.parse(localStorage.getItem("1440-edited") || "{}"); ed[KEY] = Date.now(); localStorage.setItem("1440-edited", JSON.stringify(ed)); } catch (e) {} /* when this draft was last changed: My hub opens the newest */
     if (window.ACCOUNT && Date.now() - touchedAt > 60000) { touchedAt = Date.now(); ACCOUNT.touch(N, T.site || "", C); }
   }
   function commit(now) {
