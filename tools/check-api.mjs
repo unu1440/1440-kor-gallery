@@ -94,7 +94,7 @@ t("same order twice", (await post({ ...good, signature: await hex("TOK" + "S2_te
 r = await a("POST", "/api/pay/order", { plan: "year" }); const o2 = r.body;
 t("cancelled window", (await post({ authResultCode: "9999", authResultMsg: "취소", orderId: o2.orderId })).to.indexOf("fail") >= 0);
 r = await a("POST", "/api/pay/order", { plan: "year" });
-await post({ ...good, orderId: r.body.orderId, amount: "46800", tid: "T456", signature: await hex("TOK" + "S2_test" + "46800" + "secret") });
+await post({ ...good, orderId: r.body.orderId, amount: "46000", tid: "T456", signature: await hex("TOK" + "S2_test" + "46000" + "secret") });
 me1 = (await a("GET", "/api/me")).body.user; t("year adds on", me1.paidUntil > Date.now() + 394 * 86400000, me1);
 r = await a("GET", "/api/pay/history"); t("history", r.body.payments.filter((x) => x.status === "paid").length === 2 && r.body.payments.length === 3, r);
 console.log(ok + " passed, " + bad + " failed");

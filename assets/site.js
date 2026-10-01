@@ -240,7 +240,8 @@
     if (on) { if (document.activeElement === input) input.blur(); infoOv.scrollTop = 0; }
   }
   window.SITE_INFO = { close: function () { if (infoOv.classList.contains("open")) setInfo(false); }, open: function (id) { setInfo(true); var a = infoOv.querySelector('[data-to="' + id + '"]'); if (a) a.click(); } };
-  aboutLink.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); setInfo(!infoOpen()); });
+  /* opens or closes Information only: with the account layer open, pressing it switches straight to Information */
+  aboutLink.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); setInfo(!infoOv.classList.contains("open")); });
   infoOv.addEventListener("click", function (e) {
     if (e.target.closest("[data-close]")) { e.preventDefault(); setInfo(false); return; }
     if (!e.target.closest(".info-half")) setInfo(false);

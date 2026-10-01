@@ -9,7 +9,7 @@ const DAY = 86400000, MONTH = 30 * DAY, SESSION = 60 * DAY, CODE_LIFE = 10 * 600
 const ITER = 100000; /* the most Workers allow for PBKDF2 */
 const enc = new TextEncoder();
 /* what can be bought: the amount is decided here, never by the page */
-const PLANS = { month: { amount: 4900, days: 30, goods: "1440 이용권 30일" }, year: { amount: 46800, days: 365, goods: "1440 이용권 365일" } };
+const PLANS = { month: { amount: 4900, days: 30, goods: "1440 이용권 30일" }, year: { amount: 46000, days: 365, goods: "1440 이용권 365일" } };
 
 export const UNI = /(^|\.)(ac\.[a-z]{2}|edu(\.[a-z]{2})?)$/i; /* snu.ac.kr, mit.edu, unimelb.edu.au, ox.ac.uk */
 export function uniDomain(email) { const d = String(email).split("@")[1] || ""; return UNI.test(d); }
