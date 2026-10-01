@@ -17,14 +17,17 @@
   function cleanState(s) {
     s = s && typeof s === "object" ? s : {};
     var home = Array.isArray(s.home) ? s.home.filter(function (f) { return f && +f.n >= 1 && +f.n <= 1440; }).slice(0, 60) : [];
-    return { last: s.last && +s.last.n ? s.last : null, home: home };
+    /* projects: folders in My hub that hold forms (a form names its project with p) */
+    var projects = Array.isArray(s.projects) ? s.projects.filter(function (p) { return p && p.id && p.name; }).slice(0, 40) : [];
+    return { last: s.last && +s.last.n ? s.last : null, home: home, projects: projects };
   }
   function sameForm(a, b) { return a && b && +a.n === +b.n && (a.site || "") === (b.site || "") && (a.c || "") === (b.c || ""); }
   function merge(a, b) {
     a = cleanState(a); b = cleanState(b);
     var last = !a.last ? b.last : !b.last ? a.last : (a.last.t || 0) >= (b.last.t || 0) ? a.last : b.last, home = a.home.slice();
     b.home.forEach(function (f) { if (!home.some(function (x) { return sameForm(x, f); })) home.push(f); });
-    return { last: last, home: home };
+    var projects = a.projects.slice(); b.projects.forEach(function (p) { if (!projects.some(function (x) { return x.id === p.id; })) projects.push(p); });
+    return { last: last, home: home, projects: projects };
   }
   function stateNow() { return me ? cleanState(me.state) : cleanState(get(GKEY, {})); }
   var saveT = 0;
@@ -150,7 +153,7 @@
   /* a guest who logs in brings the forms they were working on */
   function adopt(res) {
     var g = cleanState(get(GKEY, {})); take(res);
-    if (me && (g.last || g.home.length)) { var s = merge(me.state, g); me.state = s; saveState(s); try { localStorage.removeItem(GKEY); } catch (e) {} }
+    if (me && (g.last || g.home.length || g.projects.length)) { var s = merge(me.state, g); me.state = s; saveState(s); try { localStorage.removeItem(GKEY); } catch (e) {} }
     emit(); return me;
   }
   var A = {

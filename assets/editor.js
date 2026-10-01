@@ -1,7 +1,7 @@
 /* The editor: templates.html?edit=n (&site=name).
    The chosen template fills the screen and is changed where it stands: click a word or a picture and a small window
    opens next to it. A slim rail on the right holds the panels (the page's parts, words and pictures, my pictures,
-   typeface and colours, features, site settings); a thin bar on top holds undo, preview, phone and publish.
+   typeface and colours, features, site settings); a thin bar on top holds preview and phone (undo and publish are keys).
    The page is drawn with the same code the previews use (window.T1440, see templates.js).
    Changes are kept in this browser (localStorage for words and settings, IndexedDB for the pictures a person adds).
    Words are matched by what they said in the template ("Work" everywhere becomes the new word), so they survive the
@@ -128,7 +128,7 @@
   root.className = "ed";
   root.innerHTML =
     '<header class="ed-top">' +
-      '<div class="ed-l"><button type="button" class="ed-home" id="edBack" aria-label="템플릿 다시 고르기">← 1440</button><span class="ed-no">' + T.tag(N) + '</span>' +
+      '<div class="ed-l"><button type="button" class="ed-home" id="edBack" aria-label="템플릿 다시 고르기" title="템플릿 다시 고르기">← <svg class="ed-logo" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15.25" fill="#fff" stroke="#111" stroke-width="1.5"/><path d="M16 .75a15.25 15.25 0 0 0 0 30.5z" fill="#111"/><text x="9.4" y="19.6" font-family="Arial,Helvetica,sans-serif" font-size="9.6" font-weight="700" fill="#fff" text-anchor="middle">14</text><text x="22.6" y="19.6" font-family="Arial,Helvetica,sans-serif" font-size="9.6" font-weight="700" fill="#111" text-anchor="middle">40</text></svg></button><span class="ed-no">' + T.tag(N) + '</span>' +
       '<img class="ed-fav" id="edFav" alt="" hidden></div>' +
     '<nav class="ed-rail" id="edRail" aria-label="편집 도구">' +
       '<button type="button" id="edFilesBtn" data-tip="패널" aria-label="탐색기·도구·레이어" aria-pressed="false">탐색기 · 도구 · 레이어</button>' +
@@ -141,12 +141,12 @@
       '<button type="button" data-p="feat" data-tip="기능" aria-label="기능" aria-pressed="false">기능</button>' +
       '<button type="button" data-p="site" data-tip="사이트 설정" aria-label="사이트 설정" aria-pressed="false">설정</button>' +
     '</nav>' +
-      '<div class="ed-r"><button type="button" class="ed-ic" id="edUndo" aria-label="되돌리기 ' + CMD + 'Z" title="되돌리기 ' + CMD + 'Z">' + IC.undo + '</button><button type="button" class="ed-ic" id="edRedo" aria-label="다시 하기" title="다시 하기 ' + CMD + '⇧Z">' + IC.redo + '</button><span class="ed-sep"></span>' +
+      '<div class="ed-r">' +
         '<button type="button" class="ed-ic" id="edPreview" aria-pressed="false" aria-label="미리보기 ' + CMD + '\\" title="미리보기 ' + CMD + '\\">' + IC.point + '</button>' +
         '<button type="button" class="ed-ic ed-dev-desk" id="edDevice" aria-pressed="false" aria-label="폰 화면으로 보기" title="폰 화면 ' + CMD + '⇧X">' + IC.mob + '</button>' +
-        '<span class="ed-state" id="edState" role="status"></span><button type="button" class="ed-pub" id="edPub" title="공개하기 ' + CMD + 'P">공개하기</button></div>' +
+        '</div>' +
     '</header>' +
-    '<aside class="ed-files" id="edFiles" aria-label="폴더"></aside>' +
+    '<aside class="ed-files" id="edFiles" aria-label="폴더"></aside><div class="ed-save" id="edSave" role="status"></div>' +
     '<div class="ed-3d" id="ed3d" hidden></div>' +
     '<div class="ed-rs" id="edRs" role="separator" aria-orientation="vertical" aria-label="폭 조절" tabindex="0"></div>' +
     '<div class="ed-canvas ed-edit" id="edCanvas"></div>' +
@@ -154,15 +154,20 @@
     '<div class="ed-dlg" id="edDlg" hidden role="dialog" aria-modal="true" aria-labelledby="edDlgT"><div class="ed-dlg-box"></div></div>';
   document.body.appendChild(root);
   document.title = "편집 · " + T.tag(N);
-  var canvas = $("#edCanvas"), state = $("#edState"), pop = $("#edPop"), tip = $("#edTip");
+  var canvas = $("#edCanvas"), state = $("#edSave"), pop = $("#edPop"), tip = $("#edTip");
   var mode = "edit", dev = phone.matches ? "mob" : "desk", panel = null, sel = null, bypass = false, bgTip = false, bgPt = { x: 0, y: 0 };
 
   /* ---------- keeping and undoing ---------- */
   var hist = [JSON.stringify(S)], hp = 0, saveT = 0;
+  /* the corner of the side panel: "자동저장 : 방금 전", and for a moment any short message (moved, copied…) */
+  var savedAt = 0, noteT = 0;
+  function ago(t) { var s = (Date.now() - t) / 1000, d = new Date(t); return s < 60 ? "방금 전" : s < 3600 ? Math.floor(s / 60) + "분 전" : s < 86400 ? Math.floor(s / 3600) + "시간 전" : (d.getMonth() + 1) + "월 " + d.getDate() + "일"; }
+  function showSave(busy) { if (noteT) return; state.textContent = "자동저장 : " + (busy ? "저장 중…" : savedAt ? ago(savedAt) : "켜짐"); }
+  setInterval(function () { showSave(); }, 30000);
   function persist() {
     if (CHECK) return;
     drawFiles();
-    try { localStorage.setItem(KEY, JSON.stringify(S)); state.textContent = "초안 · 저장됨"; } catch (e) { state.textContent = "저장하지 못했어요"; }
+    try { localStorage.setItem(KEY, JSON.stringify(S)); savedAt = Date.now(); showSave(); } catch (e) { note("저장하지 못했어요"); }
     try { var ed = JSON.parse(localStorage.getItem("1440-edited") || "{}"); ed[KEY] = Date.now(); localStorage.setItem("1440-edited", JSON.stringify(ed)); } catch (e) {} /* when this draft was last changed: My hub opens the newest */
     if (window.ACCOUNT && Date.now() - touchedAt > 60000) { touchedAt = Date.now(); ACCOUNT.touch(N, T.site || "", C); }
   }
@@ -174,15 +179,13 @@
       hist = hist.slice(0, hp + 1); hist.push(j); if (hist.length > 60) hist.shift(); hp = hist.length - 1;
       persist(); undoState();
     }, now ? 0 : 500);
-    state.textContent = "저장 중…";
+    showSave(true);
   }
-  function undoState() { $("#edUndo").disabled = hp <= 0; $("#edRedo").disabled = hp >= hist.length - 1; }
+  function undoState() {} /* undo and redo are keys only (Ctrl/⌘+Z, ⇧Z): the bar has no buttons for them */
   function travel(d) {
     var to = hp + d; if (to < 0 || to >= hist.length) return;
     hp = to; S = JSON.parse(hist[hp]); persist(); undoState(); select(null); render();
   }
-  $("#edUndo").addEventListener("click", function () { travel(-1); });
-  $("#edRedo").addEventListener("click", function () { travel(1); });
 
   /* ---------- drawing the page ---------- */
   function model() {
@@ -310,14 +313,17 @@
     bgTip = false;
     $$(".ed-sel", canvas).forEach(function (x) { x.classList.remove("ed-sel", "ed-sel-wf"); });
     sel = el && el.isConnected ? el : null;
+    if (!sel) tipPos = null;
     if (sel) { sel.classList.add("ed-sel"); if (sel.classList.contains("wf")) sel.classList.add("ed-sel-wf"); }
     drawTip();
   }
   function scrollTo(el) { try { el.scrollIntoView({ block: "center", behavior: "auto" }); } catch (e) {} }
   function tipHead(t) { return '<div class="ed-ph"><b>' + t + '</b><button type="button" class="ed-x" id="edTipX" aria-label="닫기">' + IC.x + '</button></div>'; }
   function tipOpen(title, html) { tip.innerHTML = tipHead(title) + '<div class="ed-pb" id="edTipB">' + html + '</div>'; tip.hidden = false; $("#edTipX").addEventListener("click", function () { select(null); }); placeTip(); }
+  var tipPos = null;
   function placeTip() {
     if ((!sel && !bgTip) || tip.hidden || phone.matches) return;
+    if (tipPos) { var tp0 = $(".ed-top").offsetHeight; tip.style.left = Math.max(0, Math.min(tipPos.x, root.clientWidth - tip.offsetWidth)) + "px"; tip.style.top = Math.max(tp0, Math.min(tipPos.y, root.clientHeight - 40)) + "px"; tip.style.right = "auto"; return; }
     var r = sel ? sel.getBoundingClientRect() : { left: bgPt.x, right: bgPt.x, top: bgPt.y, bottom: bgPt.y }, w = tip.offsetWidth, h = tip.offsetHeight, vw = window.innerWidth, vh = window.innerHeight, rail = 24 + (filesOpen && !phone.matches ? $("#edFiles").offsetWidth : 0), top = $(".ed-top").offsetHeight;
     var lim = vh - 22, y = r.bottom + 10; if (y + h > lim) y = r.top - h - 10; if (y < top + 8) y = Math.max(top + 8, Math.min(lim - h, top + 12));
     var x = Math.min(Math.max(8, r.left), vw - rail - w - 10);
@@ -334,7 +340,7 @@
   }
   function layerNote() {
     var tp = $(".tp", canvas); if (!tp || !$(".lv-layer", tp)) return "";
-    return '<div class="ed-box"><p class="ed-p2">지금은 열려 있는 화면을 고치고 있어요.</p><button type="button" class="ed-btn ghost" id="edLayerX">이 화면 닫기</button></div>';
+    return '<div class="ed-box"><button type="button" class="ed-btn ghost" id="edLayerX">이 화면 닫기</button></div>';
   }
   function bindLayer() { var x = $("#edLayerX"); if (x) x.addEventListener("click", function () { T.closeAll($(".tp", canvas)); select(null); }); }
   /* the windows a visitor can open (info, menu, search, project page…): each can be opened here and changed too */
@@ -364,7 +370,7 @@
         '<button type="button" data-tb aria-pressed="' + !!st.b + '" aria-label="굵게" title="굵게"><b>B</b></button><button type="button" data-ti aria-pressed="' + !!st.i + '" aria-label="기울임" title="기울임"><i>I</i></button><span class="sp"></span>' +
         '<button type="button" data-ta="left" aria-pressed="' + (st.a === "left") + '" aria-label="왼쪽 정렬">' + IC.left + '</button><button type="button" data-ta="center" aria-pressed="' + (st.a === "center") + '" aria-label="가운데 정렬">' + IC.center + '</button><button type="button" data-ta="right" aria-pressed="' + (st.a === "right") + '" aria-label="오른쪽 정렬">' + IC.right + '</button><span class="sp"></span>' +
         '<label title="글자색" aria-label="글자색"><input type="color" id="edTc" value="' + (st.c || "#111111") + '"></label></div>' +
-      (same > 1 ? '<p class="ed-p2">같은 글 ' + same + '곳이 함께 바뀌어요. 사이트 이름은 한 번만 고치면 돼요.</p>' : '') +
+      (same > 1 ? '<p class="ed-p2">' + same + '곳 함께</p>' : '') +
       ((S.texts[o] !== undefined || S.tstyle[o]) ? '<button type="button" class="ed-link" id="edTxtReset">원래대로 되돌리기</button>' : '') + '</div>' + openBtn());
     bindLayer(); bindOpen();
     var ta = $("#edTa"); ta.value = val;
@@ -385,7 +391,7 @@
   }
   function tipSlot() {
     var k = sel.dataset.sk, val = S.slots[k] || "";
-    tipOpen("여기에 들어갈 글", '<div class="ed-box"><p class="ed-p2">회색 막대 자리에 글을 적으면 막대 대신 글이 나와요. 다 지우면 막대로 돌아가요.</p><label class="ed-sr" for="edTa">글</label><textarea class="ed-ta" id="edTa" rows="4"></textarea></div>');
+    tipOpen("여기에 들어갈 글", '<div class="ed-box"><label class="ed-sr" for="edTa">글</label><textarea class="ed-ta" id="edTa" rows="4"></textarea></div>');
     var ta = $("#edTa"); ta.value = val;
     ta.addEventListener("input", function () { var v = ta.value; if (v.trim()) { S.slots[k] = v; fillSlot(sel, v); } else { delete S.slots[k]; emptySlot(sel); } commit(); placeTip(); });
     if (!phone.matches) setTimeout(function () { ta.focus(); }, 0);
@@ -403,9 +409,9 @@
   /* a 3D object: the person's own model (a .glb file) in its place */
   function tipModel() {
     var pk = sel.dataset.pk, mine = !!(S.models[pk] && DATA[S.models[pk]]);
-    tipOpen("3D 모델", '<div class="ed-box"><p class="ed-p2">' + (mine ? "내 3D 모델이 들어 있어요." : "지금은 예시 모델이에요.") + ' 3D 프로그램에서 내보낸 <b style="color:#000">.glb</b> 파일을 올리면 이 자리에서 돌려 볼 수 있어요.</p>' +
+    tipOpen("3D 모델", '<div class="ed-box"><p class="ed-p2">' + (mine ? "내 3D 모델" : "예시 모델") + '</p>' +
       '<input type="file" accept=".glb,model/gltf-binary" id="edModelFile" class="ed-sr"><button type="button" class="ed-btn" id="edModelPick">3D 파일(.glb) 올리기</button>' +
-      '<p class="ed-p2" id="edModelMsg">파일은 40MB까지 올릴 수 있어요. 이 브라우저에만 저장돼요.</p>' + (mine ? '<button type="button" class="ed-link" id="edModelReset">예시 모델로 되돌리기</button>' : "") + '</div>');
+      '<p class="ed-p2" id="edModelMsg">.glb · 40MB까지</p>' + (mine ? '<button type="button" class="ed-link" id="edModelReset">예시 모델로 되돌리기</button>' : "") + '</div>');
     $("#edModelPick").addEventListener("click", function () { $("#edModelFile").click(); });
     $("#edModelFile").addEventListener("change", function () {
       var f = this.files && this.files[0]; if (!f) return; var msg = $("#edModelMsg");
@@ -434,9 +440,9 @@
   }
   function tipRoom() {
     var g = sel, rk = g.dataset.rk, list = roomPics(g), words = $$("text", g).map(function (t) { return t.textContent; }).slice(0, 2).join(" ");
-    tipOpen("방 사진", '<div class="ed-box"><p class="ed-p2">' + esc(words) + ' 방을 눌렀을 때 보이는 사진이에요. 방의 글자는 글자를 눌러서 고쳐요.</p><div class="ed-pics" id="edRoomPics">' +
+    tipOpen("방 사진", '<div class="ed-box"><p class="ed-p2">' + esc(words) + '</p><div class="ed-pics" id="edRoomPics">' +
       list.map(function (o) { return '<div class="it"' + (o.gone ? ' style="opacity:.3"' : "") + '><button type="button" data-rp="' + o.i + '" aria-label="사진 ' + (o.i + 1) + ' 바꾸기">' + (o.url ? '<img src="' + esc(o.url) + '" alt="">' : "") + '</button><button type="button" class="del" data-rx="' + o.i + '" aria-label="' + (o.gone ? "다시 넣기" : "빼기") + '">' + (o.gone ? "+" : IC.x) + '</button></div>'; }).join("") + '</div>' +
-      '<input type="file" accept="image/*" id="edRoomFile" class="ed-sr"><button type="button" class="ed-btn ghost" id="edRoomAdd">사진 추가</button><p class="ed-p2" id="edRoomMsg">사진을 누르면 바꿀 수 있고, ×로 뺄 수 있어요.</p></div>');
+      '<input type="file" accept="image/*" id="edRoomFile" class="ed-sr"><button type="button" class="ed-btn ghost" id="edRoomAdd">사진 추가</button><p class="ed-p2" id="edRoomMsg"></p></div>');
     var target = -1, fi = $("#edRoomFile");
     function set(i, id) { var a = (S.rooms[rk] || []).slice(); while (a.length < list.length) a.push(null); a[i] = id; S.rooms[rk] = a; commit(true); render(); var again = $('.ed-room[data-rk="' + rk + '"]', canvas); if (again) select(again); }
     $$("[data-rp]", tip).forEach(function (x) { x.addEventListener("click", function () { target = +x.dataset.rp; fi.click(); }); });
@@ -449,7 +455,7 @@
   }
   function tipMarquee() {
     var words = S.marquee ? S.marquee.split(NL).filter(function (x) { return x.trim(); }) : mqWords(sel);
-    tipOpen("흘러가는 글", '<div class="ed-box"><p class="ed-p2">화면에서 옆으로 흘러가는 소식이에요. 한 줄에 하나씩 적으면 사이사이에 ✦ 표시가 들어가요.</p><label class="ed-sr" for="edTa">흘러갈 글</label><textarea class="ed-ta" id="edTa" rows="5"></textarea>' +
+    tipOpen("흘러가는 글", '<div class="ed-box"><label class="ed-sr" for="edTa">흘러갈 글</label><textarea class="ed-ta" id="edTa" rows="5"></textarea>' +
       (S.marquee ? '<button type="button" class="ed-link" id="edMqReset">원래 글로 되돌리기</button>' : '') + '</div>');
     var ta = $("#edTa"); ta.value = words.join(NL);
     ta.addEventListener("input", function () { var v = ta.value.split(NL).filter(function (x) { return x.trim(); }); if (v.length) { S.marquee = v.join(NL); mqSet(sel, v); commit(); } });
@@ -459,11 +465,11 @@
   function tipPhoto() {
     var pk = sel.dataset.pk, mine = !!photoUrl(pk), pim = sel.tagName === "IMG" ? sel : sel.querySelector("img"), src = photoUrl(pk) || (pim ? pim.currentSrc || pim.src : sel.tagName === "CANVAS" ? T.photoUrl(pk) : ""), fit = S.fit[pk] || "";
     tipOpen("사진", layerNote() + '<div class="ed-box">' +
-      (src ? '<img class="ed-thumb" src="' + esc(src) + '" alt="">' : '<p class="ed-p2">아직 사진이 없는 자리예요. 사진을 올리면 이 자리에 들어가요.</p>') +
+      (src ? '<img class="ed-thumb" src="' + esc(src) + '" alt="">' : '') +
       '<input type="file" accept="image/*" id="edFile" class="ed-sr"><button type="button" class="ed-btn" id="edPick">내 사진 올리기</button>' +
       (S.lib.length ? '<button type="button" class="ed-btn ghost" id="edFromLib">올려 둔 사진에서 고르기</button>' : '') +
       '<div class="ed-tools" role="group" aria-label="사진 채우는 방식"><button type="button" data-fit="cover" aria-pressed="' + (fit === "cover") + '">꽉 채우기</button><button type="button" data-fit="contain" aria-pressed="' + (fit === "contain") + '">통째로 보이기</button></div>' +
-      '<p class="ed-p2" id="edPhotoMsg">폰에서는 사진첩이나 카메라에서 고를 수 있어요. 큰 사진은 자동으로 알맞은 크기로 줄여서 저장해요.</p>' +
+      '<p class="ed-p2" id="edPhotoMsg"></p>' +
       (mine ? '<button type="button" class="ed-link" id="edPhotoReset">원래 사진으로 되돌리기</button>' : '') + '</div>' + openBtn());
     bindLayer(); bindOpen();
     $("#edPick").addEventListener("click", function () { $("#edFile").click(); });
@@ -518,13 +524,40 @@
     $$(".ed [data-p]").forEach(function (x) { x.setAttribute("aria-pressed", x.dataset.p === id); });
     pop.innerHTML = '<div class="ed-ph"><b>' + TITLE[id] + '</b><button type="button" class="ed-x" id="edPopX" aria-label="닫기">' + IC.x + '</button></div><div class="ed-pb" id="edPb"></div>';
     $("#edPopX").addEventListener("click", closePanel);
-    refreshPanel(); drawFiles();
+    refreshPanel(); drawFiles(); placePop();
   }
+  /* the panel can be moved out of the way by its top line (computers only); it stays where it was put, a double click puts it back */
+  var POP_KEY = "1440-edit-pop", popPos = null;
+  try { popPos = JSON.parse(localStorage.getItem(POP_KEY) || "null"); } catch (e) {}
+  function placePop() {
+    if (phone.matches || !popPos) { pop.style.left = pop.style.top = pop.style.right = ""; return; }
+    var top = ($(".ed-top", root) || {}).offsetHeight || 0, w = pop.offsetWidth, x = Math.max(0, Math.min(popPos.x, root.clientWidth - w)), y = Math.max(top, Math.min(popPos.y, root.clientHeight - 40));
+    pop.style.left = x + "px"; pop.style.top = y + "px"; pop.style.right = "auto";
+  }
+  /* a floating window moves by its title line (computers): the panel remembers where it was put; double click puts it back */
+  function movable(box, moved, reset) {
+    box.addEventListener("pointerdown", function (e) {
+      var h = e.target.closest(".ed-ph"); if (!h || phone.matches || e.button !== 0 || e.target.closest("button")) return;
+      e.preventDefault();
+      var r = box.getBoundingClientRect(), R = root.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+      try { h.setPointerCapture(e.pointerId); } catch (z) {}
+      box.classList.add("moving");
+      function mv(ev) { moved(ev.clientX - R.left - dx, ev.clientY - R.top - dy, false); }
+      function up(ev) { h.removeEventListener("pointermove", mv); h.removeEventListener("pointerup", up); h.removeEventListener("pointercancel", up); box.classList.remove("moving"); moved(ev.clientX - R.left - dx, ev.clientY - R.top - dy, true); }
+      h.addEventListener("pointermove", mv); h.addEventListener("pointerup", up); h.addEventListener("pointercancel", up);
+    });
+    box.addEventListener("dblclick", function (e) { if (e.target.closest(".ed-ph") && !e.target.closest("button")) reset(); });
+  }
+  movable(pop, function (x, y, end) { popPos = { x: x, y: y }; placePop(); if (end) try { localStorage.setItem(POP_KEY, JSON.stringify(popPos)); } catch (z) {} },
+    function () { popPos = null; try { localStorage.removeItem(POP_KEY); } catch (z) {} placePop(); });
+  /* the small window next to a chosen piece stays where it was moved until it is closed */
+  movable(tip, function (x, y) { tipPos = { x: x, y: y }; placeTip(); }, function () { tipPos = null; placeTip(); });
+  window.addEventListener("resize", function () { if (!pop.hidden) placePop(); });
   function closePanel() { panel = null; pop.hidden = true; pop.innerHTML = ""; $$(".ed [data-p]").forEach(function (x) { x.setAttribute("aria-pressed", "false"); }); drawFiles(); }
   function refreshPanel() {
     if (!panel || pop.hidden) return;
     var pb = $("#edPb"); if (!pb) return;
-    if (phone.matches && DESK_ONLY[panel]) { pb.innerHTML = '<div class="ed-box"><h3 class="ed-h">컴퓨터에서 바꿀 수 있어요</h3><p class="ed-p2">폰에서는 글과 사진을 고치고 공개할 수 있어요. 페이지 구성, 배경, 글꼴과 색, 스크롤 효과, 기능 켜고 끄기는 컴퓨터로 들어와서 해 주세요.</p></div>'; return; }
+    if (phone.matches && DESK_ONLY[panel]) { pb.innerHTML = '<div class="ed-box"><h3 class="ed-h">컴퓨터에서 바꿀 수 있어요</h3><p class="ed-p2">컴퓨터에서 바꿀 수 있어요.</p></div>'; return; }
     ({ blocks: panelBlocks, texts: panelTexts, images: panelImages, bg: panelBg, type: panelType, motion: panelMotion, feat: panelFeat, site: panelSite })[panel](pb);
   }
   root.addEventListener("click", function (e) { var b = e.target.closest("[data-p]"); if (b) openPanel(b.dataset.p); });
@@ -536,9 +569,9 @@
     commit(true); var v = viewOf(), st = v ? v.scrollTop : 0; render(); var v2 = viewOf(); if (v2) v2.scrollTop = st;
   }
   function panelBlocks(pb) {
-    if (!gen) { pb.innerHTML = '<div class="ed-box"><h3 class="ed-h">이 템플릿은 구성이 정해져 있어요</h3><p class="ed-p2">손으로 만든 템플릿이라 첫 화면 아래 부분을 바꿀 수 없어요. 글, 사진, 색, 메뉴 기능은 바꿀 수 있어요.</p></div>'; return; }
+    if (!gen) { pb.innerHTML = '<div class="ed-box"><p class="ed-p2">구성이 정해진 템플릿이에요.</p></div>'; return; }
     var mp = moreParts(), left = GEN.MORE.blocks.filter(function (k) { return mp.blocks.indexOf(k) < 0; });
-    pb.innerHTML = '<div class="ed-box"><p class="ed-p2">첫 화면 아래에 이어지는 부분이에요. 끌어서 순서를 바꾸고, ✕로 빼고, 아래에서 더할 수 있어요.</p></div>' +
+    pb.innerHTML = '<div class="ed-box"></div>' +
       '<div class="ed-box"><div class="ed-blk lock"><span class="ed-grip" aria-hidden="true">•</span><span class="n">첫 화면<small>' + esc(GEN.layouts[gen.layout].ko) + '</small></span><span></span></div>' +
       '<div id="edBlks">' + mp.blocks.map(function (k, i) {
         return '<div class="ed-blk" draggable="true" data-i="' + i + '"><span class="ed-grip" aria-hidden="true">⋮⋮</span><button type="button" class="n" data-go="' + i + '" style="text-align:left">' + BLK[k] + '<small>' + GEN.MORE.en[k] + '</small></button><span class="b"><button type="button" data-mv="-1" aria-label="위로" ' + (i ? "" : "disabled") + '>' + IC.up + '</button><button type="button" data-mv="1" aria-label="아래로" ' + (i < mp.blocks.length - 1 ? "" : "disabled") + '>' + IC.down + '</button><button type="button" data-rm aria-label="빼기">' + IC.x + '</button></span></div>';
@@ -564,16 +597,16 @@
     var texts = [], seen = {}, pics = [], pseen = {}, slots = $$(".ed-slot", canvas), mq = $(".ed-mq", canvas);
     $$(".ed-t:not(.ed-slot)", canvas).forEach(function (el) { var o = el.dataset.orig; if (seen[o]) return; seen[o] = 1; texts.push(el); });
     $$(".ed-p", canvas).forEach(function (el) { var k = el.dataset.pk; if (pseen[k]) return; pseen[k] = 1; pics.push(el); });
-    var h = '<div class="ed-box"><p class="ed-p2">' + (mode === "edit" ? "화면에서 직접 눌러도 되고, 여기서 골라도 돼요. 바꾼 내용은 자동으로 저장돼요." : "지금은 미리보기 중이에요. 고치려면 위의 화살표 버튼(" + CMD + "\\)을 누르세요.") + '</p></div>';
+    var h = '<div class="ed-box">' + (mode === "edit" ? "" : '<p class="ed-p2">미리보기 중 · ' + CMD + '\\</p>') + '</div>';
     if (pics.length) h += '<div class="ed-box"><h3 class="ed-h">사진 ' + pics.length + '</h3><div class="ed-pics">' + pics.slice(0, 40).map(function (el, i) {
       var im = el.tagName === "IMG" ? el : el.querySelector("img"), src = photoUrl(el.dataset.pk) || (im ? im.currentSrc || im.src : ""); return '<button type="button" data-p="' + i + '" aria-label="사진 ' + (i + 1) + '">' + (src ? '<img src="' + esc(src) + '" alt="">' : "") + '</button>'; }).join("") + '</div></div>';
-    if (slots.length) h += '<div class="ed-box"><h3 class="ed-h">글을 넣을 자리 ' + slots.length + '</h3><p class="ed-p2">회색 막대는 글이 들어갈 자리예요.</p><ul class="ed-rows">' + slots.slice(0, 40).map(function (el, i) {
+    if (slots.length) h += '<div class="ed-box"><h3 class="ed-h">글을 넣을 자리 ' + slots.length + '</h3><ul class="ed-rows">' + slots.slice(0, 40).map(function (el, i) {
       var v = S.slots[el.dataset.sk]; return '<li><button type="button" data-s="' + i + '"><span class="t">' + (v ? esc(v.slice(0, 40)) : "자리 " + (i + 1)) + '</span><span class="k">' + (v ? "고치기" : "글 넣기") + '</span></button></li>'; }).join("") + '</ul></div>';
     if (texts.length) h += '<div class="ed-box"><h3 class="ed-h">글 ' + texts.length + '</h3><ul class="ed-rows">' + texts.slice(0, 80).map(function (el, i) {
       return '<li><button type="button" data-t="' + i + '"><span class="t">' + esc(el.textContent.trim().slice(0, 60)) + '</span><span class="k">고치기</span></button></li>'; }).join("") + '</ul></div>';
     if (mq) h += '<div class="ed-box"><h3 class="ed-h">흘러가는 글</h3><ul class="ed-rows"><li><button type="button" id="edMqRow"><span class="t">' + esc(mqWords(mq).slice(0, 3).join(" · ")) + '</span><span class="k">고치기</span></button></li></ul></div>';
     var ops = openers();
-    if (ops.length) h += '<div class="ed-box"><h3 class="ed-h">다른 화면도 고치기</h3><p class="ed-p2">방문자가 눌러 열어 보는 화면이에요. 열고 그 안의 글과 사진을 고쳐 보세요.</p><ul class="ed-rows">' + ops.map(function (o, i) { return '<li><button type="button" data-o="' + i + '"><span class="t">' + o.label + '</span><span class="k">열기</span></button></li>'; }).join("") + '</ul></div>';
+    if (ops.length) h += '<div class="ed-box"><h3 class="ed-h">다른 화면도 고치기</h3><ul class="ed-rows">' + ops.map(function (o, i) { return '<li><button type="button" data-o="' + i + '"><span class="t">' + o.label + '</span><span class="k">열기</span></button></li>'; }).join("") + '</ul></div>';
     pb.innerHTML = h;
     function pick(el) { scrollTo(el); setTimeout(function () { select(el); }, 40); }
     $$("[data-t]", pb).forEach(function (x) { x.addEventListener("click", function () { pick(texts[+x.dataset.t]); }); });
@@ -586,9 +619,9 @@
   /* -- my pictures: put in once, use anywhere (click one while a picture on the page is chosen, or drag it onto a picture) -- */
   function panelImages(pb) {
     var pic = sel && sel.classList.contains("ed-p") ? sel : null;
-    pb.innerHTML = '<label class="ed-drop-zone" id="edZone"><span><b>사진 올리기</b></span><span>여기에 끌어 놓거나 눌러서 고르세요 (여러 장 가능)</span><input type="file" accept="image/*" multiple id="edLibFile" class="ed-sr"></label>' +
-      '<p class="ed-p2" id="edLibMsg">' + (pic ? "지금 고른 사진 자리에 넣을 사진을 아래에서 누르세요." : "페이지의 사진을 먼저 누르고 아래 사진을 누르면 그 자리에 들어가요. 사진을 끌어서 페이지의 사진 위에 놓아도 돼요.") + '</p>' +
-      (S.lib.length ? '<div class="ed-pics">' + S.lib.map(function (it) { return DATA[it.id] ? '<div class="it"><button type="button" data-u="' + it.id + '" draggable="true" aria-label="' + esc(it.name) + '"><img src="' + esc(DATA[it.id]) + '" alt=""></button><button type="button" class="del" data-del="' + it.id + '" aria-label="지우기">' + IC.x + '</button></div>' : ""; }).join("") + '</div>' : '<p class="ed-p2">아직 올린 사진이 없어요.</p>');
+    pb.innerHTML = '<label class="ed-drop-zone" id="edZone"><span><b>사진 올리기</b></span><span>끌어 놓거나 눌러서 올리기</span><input type="file" accept="image/*" multiple id="edLibFile" class="ed-sr"></label>' +
+      '<p class="ed-p2" id="edLibMsg">' + (pic ? "넣을 사진을 누르세요" : "") + '</p>' +
+      (S.lib.length ? '<div class="ed-pics">' + S.lib.map(function (it) { return DATA[it.id] ? '<div class="it"><button type="button" data-u="' + it.id + '" draggable="true" aria-label="' + esc(it.name) + '"><img src="' + esc(DATA[it.id]) + '" alt=""></button><button type="button" class="del" data-del="' + it.id + '" aria-label="지우기">' + IC.x + '</button></div>' : ""; }).join("") + '</div>' : '<p class="ed-p2">없음</p>');
     var zone = $("#edZone", pb), inp = $("#edLibFile", pb);
     function many(files) {
       var fs = [].slice.call(files || []).filter(function (f) { return /^image\//.test(f.type) || /\.(jpe?g|png|gif|webp|avif)$/i.test(f.name); }); if (!fs.length) return;
@@ -614,7 +647,7 @@
     function sw(list, cur, kind) { return '<div class="ed-sws">' + list.map(function (c) { return '<button type="button" class="ed-c" style="background:' + c + '" aria-label="' + c + '" aria-pressed="' + (c.toLowerCase() === String(cur).toLowerCase()) + '" data-c="' + c + '" data-kind="' + kind + '"></button>'; }).join("") + '<input type="color" class="ed-cin" value="' + (/^#[0-9a-f]{6}$/i.test(cur) ? cur : "#ffffff") + '" data-kind="' + kind + '" aria-label="직접 고르기"></div>'; }
     pb.innerHTML = '<div class="ed-box"><h3 class="ed-h">바탕색</h3>' + sw(BGS, bg, "bg") + '</div><div class="ed-box"><h3 class="ed-h">글자색</h3>' + sw(INKS, ink, "ink") + (low ? '<p class="ed-warn">글자가 바탕과 비슷해서 읽기 어려워요. 다른 색을 골라 보세요.</p>' : '') + '</div>' +
       '<div class="ed-box"><h3 class="ed-h">글꼴</h3><div class="ed-faces">' + Object.keys(GEN.FACES).map(function (k) { return '<button type="button" class="ed-face" aria-pressed="' + (k === face) + '" data-f="' + k + '"><span class="s" style="font-family:' + GEN.FACES[k][0].replace(/"/g, "'") + ';font-stretch:' + GEN.FACES[k][1] + '">가나다 Abc</span><span class="l">' + FACE[k] + '</span></button>'; }).join("") + '</div>' +
-      (!gen ? '<p class="ed-p2">이 템플릿은 일부 글에만 글꼴이 적용될 수 있어요.</p>' : '') + '</div><p class="ed-p2">개별 글의 크기와 굵기는 화면에서 그 글을 눌러 바꿔요.</p>' +
+      (!gen ? '' : '') + '</div>' +
       ((S.bg || S.ink || S.face) ? '<button type="button" class="ed-link" id="edLookReset">색과 글꼴을 원래대로</button>' : '');
     $$(".ed-c", pb).forEach(function (x) { x.addEventListener("click", function () { S[x.dataset.kind] = x.dataset.c === orig[x.dataset.kind] ? null : x.dataset.c; commit(true); render(); }); });
     $$(".ed-cin", pb).forEach(function (x) { x.addEventListener("change", function () { S[x.dataset.kind] = x.value; commit(true); render(); }); });
@@ -632,16 +665,16 @@
     if (on && k === "hours") { var hh = gen && gen.hours || [10 + (gen ? gen.seed % 3 : 0), 18 + (gen ? gen.seed % 3 : 0)]; set = '<label class="ed-sr" for="edO">여는 시각</label>' + sel24("edO", hh[0]) + '<span>시부터</span>' + sel24("edC", hh[1]) + '<span>시까지</span>'; }
     if (on && k === "countdown") { var u = S.until || (gen && gen.until) || ""; set = '<label for="edU">날짜</label><input class="ed-in" type="date" id="edU" value="' + esc(u || defDate()) + '">'; }
     if (on && k === "marquee") set = '<span class="ed-p2">화면 아래 흘러가는 글을 눌러 문구를 고쳐요.</span>';
-    return '<div class="ed-row"><span class="n">' + d[0] + '</span><button type="button" class="ed-sw" role="switch" aria-checked="' + on + '" aria-label="' + esc(d[0]) + '" data-k="' + k + '" data-g="' + gid + '"' + (locked && on ? ' aria-disabled="true"' : "") + '></button><span class="h">' + d[1] + '</span>' + (set ? '<div class="set">' + set + '</div>' : "") + '</div>';
+    return '<div class="ed-row" title="' + esc(d[1]) + '"><span class="n">' + d[0] + '</span><button type="button" class="ed-sw" role="switch" aria-checked="' + on + '" aria-label="' + esc(d[0]) + '" data-k="' + k + '" data-g="' + gid + '"' + (locked && on ? ' aria-disabled="true"' : "") + '></button>' + (set ? '<div class="set">' + set + '</div>' : "") + '</div>';
   }
   function panelFeat(pb) {
     var h = "", groups = null;
     if (!gen) {
       var ex = S.extra || orig.extra;
-      h += '<div class="ed-box"><p class="ed-p2">이 템플릿은 화면 구성이 정해져 있어서 메뉴에 넣을 기능만 바꿀 수 있어요.</p></div><div class="ed-grp"><h3 class="ed-h">메뉴에 넣을 것</h3>' + ["search", "news", "clock", "contact"].map(function (k) { return frow(k, ex.indexOf(k) >= 0, "menu", false); }).join("") + '</div>';
+      h += '<div class="ed-box"><p class="ed-p2">메뉴 기능만 바꿀 수 있어요.</p></div><div class="ed-grp"><h3 class="ed-h">메뉴에 넣을 것</h3>' + ["search", "news", "clock", "contact"].map(function (k) { return frow(k, ex.indexOf(k) >= 0, "menu", false); }).join("") + '</div>';
     } else {
       var cur = feats(); groups = GEN.featuresFor(gen);
-      h += '<div class="ed-box"><p class="ed-p2">스위치를 켜면 바로 페이지에 나타나요. 눌러 보려면 위의 화살표 버튼(' + CMD + '\\)을 누르세요.</p></div>';
+      h += '<div class="ed-box"></div>';
       groups.forEach(function (g) { h += '<div class="ed-grp"><h3 class="ed-h">' + (GROUP[g.id] || g.id) + '</h3>' + g.items.map(function (k) { return frow(k, cur.indexOf(k) >= 0, g.id, g.type === "radio" && !g.none); }).join("") + '</div>'; });
     }
     pb.innerHTML = h;
@@ -665,12 +698,12 @@
   /* -- the site as a whole -- */
   function panelSite(pb) {
     var name = T.site || T.defName, cur = S.texts[name] !== undefined ? S.texts[name] : name, host = T.host;
-    pb.innerHTML = '<div class="ed-box"><h3 class="ed-h">사이트 이름</h3><label class="ed-sr" for="edName">사이트 이름</label><input class="ed-in" id="edName" type="text" maxlength="40"><p class="ed-p2">페이지 곳곳에 나오는 이름이 한 번에 바뀌어요.</p></div>' +
+    pb.innerHTML = '<div class="ed-box"><h3 class="ed-h">사이트 이름</h3><label class="ed-sr" for="edName">사이트 이름</label><input class="ed-in" id="edName" type="text" maxlength="40"></div>' +
       '<div class="ed-box"><h3 class="ed-h">사이트 주소</h3><p class="ed-p2"><b style="color:#000">' + esc(host) + '</b></p><button type="button" class="ed-btn ghost" id="edAddr">주소 정하기</button></div>' +
-      '<div class="ed-box"><h3 class="ed-h">파비콘 (탭에 보이는 작은 아이콘)</h3><div class="ed-tabmock"><img id="edFavPrev" alt="" ' + (S.fav ? 'src="' + esc(S.fav) + '"' : 'hidden') + '><span class="ed-favdef"' + (S.fav ? ' hidden' : '') + '>1440</span><span class="t">' + esc(S.title || cur) + '</span></div><input type="file" accept="image/*,.ico,.svg" id="edFavFile" class="ed-sr"><button type="button" class="ed-btn ghost" id="edFavPick">' + (S.fav ? "다른 아이콘으로 바꾸기" : "아이콘 올리기") + '</button>' + (S.fav ? '<button type="button" class="ed-link" id="edFavOff">기본 아이콘으로 되돌리기</button>' : '') + '<p class="ed-p2" id="edFavMsg">정사각형 이미지가 좋아요. 자동으로 64×64로 맞춰요.</p></div>' +
-      '<div class="ed-box"><h3 class="ed-h">검색에 나올 제목과 설명</h3><label class="ed-sr" for="edTitle">제목</label><input class="ed-in" id="edTitle" type="text" maxlength="60" placeholder="사이트 제목"><label class="ed-sr" for="edDesc">설명</label><textarea class="ed-ta" id="edDesc" rows="3" maxlength="160" placeholder="이 사이트를 한두 문장으로 소개해 보세요"></textarea><p class="ed-p2">공개한 뒤 검색 결과와 링크 미리보기에 쓰여요.</p></div>' +
-      (phone.matches ? "" : '<div class="ed-box"><h3 class="ed-h">단축키</h3><ul class="ed-rows"><li><span class="t">되돌리기</span><span class="k ed-kbd">' + CMD + 'Z</span></li><li><span class="t">다시 하기</span><span class="k ed-kbd">' + CMD + '⇧Z</span></li><li><span class="t">미리보기 켜고 끄기</span><span class="k ed-kbd">' + CMD + '\</span></li><li><span class="t">폰 · 컴퓨터 화면 바꾸기</span><span class="k ed-kbd">' + CMD + '⇧X</span></li><li><span class="t">공개하기</span><span class="k ed-kbd">' + CMD + 'P</span></li><li><span class="t">고르기 풀기 · 창 닫기</span><span class="k ed-kbd">Esc</span></li></ul></div>') +
-      '<div class="ed-box"><h3 class="ed-h">저장</h3><p class="ed-p2">고친 내용은 자동으로 이 브라우저에 초안으로 저장돼요. 공개하기 전에는 다른 사람에게 보이지 않아요.</p><button type="button" class="ed-link" id="edReset">모두 처음 상태로 되돌리기</button></div>';
+      '<div class="ed-box"><h3 class="ed-h">파비콘</h3><div class="ed-tabmock"><img id="edFavPrev" alt="" ' + (S.fav ? 'src="' + esc(S.fav) + '"' : 'hidden') + '><span class="ed-favdef"' + (S.fav ? ' hidden' : '') + '>1440</span><span class="t">' + esc(S.title || cur) + '</span></div><input type="file" accept="image/*,.ico,.svg" id="edFavFile" class="ed-sr"><button type="button" class="ed-btn ghost" id="edFavPick">' + (S.fav ? "다른 아이콘으로 바꾸기" : "아이콘 올리기") + '</button>' + (S.fav ? '<button type="button" class="ed-link" id="edFavOff">기본 아이콘으로 되돌리기</button>' : '') + '<p class="ed-p2" id="edFavMsg">정사각형 · 64×64</p></div>' +
+      '<div class="ed-box"><h3 class="ed-h">검색</h3><label class="ed-sr" for="edTitle">제목</label><input class="ed-in" id="edTitle" type="text" maxlength="60" placeholder="사이트 제목"><label class="ed-sr" for="edDesc">설명</label><textarea class="ed-ta" id="edDesc" rows="3" maxlength="160" placeholder="설명"></textarea></div>' +
+      (phone.matches ? "" : '<div class="ed-box"><h3 class="ed-h">단축키</h3><ul class="ed-rows"><li><span class="t">되돌리기</span><span class="k ed-kbd">' + CMD + 'Z</span></li><li><span class="t">다시 하기</span><span class="k ed-kbd">' + CMD + '⇧Z</span></li><li><span class="t">미리보기 켜고 끄기</span><span class="k ed-kbd">' + CMD + '\\</span></li><li><span class="t">폰 · 컴퓨터 화면 바꾸기</span><span class="k ed-kbd">' + CMD + '⇧X</span></li><li><span class="t">공개하기</span><span class="k ed-kbd">' + CMD + 'P</span></li><li><span class="t">고르기 풀기 · 창 닫기</span><span class="k ed-kbd">Esc</span></li></ul></div>') +
+      '<div class="ed-box"><h3 class="ed-h">저장</h3><button type="button" class="ed-link" id="edReset">모두 처음 상태로 되돌리기</button></div>';
     var nm = $("#edName", pb), tt = $("#edTitle", pb), ds = $("#edDesc", pb); nm.value = cur; tt.value = S.title || ""; ds.value = S.desc || "";
     nm.addEventListener("input", function () {
       var v = nm.value; $$(".ed-t:not(.ed-slot)", canvas).forEach(function (el) { if (el.dataset.orig === name) el.textContent = v; });
@@ -700,13 +733,13 @@
     var bg = S.bg || orig.bg, url = S.bgImg && DATA[S.bgImg], fit = S.bgFit || "cover";
     return '<div class="ed-box"><h3 class="ed-h">바탕색</h3>' + swHtml(BGS, bg, "bg") + '</div>' +
       '<div class="ed-box"><h3 class="ed-h">배경 사진</h3>' +
-      (url ? '<img class="ed-thumb" src="' + esc(url) + '" alt="">' : '<p class="ed-p2">사진을 올리면 페이지 뒤에 깔려요. 글이 잘 안 보이면 사진을 어둡게 하거나 글자색을 바꿔 보세요.</p>') +
+      (url ? '<img class="ed-thumb" src="' + esc(url) + '" alt="">' : '') +
       '<input type="file" accept="image/*" id="edBgFile" class="ed-sr"><button type="button" class="ed-btn" id="edBgPick">' + (url ? "다른 사진으로 바꾸기" : "배경 사진 올리기") + '</button>' +
       (S.lib.length ? '<button type="button" class="ed-btn ghost" id="edBgLib">올려 둔 사진에서 고르기</button><div class="ed-pics" id="edBgPics" hidden>' + S.lib.map(function (it) { return DATA[it.id] ? '<button type="button" data-u="' + it.id + '" aria-label="' + esc(it.name) + '"><img src="' + esc(DATA[it.id]) + '" alt=""></button>' : ""; }).join("") + '</div>' : "") +
       (url ? '<div class="ed-tools" role="group" aria-label="배경 사진 놓는 방식"><button type="button" data-bf="cover" aria-pressed="' + (fit === "cover") + '">꽉 채우기</button><button type="button" data-bf="contain" aria-pressed="' + (fit === "contain") + '">통째로</button><button type="button" data-bf="tile" aria-pressed="' + (fit === "tile") + '">타일처럼 반복</button></div>' +
         '<label class="ed-rng"><span>사진 어둡게</span><input type="range" id="edBgDim" min="0" max="80" step="5" value="' + Math.round((+S.bgDim || 0) * 100) + '"></label>' +
         '<button type="button" class="ed-link" id="edBgOff">배경 사진 빼기</button>' : "") +
-      '<p class="ed-p2" id="edBgMsg">폰에서도 사진을 고를 수 있어요. 큰 사진은 알맞은 크기로 줄여서 저장해요.</p></div>';
+      '<p class="ed-p2" id="edBgMsg"></p></div>';
   }
   function bgBind(root, inTip) {
     function redo() { render(); if (inTip) openBgTip(); }
@@ -723,7 +756,7 @@
     var dm = $("#edBgDim", root); if (dm) dm.addEventListener("input", function () { S.bgDim = +dm.value / 100; applyBg(viewOf()); commit(); });
     var off = $("#edBgOff", root); if (off) off.addEventListener("click", function () { S.bgImg = null; commit(true); redo(); });
   }
-  function panelBg(pb) { pb.innerHTML = bgHtml() + '<p class="ed-p2">페이지의 빈 곳을 눌러도 이 창이 열려요.</p>'; bgBind(pb, false); }
+  function panelBg(pb) { pb.innerHTML = bgHtml() + ''; bgBind(pb, false); }
   function openBgTip(pt) {
     if (pt) { select(null); bgPt = pt; } else if (!bgTip) return;
     bgTip = true; tipOpen("배경", bgHtml()); bgBind(tip, true);
@@ -736,8 +769,8 @@
   function panelMotion(pb) {
     var m = mo(), r = m.r || "", t = m.t || "all", sp = m.sp || "mid";
     function chips(id, cur, list) { return '<div class="ed-chips" data-k="' + id + '">' + list.map(function (x) { return '<button type="button" class="ed-chip" data-v="' + x[0] + '" aria-pressed="' + (cur === x[0]) + '">' + x[1] + '</button>'; }).join("") + '</div>'; }
-    function sw(k, on, n, h) { return '<div class="ed-row"><span class="n">' + n + '</span><button type="button" class="ed-sw" role="switch" aria-checked="' + on + '" data-mk="' + k + '" aria-label="' + n + '"></button><span class="h">' + h + '</span></div>'; }
-    pb.innerHTML = '<div class="ed-box"><p class="ed-p2">화면 아래로 스크롤할 때 나타나는 방식이에요. 고른 뒤 아래 버튼이나 위의 화살표 버튼(' + CMD + '\\)으로 미리보기에서 확인하세요.</p><button type="button" class="ed-btn ghost" id="edMoTry">미리보기로 보기</button></div>' +
+    function sw(k, on, n, h) { return '<div class="ed-row" title="' + esc(h) + '"><span class="n">' + n + '</span><button type="button" class="ed-sw" role="switch" aria-checked="' + on + '" data-mk="' + k + '" aria-label="' + n + '"></button></div>'; }
+    pb.innerHTML = '<div class="ed-box"><button type="button" class="ed-btn ghost" id="edMoTry">미리보기로 보기</button></div>' +
       '<div class="ed-box"><h3 class="ed-h">나타나는 방식</h3>' + chips("r", r, [["", "없음"]].concat(Object.keys(REVEAL).map(function (k) { return [k, REVEAL[k]]; }))) + '</div>' +
       (r ? '<div class="ed-box"><h3 class="ed-h">나타나게 할 것</h3>' + chips("t", t, [["all", "사진과 글"], ["photo", "사진만"], ["text", "글만"]]) + '</div>' +
         '<div class="ed-box"><h3 class="ed-h">속도</h3>' + chips("sp", sp, [["fast", "빠르게"], ["mid", "보통"], ["slow", "천천히"]]) + '</div>' : "") +
@@ -834,7 +867,7 @@
   function siteQ() { return T.site ? "&site=" + encodeURIComponent(T.site) : ""; }
   function pgById(id) { return (S.pages || []).filter(function (p) { return p.id === id; })[0]; }
   function pgNew() { return "p-" + Date.now().toString(36) + Math.floor(Math.random() * 46656).toString(36); }
-  function note(m) { state.textContent = m; }
+  function note(m) { clearTimeout(noteT); state.textContent = m; noteT = setTimeout(function () { noteT = 0; showSave(); }, 3200); }
   function setFiles(on) {
     filesOpen = on; root.classList.toggle("files-open", on);
     var b = $("#edFilesBtn"); if (b) b.setAttribute("aria-pressed", String(on));
@@ -852,7 +885,32 @@
   function fName(f) { return f.name || T.tag(f.n); }
   function fUrl(f) { return "templates.html?edit=" + f.n + (f.site ? "&site=" + encodeURIComponent(f.site) : "") + (f.c ? "&c=" + encodeURIComponent(f.c) : ""); }
   function homeForms() { var h = window.ACCOUNT ? ACCOUNT.state().home.slice() : []; if (!h.some(isMe)) h.unshift({ n: ME.n, site: ME.site, c: ME.c }); return h; }
-  function saveHome(h) { if (!window.ACCOUNT) return; var s = ACCOUNT.state(); s.home = h.map(function (f) { var o = { n: +f.n, site: f.site || "", c: f.c || "" }; if (f.name) o.name = f.name; return o; }); ACCOUNT.saveState(s); }
+  function saveHome(h) { if (!window.ACCOUNT) return; var s = ACCOUNT.state(); s.home = h.map(function (f) { var o = { n: +f.n, site: f.site || "", c: f.c || "" }; if (f.name) o.name = f.name; if (f.p) o.p = f.p; return o; }); ACCOUNT.saveState(s); }
+  /* projects: folders in 홈 that hold forms (a form cannot hold files of its own) */
+  function projs() { return window.ACCOUNT ? (ACCOUNT.state().projects || []).slice() : []; }
+  function projById(id) { return projs().filter(function (p) { return p.id === id; })[0]; }
+  function folderName(pid) { var p = pid && projById(pid); return p ? p.name : "홈"; }
+  function saveProjs(list) { if (!window.ACCOUNT) return; var s = ACCOUNT.state(); s.projects = list; ACCOUNT.saveState(s); }
+  function setFormProj(f, pid, before) {
+    var h = homeForms(), x = h.filter(function (y) { return sameF(y, f); })[0]; if (!x) return;
+    h = h.filter(function (y) { return y !== x; }); x = Object.assign({}, x); if (pid) x.p = pid; else delete x.p;
+    var i = before ? h.findIndex(function (y) { return sameF(y, before); }) : -1; h.splice(i < 0 ? h.length : i, 0, x);
+    if (pid) openF["j:" + pid] = true; saveHome(h); drawFiles();
+  }
+  function addProj() {
+    var list = projs(), nm = "새 프로젝트", i = 2; while (list.some(function (p) { return p.name === nm; })) nm = "새 프로젝트 " + i++;
+    var p = { id: "j" + Date.now().toString(36), name: nm }; list.push(p); saveProjs(list);
+    openF.root = openF.home = true; openF["j:" + p.id] = true; selK = renaming = "j:" + p.id; drawFiles();
+  }
+  function moveProj(id, d, beforeId) {
+    var l = projs(), i = l.findIndex(function (p) { return p.id === id; }); if (i < 0) return; var p = l.splice(i, 1)[0];
+    var j = beforeId ? l.findIndex(function (x) { return x.id === beforeId; }) : i + d; l.splice(Math.max(0, Math.min(l.length, j < 0 && beforeId ? l.length : j)), 0, p); saveProjs(l); drawFiles();
+  }
+  function delProj(id) {
+    var p = projById(id); if (!p) return; var inn = homeForms().filter(function (f) { return f.p === id; });
+    saveHome(homeForms().map(function (f) { if (f.p === id) { f = Object.assign({}, f); delete f.p; } return f; }));
+    saveProjs(projs().filter(function (x) { return x.id !== id; })); selK = null; drawFiles(); note("지웠어요: " + p.name + (inn.length ? " (안의 폼은 홈으로)" : ""));
+  }
   function formByK(k) { var id = k.slice(2); return homeForms().filter(function (f) { return fId(f) === id; })[0]; }
   function draftOf(f) { if (isMe(f)) return S; try { return JSON.parse(localStorage.getItem(fKey(f)) || "null"); } catch (e) { return null; } }
   function writeDraft(f, d) { try { localStorage.setItem(fKey(f), JSON.stringify(d)); return true; } catch (e) { note("저장하지 못했어요"); return false; } }
@@ -867,9 +925,9 @@
   }
   function dropPics(key) { if (!DB) return; try { var t = DB.transaction("photos", "readwrite"); t.objectStore("photos").delete(IDBKeyRange.bound(key + "|", key + "|￿")); } catch (e) {} }
   /* a form put into 홈: a starred template is simply added; a form that already has a draft (or is already in 홈) is copied with its draft */
-  function formToHome(f, after) {
+  function formToHome(f, after, pid) {
     var h = homeForms(), has = isMe(f) || !!localStorage.getItem(fKey(f)) || h.some(function (x) { return sameF(x, f); });
-    var nf = { n: +f.n, site: f.site || "", c: "" };
+    var nf = { n: +f.n, site: f.site || "", c: "" }, inP = pid || (after && after.p); if (inP) { nf.p = inP; openF["j:" + inP] = true; }
     if (has) {
       nf.c = Date.now().toString(36).slice(-5); nf.name = fName(f) + " 복사";
       var d = isMe(f) ? JSON.parse(JSON.stringify(S)) : draftOf(f);
@@ -883,10 +941,12 @@
   }
   function rmForm(f) {
     if (isMe(f)) { note("지금 편집 중인 폼은 지울 수 없어요"); return; }
-    if (!confirm("'" + fName(f) + "'을 홈에서 지울까요? 이 폼의 초안도 함께 지워져요.")) return;
     try { localStorage.removeItem(fKey(f)); } catch (e) {}
     dropPics(fKey(f));
-    saveHome(homeForms().filter(function (x) { return !sameF(x, f); })); selK = null; drawFiles();
+    try { var ed = JSON.parse(localStorage.getItem("1440-edited") || "{}"); delete ed[fKey(f)]; localStorage.setItem("1440-edited", JSON.stringify(ed)); var bl = JSON.parse(localStorage.getItem("1440-last") || "null"); if (bl && sameF(bl, f)) localStorage.removeItem("1440-last"); } catch (e) {} /* My hub must not open a form that is gone */
+    saveHome(homeForms().filter(function (x) { return !sameF(x, f); }));
+    if (window.ACCOUNT) { var st = ACCOUNT.state(); if (st.last && sameF(st.last, f)) { st.last = null; ACCOUNT.saveState(st); } }
+    selK = null; drawFiles(); note("지웠어요: " + fName(f));
   }
   function star(n, on) { var o = starsNow(); if (on) o[n] = 1; else delete o[n]; saveStarsNow(o); openF.fav = true; drawFiles(); }
 
@@ -948,7 +1008,8 @@
   function copyK(k, cut) {
     if (!k) return;
     if (k.indexOf("p:") === 0) { var p = pgById(k.slice(2)); if (!p || p.id === "home") return; clipSet({ op: cut ? "cut" : "copy", kind: "pages", from: ME, items: JSON.parse(JSON.stringify(treeOf(S.pages, p.id))) }); note((cut ? "잘라 냈어요: " : "복사했어요: ") + p.name); return; }
-    if (cut) return;
+    /* cutting a form: pasting it into another folder moves it there */
+    if (cut) { var cf = k.indexOf("f:") === 0 ? formByK(k) : null; if (cf) { clipSet({ op: "cut", kind: "form", form: cf }); note("잘라 냈어요: " + fName(cf)); } return; }
     var f = k.indexOf("f:") === 0 ? formByK(k) : k.indexOf("v:") === 0 ? { n: +k.slice(2), site: T.site || "", c: "" } : null;
     if (f) { clipSet({ op: "copy", kind: "form", form: f }); note("복사했어요: " + fName(f)); }
   }
@@ -980,7 +1041,14 @@
   function pasteK(k) {
     var c = clipGet(); if (!c) { note("붙여 넣을 것이 없어요"); return; }
     k = k || "f:" + fId(ME);
-    if (c.kind === "form") { if (k === "favs" || k.indexOf("v:") === 0) star(c.form.n, true); else formToHome(c.form, k.indexOf("f:") === 0 ? formByK(k) : null); return; }
+    if (c.kind === "form" && c.op === "cut") { /* moving a form from one folder to another */
+      var mf = homeForms().filter(function (x) { return sameF(x, c.form); })[0]; if (!mf) { clipSet(null); return; }
+      if (k === "favs" || k.indexOf("v:") === 0) { star(mf.n, true); return; }
+      var tf = k.indexOf("f:") === 0 ? formByK(k) : null, pid = k.indexOf("j:") === 0 ? k.slice(2) : tf ? tf.p || null : null;
+      clipSet(null); setFormProj(mf, pid, tf && !sameF(tf, mf) ? tf : null); note("옮겼어요: " + fName(mf) + " → " + folderName(pid)); return;
+    }
+    if (c.kind === "form") { if (k === "favs" || k.indexOf("v:") === 0) star(c.form.n, true); else formToHome(c.form, k.indexOf("f:") === 0 ? formByK(k) : null, k.indexOf("j:") === 0 ? k.slice(2) : null); return; }
+    if (c.kind === "pages") { note("폼 안에는 파일을 만들 수 없어요"); return; }
     if (k === "favs" || k.indexOf("v:") === 0) { note("즐겨찾기에는 폼만 넣을 수 있어요"); return; }
     if (k.indexOf("p:") === 0) { var p = pgById(k.slice(2)); if (!p) return; if (p.type === "set") pastePages(c, ME, p.id, null); else pastePages(c, ME, p.parent || null, p.id === "home" ? null : p.id); return; }
     var f = k.indexOf("f:") === 0 ? formByK(k) : ME; pastePages(c, f || ME, null, null);
@@ -990,11 +1058,12 @@
     if (k.indexOf("p:") === 0) delPg(k.slice(2));
     else if (k.indexOf("f:") === 0) { var f = formByK(k); if (f) rmForm(f); }
     else if (k.indexOf("v:") === 0) star(+k.slice(2), false);
+    else if (k.indexOf("j:") === 0) delProj(k.slice(2));
   }
   function renK(k) {
     if (!k) return;
     if (k.indexOf("p:") === 0 && k !== "p:home") renaming = k.slice(2);
-    else if (k.indexOf("f:") === 0) renaming = k;
+    else if (k.indexOf("f:") === 0 || k.indexOf("j:") === 0) renaming = k;
     else return;
     drawFiles();
   }
@@ -1004,6 +1073,7 @@
     if (kind === "p:") { var p = pgById(k.slice(2)); if (!p) return; if (p.type === "set") { openF[p.id] = openF[p.id] === false; drawFiles(); } else if (p.id !== curPage) gotoPage(p.id); return; }
     if (kind === "f:") { var f = formByK(k); if (!f) return; if (isMe(f)) { if (curPage !== "home") gotoPage("home"); } else if (strong) location.href = fUrl(f); return; }
     if (kind === "v:") { var n = +k.slice(2); if (strong && n !== N) location.href = "templates.html?edit=" + n + siteQ(); return; }
+    if (kind === "j:") { openF[k] = openF[k] === false; drawFiles(); return; }
     var o = { root: "root", home: "home", favs: "fav" }[k]; if (o) { openF[o] = openF[o] === false; drawFiles(); }
   }
 
@@ -1023,12 +1093,19 @@
       items.push("-", ["del", "지우기", "Delete", home]);
     } else if (kind === "f:") {
       var f = formByK(k); if (!f) return; var me = isMe(f), st = !!starsNow()[f.n];
-      items.push(["open", me ? "첫 페이지 열기" : "열기", "Enter"], ["ren", "이름 바꾸기", "F2"], "-", ["copy", "복사", K + "C"], ["paste", "붙여넣기", K + "V", !clip], ["newp", "새 페이지", "", !me], "-", [st ? "unstar" : "star", st ? "즐겨찾기에서 빼기" : "즐겨찾기에 넣기"], "-", ["del", "홈에서 지우기", "Delete", me]);
+      items.push(["open", me ? "첫 페이지 열기" : "열기", "Enter"], ["ren", "이름 바꾸기", "F2"], "-", ["cut", "잘라내기", K + "X"], ["copy", "복사", K + "C"], ["paste", "붙여넣기", K + "V", !clip], "-");
+      /* moving to another folder without dragging (phones cannot drag) */
+      var here = f.p && projById(f.p) ? f.p : "";
+      [""].concat(projs().map(function (p) { return p.id; })).forEach(function (id) { if (id !== here) items.push(["mv:" + id, folderName(id) + "(으)로 옮기기"]); });
+      items.push("-", [st ? "unstar" : "star", st ? "즐겨찾기에서 빼기" : "즐겨찾기에 넣기"], "-", ["del", "지우기", "Delete", me]);
+    } else if (kind === "j:") {
+      var pl = projs(), pi = pl.findIndex(function (p) { return p.id === k.slice(2); });
+      items.push(["ren", "이름 바꾸기", "F2"], ["paste", "붙여넣기 (이 프로젝트 안에)", K + "V", !clip], "-", ["jup", "위로 옮기기", "", pi <= 0], ["jdown", "아래로 옮기기", "", pi < 0 || pi >= pl.length - 1], "-", ["del", "프로젝트 지우기", "Delete"]);
     } else if (kind === "v:") {
       items.push(["open", "열기", "Enter", +k.slice(2) === N], ["copy", "복사", K + "C"], ["tohome", "홈에 넣기"], "-", ["del", "즐겨찾기에서 빼기", "Delete"]);
-    } else if (k === "home" || k === "root") items.push(["newp", "새 페이지"], ["news", "새 세트"], ["paste", "붙여넣기", K + "V", !clip]);
+    } else if (k === "home" || k === "root") items.push(["newj", "새 프로젝트"], ["paste", "붙여넣기", K + "V", !clip]);
     else if (k === "favs") items.push(["starme", starsNow()[N] ? "이 폼을 즐겨찾기에서 빼기" : "이 폼을 즐겨찾기에 넣기"], ["paste", "붙여넣기", K + "V", !clip]);
-    pgMenu.innerHTML = items.map(function (i) { return i === "-" ? '<hr>' : '<button type="button" data-m="' + i[0] + '"' + (i[3] ? " disabled" : "") + '><span>' + i[1] + '</span>' + (i[2] ? '<span class="k">' + i[2] + '</span>' : "") + '</button>'; }).join("");
+    pgMenu.innerHTML = items.map(function (i) { return i === "-" ? '<hr>' : '<button type="button" data-m="' + i[0] + '"' + (i[3] ? " disabled" : "") + '><span>' + esc(i[1]) + '</span>' + (i[2] ? '<span class="k">' + i[2] + '</span>' : "") + '</button>'; }).join("");
     pgMenu.hidden = false; var w = pgMenu.offsetWidth, h = pgMenu.offsetHeight;
     pgMenu.style.left = Math.max(6, Math.min(x, window.innerWidth - w - 6)) + "px"; pgMenu.style.top = Math.max(6, Math.min(y, window.innerHeight - h - 6)) + "px";
     $$("[data-m]", pgMenu).forEach(function (b) {
@@ -1039,6 +1116,7 @@
         else if (m === "del") delK(k); else if (m === "newp" || m === "news") { if (kind === "p:") selK = k; else selK = null; addPg(m === "newp" ? "page" : "set"); }
         else if (m === "star" || m === "unstar") star(formByK(k).n, m === "star"); else if (m === "tohome") formToHome({ n: +id, site: T.site || "", c: "" });
         else if (m === "starme") star(N, !starsNow()[N]);
+        else if (m === "newj") addProj(); else if (m === "jup" || m === "jdown") moveProj(id, m === "jup" ? -1 : 1); else if (m.indexOf("mv:") === 0) { var mf = formByK(k); setFormProj(mf, m.slice(3) || null); note("옮겼어요: " + fName(mf) + " → " + folderName(m.slice(3))); }
       });
     });
   }
@@ -1082,14 +1160,24 @@
     var hf = homeForms(), clip = clipGet(), cut = {};
     if (clip && clip.op === "cut" && clip.kind === "pages" && sameF(clip.from, ME)) clip.items.forEach(function (p) { cut[p.id] = 1; });
     var h = '<div class="ed-tree" role="tree" tabindex="0" aria-label="폴더">';
-    h += row({ k: "root", d: 0, tg: openF.root !== false, ic: me ? XI.user : XI.globe, name: me ? me.email : (T.site || T.defName), em: me ? "" : "로그인 전", cls: "root", title: me ? "로그인한 계정" : "처음에 적은 사이트 이름" });
+    h += row({ k: "root", d: 0, tg: openF.root !== false, ic: me ? XI.user : XI.globe, name: me ? me.email : (T.site || T.defName), cls: "root", title: me ? "로그인한 계정" : "처음에 적은 사이트 이름" });
     if (openF.root !== false) {
-      h += row({ k: "home", d: 1, tg: openF.home !== false, ic: XI.home, name: "홈", em: hf.length, cls: "homeh" });
-      if (openF.home !== false) hf.forEach(function (f) {
-        var mine = isMe(f), open = mine && openF.base !== false, k = "f:" + fId(f);
-        h += row({ k: k, d: 2, tg: mine ? open : null, ic: XI.tpl, name: fName(f), em: mine ? "편집 중" : (f.name ? T.tag(f.n) : ""), cls: "site" + (mine && curPage === "home" ? " on" : ""), drag: true, ren: renaming === k, dots: true, title: mine ? "지금 편집 중인 폼" : "두 번 눌러 열기",
+      var pj = projs(), known = {}; pj.forEach(function (p) { known[p.id] = 1; });
+      var cutF = clip && clip.op === "cut" && clip.kind === "form" ? fId(clip.form) : "";
+      /* a form is one file: it opens, it holds nothing inside */
+      var fRow = function (f, d) {
+        var mine = isMe(f), k = "f:" + fId(f);
+        return row({ k: k, d: d, ic: XI.tpl, name: fName(f), em: mine ? "편집 중" : (f.name ? T.tag(f.n) : ""), cls: "site" + (mine ? " on" : ""), drag: true, ren: renaming === k, dots: true, cut: cutF === fId(f), title: mine ? "지금 편집 중인 폼" : "두 번 눌러 열기",
           extra: mine ? "" : '<button type="button" class="dots go" data-gok="' + esc(k) + '" tabindex="-1" aria-label="열기" title="열기">' + XI.out + '</button>' });
-        if (open) { var roots = S.pages.filter(function (p) { return !p.parent && p.id !== "home"; }); h += roots.map(function (p) { return pgRow(p, 3, cut); }).join("") || '<p class="ed-fe" style="--d:3">위의 + 로 페이지와 세트를 더해요</p>'; }
+      };
+      /* 홈 and every project are folders side by side; a form lives in one of them */
+      var loose = hf.filter(function (f) { return !f.p || !known[f.p]; });
+      h += row({ k: "home", d: 1, tg: openF.home !== false, ic: XI.home, name: "홈", em: loose.length, cls: "homeh" });
+      if (openF.home !== false) h += loose.map(function (f) { return fRow(f, 2); }).join("") || '<p class="ed-fe" style="--d:2">비어 있음</p>';
+      pj.forEach(function (p) {
+        var k = "j:" + p.id, open = openF[k] !== false, inn = hf.filter(function (f) { return f.p === p.id; });
+        h += row({ k: k, d: 1, tg: open, ic: open ? XI.dirOpen : XI.dir, name: p.name, em: inn.length, cls: "proj", drag: true, ren: renaming === k, dots: true, title: "프로젝트 · 폼을 끌어다 넣어요" });
+        if (open) h += inn.map(function (f) { return fRow(f, 2); }).join("") || '<p class="ed-fe" style="--d:2">폼을 끌어다 넣어요</p>';
       });
       h += row({ k: "favs", d: 1, tg: openF.fav !== false, ic: XI.star, name: "즐겨찾기", em: fav.length, cls: "favh", extra: '<button type="button" class="dots" id="edStarMe" tabindex="-1" aria-pressed="' + !!st[N] + '" title="이 폼을 즐겨찾기에 ' + (st[N] ? "서 빼기" : "넣기") + '">' + (st[N] ? "★" : "☆") + '</button>' });
       if (openF.fav !== false) h += fav.length ? fav.map(function (n) {
@@ -1109,8 +1197,9 @@
       if (k === "home" || k === "root") return copy ? "copyin" : "into";
       return "";
     }
-    if (sk === "f:") { if (tk === "f:") return "before"; if (k === "favs" || tk === "v:") return "into"; if (k === "home") return copy ? "into" : ""; return ""; }
-    if (sk === "v:") { if (k === "home" || k === "root" || tk === "f:") return "into"; return ""; }
+    if (sk === "f:") { if (tk === "f:" || tk === "j:") return tk === "j:" ? "into" : "before"; if (k === "favs" || tk === "v:") return "into"; if (k === "home") return "into"; return ""; }
+    if (sk === "j:") return tk === "j:" ? "before" : "";
+    if (sk === "v:") { if (k === "home" || k === "root" || tk === "f:" || tk === "j:") return "into"; return ""; }
     return "";
   }
   function doDrop(src, k, mode) {
@@ -1124,11 +1213,14 @@
     }
     if (sk === "f:") {
       var sf = formByK(src); if (!sf) return;
-      if (tk === "f:") { var h = homeForms().filter(function (x) { return !sameF(x, sf); }), i = h.findIndex(function (x) { return fId(x) === k.slice(2); }); h.splice(i < 0 ? h.length : i, 0, sf); saveHome(h); drawFiles(); return; }
+      /* onto a form: before it, in its project; onto a project: into it; onto 홈: out of any project */
+      if (tk === "f:") { var tf = formByK(k); if (tf) setFormProj(sf, tf.p || null, tf); return; }
+      if (tk === "j:") { setFormProj(sf, k.slice(2)); return; }
       if (k === "favs" || tk === "v:") { star(sf.n, true); return; }
-      if (k === "home") formToHome(sf); return;
+      if (k === "home") setFormProj(sf, null); return;
     }
-    if (sk === "v:") formToHome({ n: +src.slice(2), site: T.site || "", c: "" }, tk === "f:" ? formByK(k) : null);
+    if (sk === "j:") { moveProj(src.slice(2), 0, k.slice(2)); return; }
+    if (sk === "v:") formToHome({ n: +src.slice(2), site: T.site || "", c: "" }, tk === "f:" ? formByK(k) : null, tk === "j:" ? k.slice(2) : null);
   }
   /* the tree keeps the keys only while the person is working in it (drawing it again must not take them from the page) */
   document.addEventListener("pointerdown", function (e) { treeFocus = !!(e.target.closest && e.target.closest(".ed-tree")); }, true);
@@ -1139,7 +1231,7 @@
     function rows() { return $$(".ed-pr[data-k]", tree); }
     function mark() { rows().forEach(function (r) { var on = r.dataset.k === selK; r.classList.toggle("sel", on); r.setAttribute("aria-selected", String(on)); if (on) try { r.scrollIntoView({ block: "nearest" }); } catch (e) {} }); }
     function toggleK(k, open) {
-      var map = { root: "root", home: "home", favs: "fav" }, key = map[k] || (k.indexOf("f:") === 0 ? (isMe(formByK(k) || {}) ? "base" : null) : k.slice(2));
+      var map = { root: "root", home: "home", favs: "fav" }, key = map[k] || (k.indexOf("j:") === 0 ? k : k.indexOf("f:") === 0 ? null : k.slice(2));
       if (!key) return false; var now = openF[key] !== false; if (open === now) return false; openF[key] = open; drawFiles(); return true;
     }
     tree.addEventListener("click", function (e) {
@@ -1197,7 +1289,8 @@
       var fin = function (ok) {
         if (done) return; done = true; renaming = null;
         var v = rn.value.trim();
-        if (id0.indexOf("f:") === 0) { var f = formByK(id0); if (ok && v && f) { var h = homeForms().map(function (x) { if (sameF(x, f)) { x = Object.assign({}, x); if (v === T.tag(x.n)) delete x.name; else x.name = v; } return x; }); saveHome(h); } }
+        if (id0.indexOf("j:") === 0) { if (ok && v) saveProjs(projs().map(function (p) { return p.id === id0.slice(2) ? { id: p.id, name: v } : p; })); }
+        else if (id0.indexOf("f:") === 0) { var f = formByK(id0); if (ok && v && f) { var h = homeForms().map(function (x) { if (sameF(x, f)) { x = Object.assign({}, x); if (v === T.tag(x.n)) delete x.name; else x.name = v; } return x; }); saveHome(h); } }
         else { var p = pgById(id0); if (ok && v && p && v !== p.name) { p.name = v; commit(true); if (curPage !== "home" && viewOf()) render(); } }
         drawFiles(); var t = $(".ed-tree"); if (t) t.focus({ preventScroll: true });
       };
@@ -1327,7 +1420,7 @@
     if (!filesOpen) { el.innerHTML = ""; return; }
     if (renaming && $(".rn", el)) return;
     if (!pgById(curPage)) curPage = "home";
-    var h = '<div class="ed-fh"><button type="button" class="sh' + (openS.pages === false ? '' : ' o') + '" data-sec="pages">' + XI.chev + '폴더</button><span class="ed-fa"><button type="button" id="edAddPg" title="새 페이지" aria-label="새 페이지">' + XI.newPage + '</button><button type="button" id="edAddSet" title="새 세트(폴더)" aria-label="새 세트">' + XI.newDir + '</button><button type="button" id="edFold" title="모두 접기" aria-label="모두 접기">' + XI.fold + '</button></span></div>' + treeHtml();
+    var h = '<div class="ed-fh"><button type="button" class="sh' + (openS.pages === false ? '' : ' o') + '" data-sec="pages">' + XI.chev + '폴더</button><span class="ed-fa"><button type="button" id="edAddProj" title="새 프로젝트" aria-label="새 프로젝트">' + XI.newDir + '</button><button type="button" id="edFold" title="모두 접기" aria-label="모두 접기">' + XI.fold + '</button></span></div>' + treeHtml();
     var pdo = openS.pages !== false;
     h = '<section class="ed-sec' + (pdo ? "" : " c") + '">' + h + '</section>';
     h += '<section class="ed-sec' + (openS.tools === false ? " c" : "") + '"><div class="ed-fh"><button type="button" class="sh' + (openS.tools === false ? "" : " o") + '" data-sec="tools">' + XI.chev + '도구</button></div>' +
@@ -1339,9 +1432,8 @@
     $$("[data-lyo]", el).forEach(function (x) { x.addEventListener("click", function () { var k = +x.dataset.lyo, L = LYS.filter(function (l) { return l.layer === k && !l.page; })[0]; flashLayer(L); }); });
     var b3 = $("#ed3d3", el); if (b3) b3.addEventListener("click", function () { if (d3on) close3d(); else open3d(); });
     bindTree(el);
-    $("#edAddPg", el).addEventListener("click", function () { addPg("page"); });
-    $("#edAddSet", el).addEventListener("click", function () { addPg("set"); });
-    $("#edFold", el).addEventListener("click", function () { S.pages.forEach(function (p) { if (p.type === "set") openF[p.id] = false; }); openF.fav = false; drawFiles(); });
+    $("#edAddProj", el).addEventListener("click", addProj);
+    $("#edFold", el).addEventListener("click", function () { projs().forEach(function (p) { openF["j:" + p.id] = false; }); openF.fav = false; drawFiles(); });
   }
   (function () {
     var rs = $("#edRs"), W_KEY = "1440-edit-files-w", raf = 0;
@@ -1400,9 +1492,9 @@
   function closeDlg() { dlg.hidden = true; }
   function publish() {
     var name = ""; try { name = localStorage.getItem("1440-site-name") || T.site || ""; } catch (e) {}
-    $(".ed-dlg-box", dlg).innerHTML = '<h2 class="ed-h" id="edDlgT" style="font-size:1.4em">공개하기</h2><p class="ed-p2">내 사이트 주소를 정해 주세요. 영문 소문자, 숫자, 하이픈(-)을 쓸 수 있어요.</p>' +
+    $(".ed-dlg-box", dlg).innerHTML = '<h2 class="ed-h" id="edDlgT" style="font-size:1.4em">공개하기</h2><p class="ed-p2">영문 소문자 · 숫자 · -</p>' +
       '<div class="ed-addr"><label class="ed-sr" for="edAddrIn">주소</label><input id="edAddrIn" type="text" maxlength="30" value="' + esc(name) + '" placeholder="이름" autocapitalize="off" autocomplete="off" spellcheck="false"><span>.kor.gallery</span></div>' +
-      '<p class="ed-p2" id="edAddrMsg">실제 공개는 준비 중이에요. 지금은 주소만 저장해 둘게요. 고친 내용은 이 브라우저에 초안으로 저장되어 있어요.' + (window.ACCOUNT && ACCOUNT.user ? '' : ' 첫 화면의 Login으로 가입하면 My hub에서 이 폼으로 바로 돌아올 수 있어요.') + '</p>' +
+      '<p class="ed-p2" id="edAddrMsg">공개는 준비 중이에요.</p>' +
       '<div class="ed-dlg-b"><button type="button" class="ed-btn ghost" id="edDlgX">닫기</button><button type="button" class="ed-btn" id="edDlgOk">주소 저장</button></div>';
     dlg.hidden = false; var inp = $("#edAddrIn");
     inp.addEventListener("input", function () { var v = inp.value.toLowerCase().replace(/[\s_]+/g, "-").replace(/[^a-z0-9-]/g, "").slice(0, 30); if (v !== inp.value) inp.value = v; });
@@ -1416,7 +1508,6 @@
     if (!dlg._out) { dlg._out = 1; dlg.addEventListener("click", function (e) { if (e.target === dlg) closeDlg(); }); }
     setTimeout(function () { inp.focus(); }, 0);
   }
-  $("#edPub").addEventListener("click", publish);
 
   /* ---------- keys, as in the tools people already know ---------- */
   document.addEventListener("keydown", function (e) {
@@ -1448,7 +1539,7 @@
         S.pages.push({ id: "t-set", type: "set", name: "세트" }, { id: "t-pg", type: "page", name: "시험 페이지", body: "글", parent: "t-set" });
         drawFiles(); var el = $("#edFiles");
         if (!$('[data-p="bg"]', el) || !$("#ed3d3", el)) cNote(n, "the tools or layers are missing from the side panel");
-        if (!$("#edAddPg", el) || !$("#edAddSet", el) || !$('[data-k="p:t-pg"]', el) || !$("#edStarMe", el)) cNote(n, "the page list is missing its parts");
+        if (!$("#edAddProj", el) || $("#edAddPg", el) || $('[data-k="p:t-pg"]', el) || !$("#edStarMe", el)) cNote(n, "the folder list is missing its parts (or shows files inside a form)");
         movePg("t-pg", "home", false); if (pgById("t-pg").parent) cNote(n, "a page does not move out of a set");
         movePg("t-pg", "t-set", true); if (pgById("t-pg").parent !== "t-set") cNote(n, "a page does not move into a set");
         dupPg("t-pg"); if (S.pages.length !== 4) cNote(n, "a page is not duplicated");
@@ -1610,5 +1701,6 @@
   var wasOpen = true; try { wasOpen = localStorage.getItem(FILES_KEY) !== "0"; } catch (e) {}
   if (!CHECK) $("#edFilesBtn").addEventListener("click", function () { setFiles(!filesOpen); });
   if (!CHECK && !phone.matches) setFiles(true); /* on a computer the panel is always open */
-  openDb(function () { dbLoad(function () { drawFiles(); render(); state.textContent = Object.keys(S.texts).length || Object.keys(S.photos).length || S.feats || S.more || S.bg || S.ink || S.face ? "초안 · 저장됨" : "초안"; hint("글이나 사진을 눌러서 고쳐 보세요"); }); });
+  if (!CHECK && phone.matches) setFiles(false); /* a phone has no side panel: the page is edited by tapping it */
+  openDb(function () { dbLoad(function () { drawFiles(); render(); try { savedAt = JSON.parse(localStorage.getItem("1440-edited") || "{}")[KEY] || 0; } catch (e) {} showSave(); hint("글이나 사진을 눌러서 고쳐 보세요"); }); });
 })();
