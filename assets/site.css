@@ -349,7 +349,7 @@ html.intro .minute { animation: none; }
 .info-page .dim { color: var(--ink-3); }
 .info-page a { transition: color .5s; }
 @media (hover: hover) { .info-page a:hover { color: var(--ink-3); } }
-.info-title { padding-left: 2.4em; }
+.info-title { padding-left: 0; }
 .sq, .no { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.15em; }
 .sq li { display: grid; grid-template-columns: 1.3em 1fr; }
 .sq li::before { content: ""; width: 0.42em; height: 0.42em; margin-top: 0.5em; background: currentColor; }
@@ -357,11 +357,11 @@ html.intro .minute { animation: none; }
 .no li > span:first-child { font-family: var(--mono); font-size: 0.92em; color: var(--ink-3); padding-top: 0.05em; }
 .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.3em 1.6em; border-top: 1px solid var(--ink-4); padding-top: 1.2em; margin-top: 0.6em; }
 .two section { display: grid; gap: 1em; align-content: start; }
-.two h2 { padding-left: 2.4em; }
+.two h2 { padding-left: 0; }
 /* a price list: a small empty box, the name, the price at the end (a list of billing choices) */
 .ck { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.35em; }
 .ck li { display: grid; grid-template-columns: 1.3em 1fr auto; align-items: baseline; gap: 0 0.4em; }
-.ck .b { width: 0.72em; height: 0.72em; border: 1px solid currentColor; align-self: center; }
+.ck .b { width: 0.42em; height: 0.42em; border-radius: 50%; background: currentColor; align-self: center; }
 .ck em { font-style: normal; color: var(--ink-3); margin-left: 0.5em; }
 .ck .v { text-align: right; }
 /* documents: articles set one under the other, each with its short title */
