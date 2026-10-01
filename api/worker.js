@@ -8,6 +8,8 @@
 const DAY = 86400000, MONTH = 30 * DAY, SESSION = 60 * DAY, CODE_LIFE = 10 * 60000;
 const ITER = 100000; /* the most Workers allow for PBKDF2 */
 const enc = new TextEncoder();
+/* what can be bought: the amount is decided here, never by the page */
+const PLANS = { month: { amount: 4900, days: 30, goods: "1440 이용권 30일" }, year: { amount: 46800, days: 365, goods: "1440 이용권 365일" } };
 
 export const UNI = /(^|\.)(ac\.[a-z]{2}|edu(\.[a-z]{2})?)$/i; /* snu.ac.kr, mit.edu, unimelb.edu.au, ox.ac.uk */
 export function uniDomain(email) { const d = String(email).split("@")[1] || ""; return UNI.test(d); }
@@ -17,6 +19,7 @@ const NICK = /^[\p{L}\p{N}_.-]{2,20}$/u;
 function b64(buf) { let s = ""; new Uint8Array(buf).forEach((c) => (s += String.fromCharCode(c))); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
 function unb64(s) { s = s.replace(/-/g, "+").replace(/_/g, "/"); const b = atob(s + "===".slice((s.length + 3) % 4)); return Uint8Array.from(b, (c) => c.charCodeAt(0)); }
 function rand(n) { return crypto.getRandomValues(new Uint8Array(n)); }
+async function hex(s) { return [...new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(s)))].map((c) => c.toString(16).padStart(2, "0")).join(""); }
 async function sha(s) { return b64(await crypto.subtle.digest("SHA-256", enc.encode(s))); }
 async function pbkdf2(pass, salt, iter) {
   const k = await crypto.subtle.importKey("raw", enc.encode(pass), "PBKDF2", false, ["deriveBits"]);
@@ -37,7 +40,7 @@ function readCookie(req, name) { const m = (req.headers.get("cookie") || "").mat
 
 function publicUser(u) {
   let state = {}; try { state = JSON.parse(u.state || "{}"); } catch (e) {}
-  return { id: u.id, nick: u.nick, email: u.email, role: u.role, student: u.student, uniEmail: u.uni_email || "", trialUntil: u.trial_until || 0, state };
+  return { id: u.id, nick: u.nick, email: u.email, role: u.role, student: u.student, uniEmail: u.uni_email || "", trialUntil: u.trial_until || 0, paidUntil: u.paid_until || 0, state };
 }
 async function userOf(env, req) {
   const t = readCookie(req, "sid"); if (!t) return null;
@@ -69,6 +72,52 @@ async function body(req) { try { return await req.json(); } catch (e) { return {
 
 const routes = {
   "GET /api/health": async () => json({ ok: true }),
+
+  /* ---------- paying: a pass of 30 or 365 days, through NICEPAY's payment window (server approval) ----------
+     1. the page asks for an order: the server fixes the amount and keeps the order
+     2. the page opens NICEPAY's window (AUTHNICE.requestPay) with that order
+     3. NICEPAY posts the card authentication to /api/pay/return; the server checks the signature and the amount,
+        approves the payment with NICEPAY, extends the pass, and sends the person back to the first page. */
+  "GET /api/pay/plans": async () => json({ plans: PLANS }),
+
+  "POST /api/pay/order": async (env, req, u) => {
+    if (!u) return fail("로그인해 주세요.", 401);
+    if (!env.NICEPAY_CLIENT_KEY || !env.NICEPAY_SECRET_KEY) return fail("결제는 준비 중이에요.", 503);
+    const d = await body(req), plan = PLANS[d.plan]; if (!plan) return fail("요금제를 골라 주세요.");
+    const orderId = "1440-" + Date.now().toString(36) + "-" + b64(rand(6)).replace(/[^a-zA-Z0-9]/g, "");
+    await env.DB.prepare("INSERT INTO payments (order_id, user_id, plan, amount, status, created) VALUES (?, ?, ?, ?, 'ready', ?)").bind(orderId, u.id, d.plan, plan.amount, Date.now()).run();
+    return json({ orderId, amount: plan.amount, goodsName: plan.goods, clientId: env.NICEPAY_CLIENT_KEY, returnUrl: new URL(req.url).origin + "/api/pay/return", buyerEmail: u.email, buyerName: u.nick });
+  },
+
+  "POST /api/pay/return": async (env, req) => {
+    const back = (q) => new Response(null, { status: 303, headers: { location: "/?pay=" + q, "cache-control": "no-store" } });
+    let f; try { f = await req.formData(); } catch (e) { return back("fail&m=" + encodeURIComponent("결제 정보를 읽지 못했어요.")); }
+    const g = (k) => String(f.get(k) || ""), orderId = g("orderId"), tid = g("tid"), amount = g("amount");
+    const o = await env.DB.prepare("SELECT * FROM payments WHERE order_id = ?").bind(orderId).first();
+    if (!o || o.status !== "ready") return back("fail&m=" + encodeURIComponent("주문을 찾을 수 없어요."));
+    if (g("authResultCode") !== "0000") { await env.DB.prepare("UPDATE payments SET status = 'failed', message = ? WHERE order_id = ?").bind(g("authResultMsg").slice(0, 200), orderId).run(); return back("fail&m=" + encodeURIComponent(g("authResultMsg") || "결제를 하지 않았어요.")); }
+    if (+amount !== o.amount || g("clientId") !== env.NICEPAY_CLIENT_KEY) return back("fail&m=" + encodeURIComponent("결제 금액이 맞지 않아요."));
+    if ((await hex(g("authToken") + g("clientId") + amount + env.NICEPAY_SECRET_KEY)) !== g("signature")) return back("fail&m=" + encodeURIComponent("결제 확인에 실패했어요."));
+    const ediDate = new Date().toISOString(), r = await fetch((env.NICEPAY_API || "https://sandbox-api.nicepay.co.kr") + "/v1/payments/" + encodeURIComponent(tid), {
+      method: "POST", headers: { "content-type": "application/json;charset=utf-8", authorization: "Basic " + btoa(env.NICEPAY_CLIENT_KEY + ":" + env.NICEPAY_SECRET_KEY) },
+      body: JSON.stringify({ amount: o.amount, ediDate, signData: await hex(tid + o.amount + ediDate + env.NICEPAY_SECRET_KEY) })
+    });
+    const a = await r.json().catch(() => ({}));
+    if (a.resultCode !== "0000" || a.status !== "paid" || +a.amount !== o.amount) {
+      await env.DB.prepare("UPDATE payments SET status = 'failed', tid = ?, message = ? WHERE order_id = ?").bind(tid, String(a.resultMsg || r.status).slice(0, 200), orderId).run();
+      return back("fail&m=" + encodeURIComponent(a.resultMsg || "결제 승인에 실패했어요."));
+    }
+    const u = await env.DB.prepare("SELECT paid_until FROM users WHERE id = ?").bind(o.user_id).first(), until = Math.max((u && u.paid_until) || 0, Date.now()) + PLANS[o.plan].days * DAY;
+    await env.DB.prepare("UPDATE payments SET status = 'paid', tid = ?, paid_at = ? WHERE order_id = ?").bind(tid, Date.now(), orderId).run();
+    await env.DB.prepare("UPDATE users SET paid_until = ? WHERE id = ?").bind(until, o.user_id).run();
+    return back("ok");
+  },
+
+  "GET /api/pay/history": async (env, req, u) => {
+    if (!u) return fail("로그인해 주세요.", 401);
+    const r = await env.DB.prepare("SELECT order_id, plan, amount, status, created, paid_at FROM payments WHERE user_id = ? AND status != 'ready' ORDER BY created DESC LIMIT 30").bind(u.id).all();
+    return json({ payments: r.results || [] });
+  },
 
   "GET /api/me": async (env, req, u) => json({ user: u ? { ...publicUser(u), admin: isAdmin(env, u) } : null }),
 
@@ -185,7 +234,7 @@ export default {
   async fetch(req, env) {
     const url = new URL(req.url), key = req.method + " " + url.pathname.replace(/\/+$/, ""), fn = routes[key];
     if (!fn) return fail("not found", 404);
-    if (req.method !== "GET") {
+    if (req.method !== "GET" && key !== "POST /api/pay/return") { /* NICEPAY's form post comes from its own site */
       const origin = req.headers.get("origin");
       if (origin && origin !== url.origin && origin !== env.SITE_ORIGIN) return fail("forbidden", 403);
       if (!/application\/json/.test(req.headers.get("content-type") || "")) return fail("json only", 415);

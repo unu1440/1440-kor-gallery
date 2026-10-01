@@ -16,8 +16,13 @@ const db = new DatabaseSync(":memory:");
 db.exec(fs.readFileSync(path.join(root, "api/schema.sql"), "utf8"));
 const D1 = { prepare(sql) { const st = db.prepare(sql); let args = []; const o = { bind(...a) { args = a; return o; }, async first() { return st.get(...args) || null; }, async all() { return { results: st.all(...args) }; }, async run() { return st.run(...args); } }; return o; } };
 const mails = [];
-globalThis.fetch = async (url, init) => { mails.push(JSON.parse(init.body)); return new Response("{}", { status: 200 }); };
-const env = { DB: D1, RESEND_API_KEY: "x", ADMIN_EMAILS: "boss@kor.gallery", SITE_ORIGIN: "https://1440.kor.gallery" };
+/* Resend gets mail; NICEPAY's approval answers like the sandbox (it says what it was asked) */
+const approvals = [];
+globalThis.fetch = async (url, init) => {
+  if (String(url).indexOf("/v1/payments/") >= 0) { const b = JSON.parse(init.body); approvals.push({ url: String(url), auth: init.headers.authorization, body: b }); return new Response(JSON.stringify({ resultCode: "0000", status: "paid", amount: b.amount, tid: String(url).split("/").pop() }), { status: 200 }); }
+  mails.push(JSON.parse(init.body)); return new Response("{}", { status: 200 });
+};
+const env = { DB: D1, RESEND_API_KEY: "x", NICEPAY_CLIENT_KEY: "S2_test", NICEPAY_SECRET_KEY: "secret", NICEPAY_API: "https://sandbox-api.nicepay.co.kr", ADMIN_EMAILS: "boss@kor.gallery", SITE_ORIGIN: "https://1440.kor.gallery" };
 const O = "https://1440.kor.gallery";
 function jar() { let c = ""; return async (method, path, data, extra = {}) => {
   const h = { origin: O, "content-type": "application/json", ...(c ? { cookie: c } : {}), ...extra };
@@ -70,5 +75,25 @@ t("logout", (await d("POST", "/api/logout")).status === 200);
 t("after logout", (await d("GET", "/api/me")).body.user === null);
 for (let i = 0; i < 8; i++) await d("POST", "/api/login", { email: "kim@mail.com", password: "nopenope" });
 t("throttle", (await d("POST", "/api/login", { email: "kim@mail.com", password: "abcdefgh" })).status === 429);
+
+// paying: an order, NICEPAY's post back, the approval, the pass
+const hex = async (x) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(x)))].map((c) => c.toString(16).padStart(2, "0")).join("");
+const post = async (fields, origin) => { const r = await W.fetch(new Request(O + "/api/pay/return", { method: "POST", headers: { origin: origin || "https://pay.nicepay.co.kr", "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(fields) }), env); return { status: r.status, to: r.headers.get("location") }; };
+t("order needs login", (await jar()("POST", "/api/pay/order", { plan: "month" })).status === 401);
+t("unknown plan", (await a("POST", "/api/pay/order", { plan: "forever" })).status === 400);
+r = await a("POST", "/api/pay/order", { plan: "month" }); t("order", r.status === 200 && r.body.amount === 4900 && r.body.clientId === "S2_test" && /\/api\/pay\/return$/.test(r.body.returnUrl), r);
+const o1 = r.body, good = { authResultCode: "0000", authResultMsg: "ok", tid: "T123", clientId: "S2_test", orderId: o1.orderId, amount: "4900", authToken: "TOK" };
+t("bad signature", (await post({ ...good, signature: "nope" })).to.indexOf("fail") >= 0);
+t("changed amount", (await post({ ...good, amount: "100", signature: await hex("TOK" + "S2_test" + "100" + "secret") })).to.indexOf("fail") >= 0);
+r = await post({ ...good, signature: await hex("TOK" + "S2_test" + "4900" + "secret") }); t("paid", r.status === 303 && r.to === "/?pay=ok", r);
+t("approval call", approvals.length === 1 && approvals[0].url === "https://sandbox-api.nicepay.co.kr/v1/payments/T123" && approvals[0].auth === "Basic " + btoa("S2_test:secret") && approvals[0].body.amount === 4900, approvals);
+let me1 = (await a("GET", "/api/me")).body.user; t("pass 30 days", me1.paidUntil > Date.now() + 29 * 86400000 && me1.paidUntil < Date.now() + 31 * 86400000, me1);
+t("same order twice", (await post({ ...good, signature: await hex("TOK" + "S2_test" + "4900" + "secret") })).to.indexOf("fail") >= 0 && approvals.length === 1);
+r = await a("POST", "/api/pay/order", { plan: "year" }); const o2 = r.body;
+t("cancelled window", (await post({ authResultCode: "9999", authResultMsg: "취소", orderId: o2.orderId })).to.indexOf("fail") >= 0);
+r = await a("POST", "/api/pay/order", { plan: "year" });
+await post({ ...good, orderId: r.body.orderId, amount: "46800", tid: "T456", signature: await hex("TOK" + "S2_test" + "46800" + "secret") });
+me1 = (await a("GET", "/api/me")).body.user; t("year adds on", me1.paidUntil > Date.now() + 394 * 86400000, me1);
+r = await a("GET", "/api/pay/history"); t("history", r.body.payments.filter((x) => x.status === "paid").length === 2 && r.body.payments.length === 3, r);
 console.log(ok + " passed, " + bad + " failed");
 if (bad) process.exit(1);

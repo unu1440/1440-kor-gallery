@@ -55,6 +55,7 @@
     $('[data-v="email"]').textContent = me.email;
     $('[data-v="trial"]').textContent = trialText(me);
     $('[data-v="student"]').textContent = STU[me.student] || "안 함";
+    $('[data-v="paid"]').textContent = me.paidUntil > Date.now() ? day(me.paidUntil) + "까지" : "없음";
     $('[data-v="hub"]').href = A.hubUrl();
     var st = $('[data-v="stuState"]'), done = me.student === "verified", wait = me.student === "pending";
     st.textContent = done ? "확인했어요 (" + me.uniEmail + "). 무료 이용은 " + trialText(me) + "." : wait ? "관리자가 확인하고 있어요. 확인되면 한 달이 열려요." : "학교 메일로 코드를 받아 넣으면 첫 한 달이 무료예요. 학교 메일 하나로 한 번만 받을 수 있어요.";
@@ -89,6 +90,23 @@
     request: function (f) { run(f, A.request({ school: f.school.value, uniEmail: f.uni.value }), function () { f.reset(); fill(); }); }
   };
   [].forEach.call(ov.querySelectorAll("form[data-f]"), function (f) { f.addEventListener("submit", function (e) { e.preventDefault(); FORMS[f.dataset.f](f); }); });
+
+  /* paying: the window is NICEPAY's; when it is done NICEPAY brings the person back here with ?pay=ok or ?pay=fail */
+  ov.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-pay]"); if (!b) return; e.preventDefault();
+    var m = $('[data-v="payMsg"]'); m.textContent = "결제창을 여는 중…"; m.classList.remove("err"); b.disabled = true;
+    A.pay(b.dataset.pay).then(function () { m.textContent = ""; b.disabled = false; }, function (er) { b.disabled = false; m.textContent = er.userMessage || "결제를 시작하지 못했어요."; m.classList.add("err"); });
+  });
+  (function () {
+    var q = new URLSearchParams(location.search), r = q.get("pay"); if (!r) return;
+    history.replaceState(null, "", location.pathname);
+    A.ready.then(function () {
+      setOpen(true, "account");
+      var m = $('[data-v="payMsg"]');
+      if (r === "ok") { m.textContent = "결제했어요. 이용권이 늘어났어요."; m.classList.remove("err"); }
+      else { m.textContent = (q.get("m") || "결제하지 못했어요.") + " 다시 해 주세요."; m.classList.add("err"); }
+    });
+  })();
 
   /* the admin: requests first, then every account */
   var LIST = null;

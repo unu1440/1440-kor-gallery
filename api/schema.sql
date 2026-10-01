@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   uni_email TEXT UNIQUE,                 -- a university address can give one free month, once
   student TEXT NOT NULL DEFAULT 'none',  -- 'none' | 'pending' | 'verified'
   trial_until INTEGER,                   -- ms; free use until then
+  paid_until INTEGER,                    -- ms; a paid pass runs until then
   state TEXT NOT NULL DEFAULT '{}',      -- the hub: last form, forms in 홈 (JSON, small)
   created INTEGER NOT NULL
 );
@@ -38,3 +39,15 @@ CREATE TABLE IF NOT EXISTS attempts (    -- failed log-ins, for slowing down gue
 );
 CREATE INDEX IF NOT EXISTS attempts_key ON attempts (key, at);
 CREATE INDEX IF NOT EXISTS sessions_user ON sessions (user_id);
+CREATE TABLE IF NOT EXISTS payments (    -- NICEPAY orders: the amount is fixed by the server when the order is made
+  order_id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  plan TEXT NOT NULL,                    -- 'month' | 'year'
+  amount INTEGER NOT NULL,
+  status TEXT NOT NULL,                  -- 'ready' | 'paid' | 'failed'
+  tid TEXT,
+  message TEXT,
+  created INTEGER NOT NULL,
+  paid_at INTEGER
+);
+CREATE INDEX IF NOT EXISTS payments_user ON payments (user_id, created);

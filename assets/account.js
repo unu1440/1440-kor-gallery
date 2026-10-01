@@ -60,7 +60,7 @@
     return crypto.subtle.importKey("raw", te.encode(pass), "PBKDF2", false, ["deriveBits"])
       .then(function (k) { return crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: te.encode(salt), iterations: 100000 }, k, 256); }).then(b64);
   }
-  function pub(u) { return { id: u.id, nick: u.nick, email: u.email, role: u.role || "user", student: u.student || "none", uniEmail: u.uniEmail || "", trialUntil: u.trialUntil || 0, state: cleanState(u.state), admin: ADMIN.indexOf(u.email) >= 0 }; }
+  function pub(u) { return { id: u.id, nick: u.nick, email: u.email, role: u.role || "user", student: u.student || "none", uniEmail: u.uniEmail || "", trialUntil: u.trialUntil || 0, paidUntil: 0, state: cleanState(u.state), admin: ADMIN.indexOf(u.email) >= 0 }; }
   function lme() { var id = get(SKEY, null), db = ldb(); return id && db.users[id] ? pub(db.users[id]) : null; }
   function need() { if (!me) throw err("로그인해 주세요."); }
   var L = {
@@ -149,8 +149,27 @@
       grant: function (userId, days) { return adminOnly() || (mode === "server" ? api("POST", "/api/admin/grant", { userId: userId, days: days }) : L.grant(userId, days)); }
     },
     state: stateNow, saveState: saveState, touch: touch, hubUrl: hubUrl, formUrl: formUrl, sameForm: sameForm,
+    /* paying (only with the server): the server makes the order, NICEPAY's window takes the card, the server approves */
+    pay: function (plan) {
+      if (mode !== "server") return Promise.reject(err("결제는 1440.kor.gallery에서 할 수 있어요."));
+      return api("POST", "/api/pay/order", { plan: plan }).then(function (o) {
+        return loadPay().then(function () {
+          return new Promise(function (done, no) {
+            window.AUTHNICE.requestPay({ clientId: o.clientId, method: "card", orderId: o.orderId, amount: o.amount, goodsName: o.goodsName, returnUrl: o.returnUrl, buyerEmail: o.buyerEmail, buyerName: o.buyerName,
+              fnError: function (r) { no(err((r && r.errorMsg) || "결제창을 닫았어요.")); } });
+            done();
+          });
+        });
+      });
+    },
+    payments: function () { return mode === "server" ? api("GET", "/api/pay/history") : Promise.resolve({ payments: [] }); },
     isUni: function (email) { return UNI.test(String(email).split("@")[1] || ""); }
   };
+  var payJs = null;
+  function loadPay() {
+    if (window.AUTHNICE) return Promise.resolve();
+    return payJs || (payJs = new Promise(function (done, no) { var sc = document.createElement("script"); sc.src = "https://pay.nicepay.co.kr/v1/js/"; sc.onload = done; sc.onerror = function () { payJs = null; no(err("결제창을 불러오지 못했어요.")); }; document.head.appendChild(sc); }));
+  }
   /* is the server there? (the static preview answers /api with a plain 404 page) */
   A.ready = new Promise(function (done) {
     var t = setTimeout(function () { done(); }, 2500);

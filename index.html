@@ -26,7 +26,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="assets/site.css?v=35">
+  <link rel="stylesheet" href="assets/site.css?v=36">
 </head>
 <body class="page-home">
 
@@ -214,7 +214,17 @@
           <li><span class="b"></span><span class="t">이메일</span><span class="v" data-v="email"></span></li>
           <li><span class="b"></span><span class="t">무료 이용</span><span class="v" data-v="trial"></span></li>
           <li><span class="b"></span><span class="t">대학생 확인</span><span class="v" data-v="student"></span></li>
+          <li><span class="b"></span><span class="t">이용권</span><span class="v" data-v="paid"></span></li>
         </ul>
+        <section class="pay">
+          <h2>이용권</h2>
+          <p class="dim">결제한 만큼 이용 기간이 늘어납니다. 자동으로 다시 결제되지 않습니다.</p>
+          <ul class="ck">
+            <li><span class="b"></span><span class="t">30일</span><span class="v"><button type="button" class="u" data-pay="month">4,900원 결제</button></span></li>
+            <li><span class="b"></span><span class="t">365일 <em>월 3,900원꼴</em></span><span class="v"><button type="button" class="u" data-pay="year">46,800원 결제</button></span></li>
+          </ul>
+          <p class="acct-msg" role="status" data-v="payMsg"></p>
+        </section>
         <div class="two">
           <section><h2>My hub</h2><p>가장 최근에 고친 폼으로 바로 갑니다.</p><p><a href="templates.html" class="u" data-v="hub">My hub →</a></p></section>
           <section><h2>나가기</h2><p>이 브라우저에서 로그아웃합니다. 고친 초안은 그대로 남습니다.</p><p><a href="#" class="u" id="logoutLink">Log out</a></p></section>
@@ -277,7 +287,7 @@
 
 <script src="assets/common.js?v=5"></script>
 <script src="assets/site.js?v=18"></script>
-<script src="assets/account.js?v=1"></script>
-<script src="assets/acct-ui.js?v=1"></script>
+<script src="assets/account.js?v=2"></script>
+<script src="assets/acct-ui.js?v=2"></script>
 </body>
 </html>

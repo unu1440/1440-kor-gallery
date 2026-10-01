@@ -16,7 +16,12 @@
   "vars": {
     "ADMIN_EMAILS": "1440unu@kor.gallery",
     "MAIL_FROM": "1440 <no-reply@kor.gallery>",
-    "SITE_ORIGIN": "https://1440.kor.gallery"
+    "SITE_ORIGIN": "https://1440.kor.gallery",
+    // NICEPAY (포스타트): the client key goes to the browser anyway, so it is not a secret. S2_ = sandbox (no real money).
+    // For real payments: the live keys from the NICEPAY admin, NICEPAY_API "https://api.nicepay.co.kr", and the secret again:
+    //   npx wrangler secret put NICEPAY_SECRET_KEY -c api/wrangler.jsonc
+    "NICEPAY_CLIENT_KEY": "S2_60fd567f80e64e3a96768435645d0eef",
+    "NICEPAY_API": "https://sandbox-api.nicepay.co.kr"
   },
   "d1_databases": [
     { "binding": "DB", "database_name": "kor-gallery-accounts", "database_id": "80a56aed-83ec-4cf5-b9ff-44084b5e0df7" }
