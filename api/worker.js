@@ -9,10 +9,6 @@ const DAY = 86400000, MONTH = 30 * DAY, SESSION = 60 * DAY, CODE_LIFE = 10 * 600
 const ITER = 100000; /* the most Workers allow for PBKDF2 */
 const enc = new TextEncoder();
 /* what can be bought: the amount is decided here, never by the page */
-/* the one-off pass is paid by easy pay only (one brand per window: NICEPAY has no "easy pay only" window).
-   Each brand needs its own contract with NICEPAY: NICEPAY_EASYPAY (comma list) narrows these to the ones signed. */
-const EASYPAY = { naverpayCard: "네이버페이", kakaopay: "카카오페이", samsungpayCard: "삼성페이", payco: "페이코", ssgpay: "SSG페이" };
-function easyPays(env) { const on = String(env.NICEPAY_EASYPAY || "").split(",").map((x) => x.trim()).filter((x) => EASYPAY[x]); return on.length ? on : Object.keys(EASYPAY); }
 const PLANS = { month: { amount: 4900, days: 30, goods: "1440 이용권 30일" }, year: { amount: 46000, days: 365, goods: "1440 이용권 365일" } };
 
 /* the monthly subscription (NICEPAY billing): charged when the pass runs out, renewed by the daily cron */
@@ -146,21 +142,20 @@ async function body(req) { try { return await req.json(); } catch (e) { return {
 const routes = {
   "GET /api/health": async () => json({ ok: true }),
 
-  /* ---------- paying: a pass of 30 or 365 days, by easy pay in NICEPAY's payment window (server approval) ----------
+  /* ---------- paying: a pass of 30 or 365 days, through NICEPAY's payment window: card and easy pay in one window (server approval) ----------
      1. the page asks for an order: the server fixes the amount and keeps the order
      2. the page opens NICEPAY's window (AUTHNICE.requestPay) with that order
      3. NICEPAY posts the card authentication to /api/pay/return; the server checks the signature and the amount,
         approves the payment with NICEPAY, extends the pass, and sends the person back to the first page. */
-  "GET /api/pay/plans": async (env) => json({ plans: PLANS, methods: easyPays(env).map((m) => ({ method: m, name: EASYPAY[m] })) }),
+  "GET /api/pay/plans": async () => json({ plans: PLANS }),
 
   "POST /api/pay/order": async (env, req, u) => {
     if (!u) return fail("로그인해 주세요.", 401);
     if (!env.NICEPAY_CLIENT_KEY || !env.NICEPAY_SECRET_KEY) return fail("결제는 준비 중이에요.", 503);
     const d = await body(req), plan = PLANS[d.plan]; if (!plan) return fail("요금제를 골라 주세요.");
-    const method = String(d.method || ""); if (easyPays(env).indexOf(method) < 0) return fail("간편결제를 골라 주세요.");
     const orderId = "1440-" + Date.now().toString(36) + "-" + b64(rand(6)).replace(/[^a-zA-Z0-9]/g, "");
     await env.DB.prepare("INSERT INTO payments (order_id, user_id, plan, amount, status, created) VALUES (?, ?, ?, ?, 'ready', ?)").bind(orderId, u.id, d.plan, plan.amount, Date.now()).run();
-    return json({ orderId, method, amount: plan.amount, goodsName: plan.goods, clientId: env.NICEPAY_CLIENT_KEY, returnUrl: new URL(req.url).origin + "/api/pay/return", buyerEmail: u.email, buyerName: u.nick });
+    return json({ orderId, method: "cardAndEasyPay", amount: plan.amount, goodsName: plan.goods, clientId: env.NICEPAY_CLIENT_KEY, returnUrl: new URL(req.url).origin + "/api/pay/return", buyerEmail: u.email, buyerName: u.nick });
   },
 
   "POST /api/pay/return": async (env, req) => {

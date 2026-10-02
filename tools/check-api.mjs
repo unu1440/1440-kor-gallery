@@ -93,10 +93,7 @@ const hex = async (x) => [...new Uint8Array(await crypto.subtle.digest("SHA-256"
 const post = async (fields, origin) => { const r = await W.fetch(new Request(O + "/api/pay/return", { method: "POST", headers: { origin: origin || "https://pay.nicepay.co.kr", "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(fields) }), env); return { status: r.status, to: r.headers.get("location") }; };
 t("order needs login", (await jar()("POST", "/api/pay/order", { plan: "month", method: "kakaopay" })).status === 401);
 t("unknown plan", (await a("POST", "/api/pay/order", { plan: "forever", method: "kakaopay" })).status === 400);
-t("easy pay only", (await a("POST", "/api/pay/order", { plan: "month", method: "card" })).status === 400 && (await a("POST", "/api/pay/order", { plan: "month" })).status === 400);
-r = await a("GET", "/api/pay/plans"); t("easy pay list", r.body.methods.map((x) => x.method).join() === "naverpayCard,kakaopay,samsungpayCard,payco,ssgpay", r);
-env.NICEPAY_EASYPAY = "kakaopay, naverpayCard"; t("easy pay narrowed", (await a("GET", "/api/pay/plans")).body.methods.length === 2 && (await a("POST", "/api/pay/order", { plan: "month", method: "payco" })).status === 400); delete env.NICEPAY_EASYPAY;
-r = await a("POST", "/api/pay/order", { plan: "month", method: "kakaopay" }); t("order", r.body.method === "kakaopay" && r.status === 200 && r.body.amount === 4900 && r.body.clientId === "S2_test" && /\/api\/pay\/return$/.test(r.body.returnUrl), r);
+r = await a("POST", "/api/pay/order", { plan: "month", method: "kakaopay" }); t("order", r.body.method === "cardAndEasyPay" && r.status === 200 && r.body.amount === 4900 && r.body.clientId === "S2_test" && /\/api\/pay\/return$/.test(r.body.returnUrl), r);
 const o1 = r.body, good = { authResultCode: "0000", authResultMsg: "ok", tid: "T123", clientId: "S2_test", orderId: o1.orderId, amount: "4900", authToken: "TOK" };
 t("bad signature", (await post({ ...good, signature: "nope" })).to.indexOf("fail") >= 0);
 t("changed amount", (await post({ ...good, amount: "100", signature: await hex("TOK" + "S2_test" + "100" + env.NICEPAY_SECRET_KEY) })).to.indexOf("fail") >= 0);
