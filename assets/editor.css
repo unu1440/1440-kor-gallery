@@ -395,3 +395,57 @@ button.ed-pr.tool .nm em { margin-left: auto; padding-left: 0.5em; }
 @media (prefers-reduced-motion: reduce) { .ed-dlg, .ed-dlg-box { animation: none; } }
 /* the small window moves by its title line too (computers) */
 @media (hover: hover) and (min-width: 761px) { .ed-tip .ed-ph { cursor: grab; touch-action: none; } .ed-tip.moving .ed-ph { cursor: grabbing; } .ed-tip.moving { user-select: none; } }
+
+/* ---- the side panel (폴더 · 도구 · 레이어) in the site's own look: paper, ink in steps, no blue, hairlines;
+   the tree, keys and menus stay as they are. Rows are grey and come forward on hover; the chosen one is plain black;
+   a tool's one-line description comes out of a blur only when asked (hover) ---- */
+.ed-files, .ed-save { background: #f8f8f6; border-left-color: rgba(0, 0, 0, .08); }
+.ed-sec { border-bottom-color: rgba(0, 0, 0, .07); }
+.ed-fh { color: rgba(0, 0, 0, .38); letter-spacing: 0.01em; }
+.ed-fh .sh { color: inherit; transition: color .4s; }
+.ed-fh .sh:hover { color: #000; }
+.ed-fa button { color: rgba(0, 0, 0, .38); transition: color .4s; }
+.ed-fa button:hover { background: none; color: #000; }
+.ed-files .ed-pr { color: rgba(0, 0, 0, .55); transition: color .4s ease, background-color .4s ease; }
+.ed-pr::before { background: repeating-linear-gradient(90deg, rgba(0, 0, 0, .07) 0 1px, transparent 1px 1.05em); }
+.ed-pr .ic { color: rgba(0, 0, 0, .35); transition: color .4s; }
+.ed-fa svg, .ed-pr .ic svg { stroke-width: 1; }
+.ed-files .ed-pr:hover { background: none; color: #000; }
+.ed-pr:hover .ic { color: #000; }
+.ed-files .ed-pr.on, .ed-files .ed-pr.sel, .ed-files .ed-pr.on.sel { background: none; color: #000; }
+.ed-pr.on .ic { color: #000; }
+.ed-pr.on .nm > span:first-child::before { content: ""; display: inline-block; width: 0.32em; height: 0.32em; margin: 0 0.45em 0.12em 0; border-radius: 50%; background: currentColor; vertical-align: middle; }
+.ed-tree:focus-within .ed-pr.sel { box-shadow: none; background: rgba(0, 0, 0, .035); }
+.ed-pr.homeh, .ed-pr.favh { font-weight: 400; }
+.ed-pr.root { font-weight: 500; }
+.ed-pr .ic b { font-weight: 500; }
+.ed-pr .nm em { color: rgba(0, 0, 0, .3); }
+.ed-pr .dots { color: rgba(0, 0, 0, .38); }
+.ed-pr .dots:hover { background: none; color: #000; }
+@media (hover: hover) {
+  button.ed-pr.tool .nm em { opacity: 0; filter: blur(4px); transition: opacity .7s ease, filter .9s cubic-bezier(.2, .7, .2, 1); }
+  button.ed-pr.tool:hover .nm em, button.ed-pr.tool:focus-visible .nm em { opacity: 1; filter: none; }
+}
+.ed-files *:focus-visible { outline: 1px solid rgba(0, 0, 0, .5); outline-offset: -1px; }
+.ed-rs:hover::after, .ed-rs:focus-visible::after, .ed.resizing .ed-rs::after { background: rgba(0, 0, 0, .35); width: 1px; left: 3px; }
+@media (prefers-reduced-motion: reduce) { .ed-pr, .ed-pr .ic, button.ed-pr.tool .nm em { transition: none; } }
+
+/* ---- the tool windows (구성, 글·사진, 기능 …) and the small window: the same paper and quiet ink as the side panel.
+   Rows without rules between them, names in soft ink that darken on hover, thin switches; each window comes out of a blur ---- */
+.ed-pop, .ed-tip { background: rgba(248, 248, 246, .94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-color: rgba(0, 0, 0, .08); box-shadow: none; }
+.ed-pop:not([hidden]), .ed-tip:not([hidden]) { animation: edRise .8s cubic-bezier(.2, .7, .2, 1) both; }
+@media (hover: hover) and (min-width: 761px) { .ed-pop.moving { box-shadow: none; } }
+.ed-ph b { font-weight: 400; color: rgba(0, 0, 0, .38); }
+.ed-row, .ed-rows li { border-top-color: transparent; }
+.ed-row { padding: 0.42em 0; }
+.ed-row .n { font-weight: 400; color: rgba(0, 0, 0, .7); transition: color .4s; }
+.ed-row:hover .n { color: #000; }
+.ed-rows > li > button { color: rgba(0, 0, 0, .7); transition: color .4s; }
+.ed-rows > li > button:hover { color: #000; }
+.ed-pb .ed-h { color: rgba(0, 0, 0, .35); padding-top: 0.6em; }
+.ed-sw { width: 1.9em; height: 1em; background: rgba(0, 0, 0, .1); transition: background .4s; }
+.ed-sw::after { left: 0.14em; top: 0.14em; width: 0.72em; height: 0.72em; transition: transform .4s cubic-bezier(.2, .7, .2, 1); }
+.ed-sw[aria-checked="true"] { background: #000; }
+.ed-sw[aria-checked="true"]::after { transform: translateX(0.9em); }
+@media (max-width: 760px) { .ed-pop, .ed-tip { background: rgba(248, 248, 246, .97); } }
+@media (prefers-reduced-motion: reduce) { .ed-pop:not([hidden]), .ed-tip:not([hidden]) { animation: none; } }
