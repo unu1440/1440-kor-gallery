@@ -163,5 +163,39 @@ const expires0 = subCalls.filter((x) => /expire$/.test(x.url)).length;
 r = await e("POST", "/api/sub/cancel"); t("cancel", r.status === 200 && r.body.user.sub.status === "canceled" && r.body.user.paidUntil > Date.now() && subCalls.filter((x) => /expire$/.test(x.url)).length === expires0 + 1, r);
 t("cancel twice", (await e("POST", "/api/sub/cancel")).status === 404);
 rr = await W2.renewSubs(env, Date.now() + 400 * 86400000); t("no charge after cancel", rr.paid === 0 && rr.failed === 0, rr);
+
+// NICEPAY's webhook: a cancelled payment takes its days back (once), a cancelled subscription charge stops it
+const hookPost = async (h) => { const r = await W.fetch(new Request(O + "/api/pay/hook", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(h) }), env); return { status: r.status, text: await r.text(), type: r.headers.get("content-type") }; };
+const sig = async (tid, amount, ediDate) => hex(tid + amount + ediDate + env.NICEPAY_SECRET_KEY);
+{ const f = jar(); await join(f, { email: "refund@mail.com", password: "12345678" });
+  let o = (await f("POST", "/api/pay/order", { plan: "month" })).body;
+  await post({ authResultCode: "0000", authResultMsg: "ok", tid: "TR1", clientId: "S2_test", orderId: o.orderId, amount: "4900", authToken: "TOK", signature: await hex("TOK" + "S2_test" + "4900" + env.NICEPAY_SECRET_KEY) });
+  const before = (await f("GET", "/api/me")).body.user.paidUntil;
+  const ed = "2026-10-02T15:00:00+0900";
+  let hr = await hookPost({ tid: "TR1", status: "cancelled", amount: 4900, balanceAmt: 0, ediDate: ed, signature: "forged" });
+  t("hook answers OK as text", hr.status === 200 && hr.text === "OK" && /text\/html/.test(hr.type), hr);
+  t("hook: forged signature changes nothing", (await f("GET", "/api/me")).body.user.paidUntil === before);
+  await hookPost({ tid: "TR1", status: "paid", amount: 4900, balanceAmt: 4900, ediDate: ed, signature: await sig("TR1", 4900, ed) });
+  t("hook: paid event changes nothing", (await f("GET", "/api/me")).body.user.paidUntil === before);
+  await hookPost({ tid: "TR1", status: "cancelled", amount: 4900, balanceAmt: 0, ediDate: ed, signature: await sig("TR1", 4900, ed) });
+  t("hook: cancelled payment takes the pass back", before > Date.now() + 29 * 86400000 && (await f("GET", "/api/me")).body.user.paidUntil === 0 && db.prepare("SELECT status FROM payments WHERE tid = 'TR1'").get().status === "cancelled");
+  // two months bought, one taken back: the other stays
+  o = (await f("POST", "/api/pay/order", { plan: "month" })).body;
+  await post({ authResultCode: "0000", authResultMsg: "ok", tid: "TR2", clientId: "S2_test", orderId: o.orderId, amount: "4900", authToken: "TOK", signature: await hex("TOK" + "S2_test" + "4900" + env.NICEPAY_SECRET_KEY) });
+  o = (await f("POST", "/api/pay/order", { plan: "month" })).body;
+  await post({ authResultCode: "0000", authResultMsg: "ok", tid: "TR3", clientId: "S2_test", orderId: o.orderId, amount: "4900", authToken: "TOK", signature: await hex("TOK" + "S2_test" + "4900" + env.NICEPAY_SECRET_KEY) });
+  const two = (await f("GET", "/api/me")).body.user.paidUntil;
+  await hookPost({ tid: "TR3", status: "cancelled", amount: 4900, balanceAmt: 0, ediDate: ed, signature: await sig("TR3", 4900, ed) });
+  await hookPost({ tid: "TR3", status: "cancelled", amount: 4900, balanceAmt: 0, ediDate: ed, signature: await sig("TR3", 4900, ed) });
+  const one = (await f("GET", "/api/me")).body.user.paidUntil;
+  t("hook: only that payment, only once", Math.abs(two - one - 30 * 86400000) < 5, { two, one });
+  // a subscription charge taken back: the days go and the subscription stops
+  await f("POST", "/api/sub/start", card);
+  const subTid = db.prepare("SELECT tid FROM payments WHERE plan = 'sub' AND user_id = (SELECT id FROM users WHERE email = 'refund@mail.com')").get().tid;
+  const withSub = (await f("GET", "/api/me")).body.user;
+  await hookPost({ tid: subTid, status: "cancelled", amount: 4900, balanceAmt: 0, ediDate: ed, signature: await sig(subTid, 4900, ed) });
+  const afterSub = (await f("GET", "/api/me")).body.user;
+  t("hook: subscription charge taken back stops it", afterSub.sub.status === "canceled" && Math.abs(withSub.paidUntil - afterSub.paidUntil - 30 * 86400000) < 5, { withSub, afterSub });
+}
 console.log(ok + " passed, " + bad + " failed");
 if (bad) process.exit(1);

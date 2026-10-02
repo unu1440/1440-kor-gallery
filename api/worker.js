@@ -107,6 +107,19 @@ async function chargeSub(env, user, bid) {
   await env.DB.prepare("UPDATE users SET paid_until = ? WHERE id = ?").bind(until, user.id).run();
   return { ok: true, until };
 }
+/* a payment taken back (all or part): the days it bought come off the pass (never below now), and a subscription
+   charge also stops the subscription so it is not charged again */
+const DAYS_OF = { month: PLANS.month.days, year: PLANS.year.days, sub: SUB.days };
+async function undoPayment(env, o, cancelled) {
+  const full = cancelled >= o.amount, days = Math.round((DAYS_OF[o.plan] || 0) * Math.min(1, cancelled / o.amount));
+  await env.DB.prepare("UPDATE payments SET status = ?, message = ? WHERE order_id = ?").bind(full ? "cancelled" : "partial", "취소 " + cancelled + "원", o.order_id).run();
+  const u = await env.DB.prepare("SELECT paid_until FROM users WHERE id = ?").bind(o.user_id).first(), now = Date.now();
+  if (u && u.paid_until) { const left = u.paid_until - days * DAY; await env.DB.prepare("UPDATE users SET paid_until = ? WHERE id = ?").bind(left > now ? left : null, o.user_id).run(); }
+  if (o.plan === "sub") {
+    const s = await env.DB.prepare("SELECT * FROM subs WHERE user_id = ? AND status = 'active'").bind(o.user_id).first();
+    if (s) { await env.DB.prepare("UPDATE subs SET status = 'canceled', bid = '' WHERE user_id = ?").bind(o.user_id).run(); await expireBid(env, s.bid); }
+  }
+}
 async function expireBid(env, bid) {
   const orderId = newOrder("x"), ediDate = new Date().toISOString();
   try { await nice(env, "/v1/subscribe/" + encodeURIComponent(bid) + "/expire", { orderId, ediDate, signData: await hex(orderId + bid + ediDate + env.NICEPAY_SECRET_KEY) }); } catch (e) {}
@@ -194,6 +207,21 @@ const routes = {
     await env.DB.prepare("UPDATE payments SET status = 'paid', tid = ?, paid_at = ? WHERE order_id = ?").bind(tid, Date.now(), orderId).run();
     await env.DB.prepare("UPDATE users SET paid_until = ? WHERE id = ?").bind(until, o.user_id).run();
     return back("ok");
+  },
+
+  /* NICEPAY's webhook (register https://1440.kor.gallery/api/pay/hook in the NICEPAY admin → 웹훅): whenever a payment
+     is cancelled (from the NICEPAY admin or the API), the days it bought come off the pass; a cancelled subscription
+     charge also stops the subscription. The signature is checked and a payment is undone only once. NICEPAY wants
+     the text "OK" back (text/html), or it sends again. */
+  "POST /api/pay/hook": async (env, req) => {
+    const ok = () => new Response("OK", { status: 200, headers: { "content-type": "text/html; charset=utf-8" } });
+    let h; try { h = await req.json(); } catch (e) { return ok(); }
+    if (!h || !h.tid || !/^(cancelled|partialCancelled)$/.test(h.status || "")) return ok();
+    if (!env.NICEPAY_SECRET_KEY || (await hex(String(h.tid) + h.amount + h.ediDate + env.NICEPAY_SECRET_KEY)) !== String(h.signature || "")) { console.log("hook: bad signature"); return ok(); }
+    const o = await env.DB.prepare("SELECT * FROM payments WHERE tid = ?").bind(String(h.tid)).first();
+    if (!o || o.status !== "paid") return ok();
+    await undoPayment(env, o, Math.max(0, o.amount - Math.max(0, +h.balanceAmt || 0)));
+    return ok();
   },
 
   "GET /api/pay/history": async (env, req, u) => {
@@ -384,7 +412,7 @@ export default {
   async fetch(req, env) {
     const url = new URL(req.url), key = req.method + " " + url.pathname.replace(/\/+$/, ""), fn = routes[key];
     if (!fn) return fail("not found", 404);
-    if (req.method !== "GET" && key !== "POST /api/pay/return") { /* NICEPAY's form post comes from its own site */
+    if (req.method !== "GET" && key !== "POST /api/pay/return" && key !== "POST /api/pay/hook") { /* NICEPAY's posts come from its own servers */
       const origin = req.headers.get("origin");
       if (origin && origin !== url.origin && origin !== env.SITE_ORIGIN) return fail("forbidden", 403);
       if (!/application\/json/.test(req.headers.get("content-type") || "")) return fail("json only", 415);
