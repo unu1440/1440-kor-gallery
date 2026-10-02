@@ -376,8 +376,22 @@ button.ed-pr.tool .nm em { margin-left: auto; padding-left: 0.5em; }
 .ed-sw::after { left: 0.15em; top: 0.15em; width: 0.85em; height: 0.85em; box-shadow: none; }
 .ed-sw[aria-checked="true"]::after { transform: translateX(0.95em); }
 .ed-tools button, .ed-tools label { border-radius: 0.25em; }
-.ed-dlg { background: rgba(255, 255, 255, .6); }
-.ed-dlg-box { padding: 1.3em 1.4em; gap: 0.8em; border-radius: 0.3em; box-shadow: 0 10px 30px -22px rgba(0, 0, 0, .4), 0 0 0 1px var(--line); }
-.ed-dlg-box .ed-h { font-size: 1em !important; color: #000; }
+/* publish: like the front page's Information layer, words only on a blurred page (no box, no shadow), coming out of a blur */
+.ed-dlg { background: rgba(248, 248, 246, .78); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); animation: edFade .7s ease both; }
+.ed-dlg-box { width: min(100%, 24em); gap: 1.1em; padding: 0; border-radius: 0; background: none; box-shadow: none; animation: edRise 1.1s cubic-bezier(.2, .7, .2, 1) both; }
+.ed-dlg-box .ed-h { font-size: 0.86em !important; font-weight: 400; color: rgba(0, 0, 0, .45); }
+.ed-dlg .ed-addr { border-bottom: 1px solid rgba(0, 0, 0, .18); padding-bottom: 0.35em; transition: border-color .3s; }
+.ed-dlg .ed-addr:focus-within { border-color: #000; }
+.ed-dlg .ed-addr input { font-size: max(16px, 1.1em); text-align: right; }
+.ed-dlg .ed-addr input:focus-visible { outline: none; }
+.ed-dlg .ed-addr span { color: rgba(0, 0, 0, .45); }
+.ed-dlg .ed-p2 { min-height: 1.45em; }
+.ed-dlg-b { gap: 1.4em; }
+.ed-txt { padding: 0; color: rgba(0, 0, 0, .45); text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 0.25em; transition: color .2s, text-decoration-color .2s; }
+.ed-txt.on { color: #000; }
+.ed-txt:hover, .ed-txt:focus-visible { color: #000; text-decoration-color: currentColor; outline: none; }
+@keyframes edFade { from { opacity: 0; } }
+@keyframes edRise { from { opacity: 0; filter: blur(10px); } }
+@media (prefers-reduced-motion: reduce) { .ed-dlg, .ed-dlg-box { animation: none; } }
 /* the small window moves by its title line too (computers) */
 @media (hover: hover) and (min-width: 761px) { .ed-tip .ed-ph { cursor: grab; touch-action: none; } .ed-tip.moving .ed-ph { cursor: grabbing; } .ed-tip.moving { user-select: none; } }

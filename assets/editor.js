@@ -1494,18 +1494,18 @@
   function closeDlg() { dlg.hidden = true; }
   function publish() {
     var name = ""; try { name = localStorage.getItem("1440-site-name") || T.site || ""; } catch (e) {}
-    $(".ed-dlg-box", dlg).innerHTML = '<h2 class="ed-h" id="edDlgT" style="font-size:1.4em">공개하기</h2><p class="ed-p2">영문 소문자 · 숫자 · -</p>' +
-      '<div class="ed-addr"><label class="ed-sr" for="edAddrIn">주소</label><input id="edAddrIn" type="text" maxlength="30" value="' + esc(name) + '" placeholder="이름" autocapitalize="off" autocomplete="off" spellcheck="false"><span>.kor.gallery</span></div>' +
-      '<p class="ed-p2" id="edAddrMsg">공개는 준비 중이에요.</p>' +
-      '<div class="ed-dlg-b"><button type="button" class="ed-btn ghost" id="edDlgX">닫기</button><button type="button" class="ed-btn" id="edDlgOk">주소 저장</button></div>';
+    $(".ed-dlg-box", dlg).innerHTML = '<h2 class="ed-h" id="edDlgT">공개하기</h2>' +
+      '<div class="ed-addr" title="영문 소문자 · 숫자 · -"><label class="ed-sr" for="edAddrIn">주소</label><input id="edAddrIn" type="text" maxlength="30" value="' + esc(name) + '" placeholder="이름" autocapitalize="off" autocomplete="off" spellcheck="false"><span>.kor.gallery</span></div>' +
+      '<p class="ed-p2" id="edAddrMsg">준비 중</p>' +
+      '<div class="ed-dlg-b"><button type="button" class="ed-txt" id="edDlgX">닫기</button><button type="button" class="ed-txt on" id="edDlgOk">저장 →</button></div>';
     dlg.hidden = false; var inp = $("#edAddrIn");
     inp.addEventListener("input", function () { var v = inp.value.toLowerCase().replace(/[\s_]+/g, "-").replace(/[^a-z0-9-]/g, "").slice(0, 30); if (v !== inp.value) inp.value = v; });
     $("#edDlgX").addEventListener("click", closeDlg);
     $("#edDlgOk").addEventListener("click", function () {
       var v = inp.value.replace(/^-+|-+$/g, ""), m = $("#edAddrMsg");
-      if (v.length < 2) { m.textContent = "두 글자 이상 적어 주세요."; inp.focus(); return; }
+      if (v.length < 2) { m.textContent = "두 글자 이상"; inp.focus(); return; }
       try { localStorage.setItem("1440-site-name", v); } catch (e) {}
-      m.textContent = v + ".kor.gallery 주소를 저장했어요. 공개는 준비 중이에요."; T.setHost(v); render();
+      m.textContent = "저장했어요 · 공개는 준비 중"; T.setHost(v); render();
     });
     if (!dlg._out) { dlg._out = 1; dlg.addEventListener("click", function (e) { if (e.target === dlg) closeDlg(); }); }
     setTimeout(function () { inp.focus(); }, 0);
