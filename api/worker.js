@@ -137,6 +137,20 @@ export async function renewSubs(env, now = Date.now()) {
   return { paid, failed };
 }
 
+/* the sign-up code: one a minute, six a day per address, twenty a day per network; ten minutes to use it */
+async function sendSignupCode(env, email, p, ip) {
+  const old = await env.DB.prepare("SELECT sent FROM signups WHERE email = ?").bind(email).first();
+  if (old && Date.now() - old.sent < 60000) return fail("1분 뒤에 다시 보낼 수 있어요.", 429);
+  if (await tooMany(env, "signup:" + email, 6, DAY) || (ip && await tooMany(env, "sip:" + ip, 20, DAY))) return fail("오늘은 더 보낼 수 없어요.", 429);
+  const code = String(100000 + (crypto.getRandomValues(new Uint32Array(1))[0] % 900000));
+  await env.DB.prepare("INSERT OR REPLACE INTO signups (email, pass, student, state, code, expires, tries, sent) VALUES (?, ?, ?, ?, ?, ?, 0, ?)")
+    .bind(email, p.pass, p.student ? 1 : 0, p.state || "{}", await sha(code), Date.now() + CODE_LIFE, Date.now()).run();
+  await note(env, "signup:" + email); if (ip) await note(env, "sip:" + ip);
+  try { await sendMail(env, email, "1440 가입 확인 코드 " + code, "1440 가입 확인 코드: " + code + "\n\n10분 안에 입력해 주세요. 가입하지 않았다면 이 메일은 지워도 됩니다.\n\n1440.kor.gallery"); }
+  catch (e) { return fail("메일을 보내지 못했어요. 잠시 후 다시 해 주세요.", 502); }
+  return json({ pending: true, email });
+}
+
 async function body(req) { try { return await req.json(); } catch (e) { return {}; } }
 
 const routes = {
@@ -226,19 +240,43 @@ const routes = {
 
   "GET /api/me": async (env, req, u) => json({ user: u ? await fullUser(env, u) : null }),
 
+  /* signing up is two steps: the address gets a six-digit code (Resend), and only the right code makes the account.
+     Until then the e-mail, the hashed password and the code wait in "signups". A student who signs up with a
+     university address is checked by the same code: the free month opens at once. */
   "POST /api/signup": async (env, req) => {
-    const d = await body(req), email = String(d.email || "").trim().toLowerCase(), pass = String(d.password || "");
+    const d = await body(req), email = String(d.email || "").trim().toLowerCase(), pass = String(d.password || ""), ip = req.headers.get("cf-connecting-ip") || "";
     if (!EMAIL.test(email)) return fail("이메일 주소를 확인해 주세요.");
     if (d.student && !uniDomain(email)) return fail("대학생은 학교 메일(.ac.kr, .edu 등)로만 가입할 수 있어요.");
     if (pass.length < 8) return fail("비밀번호는 8자 이상이에요.");
     if (await env.DB.prepare("SELECT 1 FROM users WHERE email = ?").bind(email).first()) return fail("이미 가입한 이메일이에요.", 409);
-    /* the name in the header: the part of the e-mail before @, made unique */
+    const state = JSON.stringify(d.state && typeof d.state === "object" ? d.state : {}).slice(0, 8000);
+    return sendSignupCode(env, email, { pass: await hashPass(pass), student: d.student ? 1 : 0, state }, ip);
+  },
+  /* the code again (the password stays as it was given) */
+  "POST /api/signup/resend": async (env, req) => {
+    const d = await body(req), email = String(d.email || "").trim().toLowerCase();
+    const p = await env.DB.prepare("SELECT * FROM signups WHERE email = ?").bind(email).first();
+    if (!p) return fail("가입을 처음부터 다시 해 주세요.", 404);
+    return sendSignupCode(env, email, p, req.headers.get("cf-connecting-ip") || "");
+  },
+  "POST /api/signup/verify": async (env, req) => {
+    const d = await body(req), email = String(d.email || "").trim().toLowerCase();
+    const p = await env.DB.prepare("SELECT * FROM signups WHERE email = ?").bind(email).first();
+    if (!p || p.expires < Date.now()) return fail("코드가 없거나 시간이 지났어요. 다시 보내 주세요.");
+    if (p.tries >= 5) return fail("여러 번 틀렸어요. 코드를 다시 보내 주세요.", 429);
+    if ((await sha(String(d.code || "").trim())) !== p.code) { await env.DB.prepare("UPDATE signups SET tries = tries + 1 WHERE email = ?").bind(email).run(); return fail("코드가 맞지 않아요."); }
+    if (await env.DB.prepare("SELECT 1 FROM users WHERE email = ?").bind(email).first()) { await env.DB.prepare("DELETE FROM signups WHERE email = ?").bind(email).run(); return fail("이미 가입한 이메일이에요.", 409); }
+    /* the name kept on the server: the part of the e-mail before @, made unique (the pages show the e-mail) */
     let base = (email.split("@")[0].match(/[\p{L}\p{N}_.-]/gu) || []).join("").slice(0, 16), nick = "";
     if (base.length < 2) base = "user";
     for (let i = 1; i < 500 && !nick; i++) { const x = i === 1 ? base : base + i; if (!(await env.DB.prepare("SELECT 1 FROM users WHERE nick = ?").bind(x).first())) nick = x; }
     if (!nick) nick = base + b64(rand(3));
-    const id = b64(rand(12)), state = JSON.stringify(d.state && typeof d.state === "object" ? d.state : {}).slice(0, 8000);
-    await env.DB.prepare("INSERT INTO users (id, email, nick, pass, state, created) VALUES (?, ?, ?, ?, ?, ?)").bind(id, email, nick, await hashPass(pass), state, Date.now()).run();
+    const id = b64(rand(12));
+    await env.DB.prepare("INSERT INTO users (id, email, nick, pass, state, created) VALUES (?, ?, ?, ?, ?, ?)").bind(id, email, nick, p.pass, p.state || "{}", Date.now()).run();
+    /* the code went to this address, so a university address is a checked one: the student month */
+    if (p.student && uniDomain(email) && !(await env.DB.prepare("SELECT 1 FROM users WHERE uni_email = ?").bind(email).first()))
+      await env.DB.prepare("UPDATE users SET uni_email = ?, student = 'verified', trial_until = ? WHERE id = ?").bind(email, Date.now() + MONTH, id).run();
+    await env.DB.prepare("DELETE FROM signups WHERE email = ?").bind(email).run();
     const u = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(id).first();
     return json({ user: await fullUser(env, u) }, 200, { "set-cookie": await startSession(env, id) });
   },
@@ -247,6 +285,7 @@ const routes = {
     const d = await body(req), email = String(d.email || "").trim().toLowerCase(), ip = req.headers.get("cf-connecting-ip") || "";
     if (await tooMany(env, "login:" + email, 8, 15 * 60000) || await tooMany(env, "ip:" + ip, 30, 15 * 60000)) return fail("잠시 후 다시 해 주세요.", 429);
     const u = await env.DB.prepare("SELECT * FROM users WHERE email = ?").bind(email).first();
+    if (!u) { const p = await env.DB.prepare("SELECT pass FROM signups WHERE email = ?").bind(email).first(); if (p && await checkPass(String(d.password || ""), p.pass)) return json({ error: "메일로 받은 코드를 넣어 가입을 마쳐 주세요.", pending: true, email }, 403); }
     if (!u || !(await checkPass(String(d.password || ""), u.pass))) { await note(env, "login:" + email); await note(env, "ip:" + ip); return fail("이메일이나 비밀번호가 맞지 않아요.", 401); }
     return json({ user: await fullUser(env, u) }, 200, { "set-cookie": await startSession(env, u.id) });
   },

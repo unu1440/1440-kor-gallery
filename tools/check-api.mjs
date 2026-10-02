@@ -40,16 +40,39 @@ function jar() { let c = ""; return async (method, path, data, extra = {}) => {
   const sc = r.headers.get("set-cookie"); if (sc) c = sc.split(";")[0];
   return { status: r.status, body: await r.json() };
 }; }
+/* signing up: the address gets a code; the code makes the account */
+const codeFor = (to) => { const m = mails.filter((x) => x.to[0] === to).pop(); return m && /(\d{6})/.exec(m.subject)[1]; };
+async function join(j, data) {
+  const s = await j("POST", "/api/signup", data); if (s.status !== 200) return s;
+  return j("POST", "/api/signup/verify", { email: data.email, code: codeFor(String(data.email).toLowerCase()) });
+}
 let ok = 0, bad = 0; const t = (name, cond, extra) => { if (cond) ok++; else { bad++; console.log("✗", name, JSON.stringify(extra || "")); } };
 
 const a = jar(), boss = jar(), c = jar();
-let r = await a("POST", "/api/signup", { nick: "lee", email: "Lee@Mail.com", password: "12345678", state: { last: { n: 12, site: "lee", t: 1 } } });
+let r = await join(a, { nick: "lee", email: "Lee@Mail.com", password: "12345678", state: { last: { n: 12, site: "lee", t: 1 } } });
 t("signup", r.status === 200 && r.body.user.nick === "lee" && r.body.user.email === "lee@mail.com" && r.body.user.state.last.n === 12, r);
-t("dup email", (await c("POST", "/api/signup", { nick: "other", email: "lee@mail.com", password: "12345678" })).status === 409);
-r = await jar()("POST", "/api/signup", { email: "lee@other.com", password: "12345678" }); t("nick from e-mail, made unique", r.status === 200 && r.body.user.nick === "lee2", r);
-t("student needs a school address", (await jar()("POST", "/api/signup", { email: "s@gmail.com", password: "12345678", student: true })).status === 400);
-r = await jar()("POST", "/api/signup", { email: "s@korea.ac.kr", password: "12345678", student: true }); t("student school address", r.status === 200 && r.body.user.nick === "s" + "" || r.body.user.nick === "user", r);
-t("short pass", (await c("POST", "/api/signup", { nick: "kim", email: "k@y.com", password: "123" })).status === 400);
+t("dup email", (await join(c, { nick: "other", email: "lee@mail.com", password: "12345678" })).status === 409);
+r = await join(jar(), { email: "lee@other.com", password: "12345678" }); t("nick from e-mail, made unique", r.status === 200 && r.body.user.nick === "lee2", r);
+t("student needs a school address", (await join(jar(), { email: "s@gmail.com", password: "12345678", student: true })).status === 400);
+r = await join(jar(), { email: "s@korea.ac.kr", password: "12345678", student: true }); t("student school address", r.status === 200 && r.body.user.nick === "s" + "" || r.body.user.nick === "user", r);
+t("student checked by the sign-up code", (await (async () => { const j = jar(); await join(j, { email: "t@yonsei.ac.kr", password: "12345678", student: true }); return (await j("GET", "/api/me")).body.user; })()).student === "verified");
+// the code step itself
+{ const j = jar(), em = "code@mail.com";
+  r = await j("POST", "/api/signup", { email: em, password: "12345678" }); t("signup sends a code, no account yet", r.status === 200 && r.body.pending === true && !!codeFor(em) && !r.body.user && (await j("GET", "/api/me")).body.user === null, r);
+  t("code mail", /가입 확인 코드/.test(mails[mails.length - 1].subject));
+  t("login before the code", (await j("POST", "/api/login", { email: em, password: "12345678" })).body.pending === true);
+  t("resend too soon", (await j("POST", "/api/signup/resend", { email: em })).status === 429);
+  t("wrong code", (await j("POST", "/api/signup/verify", { email: em, code: "000000" })).status === 400);
+  db.prepare("UPDATE signups SET sent = 0 WHERE email = ?").run(em);
+  const first = codeFor(em); r = await j("POST", "/api/signup/resend", { email: em }); t("resend", r.status === 200 && mails.filter((x) => x.to[0] === em).length === 2, r);
+  r = await j("POST", "/api/signup/verify", { email: em, code: codeFor(em) }); t("verify makes the account", r.status === 200 && r.body.user.email === em && (await j("GET", "/api/me")).body.user.email === em, r);
+  t("code used once", (await jar()("POST", "/api/signup/verify", { email: em, code: first })).status === 400);
+  t("login after", (await jar()("POST", "/api/login", { email: em, password: "12345678" })).status === 200);
+  const k = jar(), em2 = "many@mail.com"; await k("POST", "/api/signup", { email: em2, password: "12345678" });
+  for (let i = 0; i < 5; i++) await k("POST", "/api/signup/verify", { email: em2, code: "111111" });
+  t("five wrong codes", (await k("POST", "/api/signup/verify", { email: em2, code: codeFor(em2) })).status === 429);
+}
+t("short pass", (await join(c, { nick: "kim", email: "k@y.com", password: "123" })).status === 400);
 t("me", (await a("GET", "/api/me")).body.user.nick === "lee");
 t("anon me", (await c("GET", "/api/me")).body.user === null);
 t("cross origin", (await a("POST", "/api/logout", {}, { origin: "https://evil.com" })).status === 403);
@@ -59,21 +82,21 @@ t("state read", (await a("GET", "/api/me")).body.user.state.last.n === 99);
 // student
 t("non-uni", (await a("POST", "/api/student/send", { uniEmail: "me@gmail.com" })).status === 422);
 r = await a("POST", "/api/student/send", { uniEmail: "me@snu.ac.kr" }); t("send", r.status === 200, r);
-const code = mails[0] && /(\d{6})/.exec(mails[0].subject)[1]; t("mail", !!code && mails[0].to[0] === "me@snu.ac.kr");
+const code = codeFor("me@snu.ac.kr"); t("mail", !!code);
 t("send again too soon", (await a("POST", "/api/student/send", { uniEmail: "me@snu.ac.kr" })).status === 429);
 t("wrong code", (await a("POST", "/api/student/verify", { code: "000000" })).status === 400);
 r = await a("POST", "/api/student/verify", { code }); t("verify", r.status === 200 && r.body.trialUntil > Date.now() + 29 * 86400000, r);
 t("me student", (await a("GET", "/api/me")).body.user.student === "verified");
 // the same address on another account
-await c("POST", "/api/signup", { nick: "kim", email: "kim@mail.com", password: "abcdefgh" });
+await join(c, { nick: "kim", email: "kim@mail.com", password: "abcdefgh" });
 t("uni reused", (await c("POST", "/api/student/send", { uniEmail: "me@snu.ac.kr" })).status === 409);
 r = await c("POST", "/api/student/request", { uniEmail: "kim@artschool.kr", school: "Art School" }); t("request", r.status === 200, r);
 t("request twice", (await c("POST", "/api/student/request", { uniEmail: "kim@artschool.kr", school: "Art School" })).status === 400);
 t("not admin", (await c("GET", "/api/admin/students")).status === 403);
 // admin
-await boss("POST", "/api/signup", { nick: "boss", email: "boss@kor.gallery", password: "bossboss" });
+await join(boss, { nick: "boss", email: "boss@kor.gallery", password: "bossboss" });
 t("admin flag", (await boss("GET", "/api/me")).body.user.admin === true);
-r = await boss("GET", "/api/admin/students"); t("list", r.body.requests.length === 1 && r.body.users.length === 5, r);
+r = await boss("GET", "/api/admin/students"); t("list", r.body.requests.length === 1 && r.body.users.length === 7, r);
 r = await boss("POST", "/api/admin/decide", { id: r.body.requests[0].id, approve: true }); t("approve", r.status === 200, r);
 t("kim verified", (await c("GET", "/api/me")).body.user.student === "verified");
 const kimId = (await c("GET", "/api/me")).body.user.id;
@@ -111,7 +134,7 @@ r = await a("GET", "/api/pay/history"); t("history", r.body.payments.filter((x) 
 // the monthly subscription: card → billing key → first month, renewals by the cron, failures, stopping
 const W2 = await import(pathToFileURL(copy).href);
 const card = { cardNo: "9410-1234-5678-1234", expYear: "28", expMonth: "3", idNo: "900101", cardPw: "12", agree: true };
-const e = jar(); await e("POST", "/api/signup", { email: "sub@mail.com", password: "12345678" });
+const e = jar(); await join(e, { email: "sub@mail.com", password: "12345678" });
 t("sub needs login", (await jar()("POST", "/api/sub/start", card)).status === 401);
 t("sub needs consent", (await e("POST", "/api/sub/start", { ...card, agree: false })).status === 400);
 t("sub bad card", (await e("POST", "/api/sub/start", { ...card, cardNo: "1234" })).status === 400);

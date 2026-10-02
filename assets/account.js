@@ -66,7 +66,7 @@
   /* ---------- the server ---------- */
   function api(method, path, data) {
     return fetch(path, { method: method, credentials: "same-origin", headers: data ? { "content-type": "application/json" } : {}, body: data ? JSON.stringify(data) : undefined })
-      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw err(j.error || "잠시 문제가 생겼어요."); return j; }); });
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) { var e = err(j.error || "잠시 문제가 생겼어요."); e.data = j; throw e; } return j; }); });
   }
 
   /* ---------- this browser only (before the server is up) ---------- */
@@ -91,19 +91,37 @@
       var db = ldb(), email = String(d.email || "").trim().toLowerCase();
       if (!EMAIL.test(email)) return Promise.reject(err("이메일 주소를 확인해 주세요."));
       if (d.student && !UNI.test(email.split("@")[1])) return Promise.reject(err("대학생은 학교 메일(.ac.kr, .edu 등)로만 가입할 수 있어요."));
-      var taken = {}; for (var k0 in db.users) taken[db.users[k0].nick.toLowerCase()] = 1;
-      var nick = nickFrom(email, function (x) { return taken[x.toLowerCase()]; });
       if (String(d.password || "").length < 8) return Promise.reject(err("비밀번호는 8자 이상이에요."));
       for (var k in db.users) if (db.users[k].email === email) return Promise.reject(err("이미 가입한 이메일이에요."));
-      var id = "u" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), salt = id;
+      var salt = "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
       return hash(d.password, salt).then(function (h) {
-        db = ldb(); db.users[id] = { id: id, email: email, nick: nick, pass: h, salt: salt, state: cleanState(d.state), created: Date.now() }; put(LKEY, db); put(SKEY, id);
-        return { user: pub(db.users[id]) };
+        db = ldb(); db.pending = db.pending || {};
+        var code = String(100000 + Math.floor(Math.random() * 900000));
+        db.pending[email] = { pass: h, salt: salt, student: !!d.student, state: cleanState(d.state), code: code, expires: Date.now() + 600000, tries: 0 }; put(LKEY, db);
+        return { pending: true, email: email, devCode: code };
       });
+    },
+    resend: function (email) {
+      var db = ldb(), p = (db.pending || {})[email]; if (!p) return Promise.reject(err("가입을 처음부터 다시 해 주세요."));
+      p.code = String(100000 + Math.floor(Math.random() * 900000)); p.expires = Date.now() + 600000; p.tries = 0; put(LKEY, db);
+      return Promise.resolve({ pending: true, email: email, devCode: p.code });
+    },
+    verifySignup: function (email, code) {
+      var db = ldb(), p = (db.pending || {})[email];
+      if (!p || p.expires < Date.now()) return Promise.reject(err("코드가 없거나 시간이 지났어요. 다시 보내 주세요."));
+      if (p.tries >= 5) return Promise.reject(err("여러 번 틀렸어요. 코드를 다시 보내 주세요."));
+      if (String(code || "").trim() !== p.code) { p.tries++; put(LKEY, db); return Promise.reject(err("코드가 맞지 않아요.")); }
+      var taken = {}; for (var k0 in db.users) taken[db.users[k0].nick.toLowerCase()] = 1;
+      var id = "u" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), uni = p.student && UNI.test(email.split("@")[1]);
+      db.users[id] = { id: id, email: email, nick: nickFrom(email, function (x) { return taken[x.toLowerCase()]; }), pass: p.pass, salt: p.salt, state: p.state, created: Date.now() };
+      if (uni) { db.users[id].uniEmail = email; db.users[id].student = "verified"; db.users[id].trialUntil = Date.now() + MONTH; }
+      delete db.pending[email]; put(LKEY, db); put(SKEY, id);
+      return Promise.resolve({ user: pub(db.users[id]) });
     },
     login: function (d) {
       var db = ldb(), email = String(d.email || "").trim().toLowerCase(), u = null;
       for (var k in db.users) if (db.users[k].email === email) u = db.users[k];
+      if (!u && (db.pending || {})[email]) { var pe = err("메일로 받은 코드를 넣어 가입을 마쳐 주세요."); pe.data = { pending: true, email: email }; return Promise.reject(pe); }
       if (!u) return Promise.reject(err("이메일이나 비밀번호가 맞지 않아요."));
       return hash(String(d.password || ""), u.salt).then(function (h) { if (h !== u.pass) throw err("이메일이나 비밀번호가 맞지 않아요."); put(SKEY, u.id); return { user: pub(u) }; });
     },
@@ -161,7 +179,10 @@
     get user() { return me; },
     ready: null,
     on: function (f) { subs.push(f); },
-    signup: function (d) { var g = cleanState(get(GKEY, {})); d = { email: d.email, password: d.password, student: !!d.student, state: g }; return (mode === "server" ? api("POST", "/api/signup", d) : L.signup(d)).then(adopt); },
+    /* signing up is two steps: the address gets a code ({pending, email}); the code makes the account */
+    signup: function (d) { var g = cleanState(get(GKEY, {})); d = { email: d.email, password: d.password, student: !!d.student, state: g }; return mode === "server" ? api("POST", "/api/signup", d) : L.signup(d); },
+    resendSignup: function (email) { return mode === "server" ? api("POST", "/api/signup/resend", { email: email }) : L.resend(email); },
+    verifySignup: function (email, code) { return (mode === "server" ? api("POST", "/api/signup/verify", { email: email, code: code }) : L.verifySignup(email, code)).then(adopt); },
     login: function (d) { return (mode === "server" ? api("POST", "/api/login", d) : L.login(d)).then(adopt); },
     logout: function () { return (mode === "server" ? api("POST", "/api/logout", {}) : L.logout()).then(function () { me = null; emit(); }); },
     refresh: function () { return (mode === "server" ? api("GET", "/api/me") : Promise.resolve({ user: lme() })).then(function (r) { me = r.user || null; emit(); return me; }); },

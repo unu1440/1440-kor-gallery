@@ -77,17 +77,27 @@
     return p.then(function (r) { busy(form, false); ok && ok(r); }, function (e) { busy(form, false); msg(form, e.userMessage || "잠시 문제가 생겼어요. 다시 해 주세요.", true); });
   }
   var FORMS = {
-    login: function (f) { run(f, A.login({ email: f.email.value, password: f.password.value }), function () { f.reset(); show("account"); }); },
+    login: function (f) {
+      busy(f, true); msg(f, "");
+      A.login({ email: f.email.value, password: f.password.value }).then(function () { busy(f, false); f.reset(); show("account"); }, function (e) {
+        busy(f, false);
+        /* signed up but the code was never put in: straight to the code */
+        if (e.data && e.data.pending) { f.reset(); show("signup"); codeStep(e.data.email, "메일로 받은 코드를 넣어 가입을 마쳐 주세요. 코드가 없으면 다시 받기를 눌러 주세요."); return; }
+        msg(f, e.userMessage || "잠시 문제가 생겼어요. 다시 해 주세요.", true);
+      });
+    },
     signup: function (f) {
       var stu = f.student.checked, email = f.email.value.trim();
       if (stu && !A.isUni(email)) { msg(f, "대학생은 학교 메일(.ac.kr, .edu 등)로만 가입할 수 있어요.", true); f.email.focus(); return; }
       if (!f.agree.checked) { msg(f, "약관과 개인정보 보호정책에 동의해 주세요.", true); return; }
-      run(f, A.signup({ email: email, password: f.password.value, student: stu }), function () {
+      run(f, A.signup({ email: email, password: f.password.value, student: stu }), function (r) {
         f.reset(); studentMode(f);
-        if (!stu) { show("account"); return; }
-        /* a student signed up with the school address: the code goes there at once */
-        show("student"); var s = ov.querySelector('[data-f="send"]'); s.uni.value = email; FORMS.send(s);
+        codeStep(r.email, r.devCode ? "미리보기라 메일 대신 여기에 보여요: " + r.devCode : r.email + " 로 코드를 보냈어요. 10분 안에 넣어 주세요.");
       });
+    },
+    /* the code from the mail makes the account (a student's school address is checked by it too) */
+    code: function (f) {
+      run(f, A.verifySignup(f.dataset.email, f.code.value.replace(/\D/g, "")), function () { f.reset(); f.hidden = true; ov.querySelector('[data-f="signup"]').hidden = false; show("account"); });
     },
     send: function (f) {
       var uni = f.uni.value.trim();
@@ -109,6 +119,20 @@
     },
     request: function (f) { run(f, A.request({ school: f.school.value, uniEmail: f.uni.value }), function () { f.reset(); fill(); }); }
   };
+  /* the code step of signing up: the form for the address is put away and the code form takes its place */
+  function codeStep(email, text) {
+    var sf = ov.querySelector('[data-f="signup"]'), cf = ov.querySelector('[data-f="code"]');
+    sf.hidden = true; cf.hidden = false; cf.dataset.email = email; msg(cf, "");
+    $('[data-v="codeTo"]', cf).textContent = text;
+    try { cf.code.focus({ preventScroll: true }); } catch (e) {}
+  }
+  ov.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-code]"); if (!b) return; e.preventDefault();
+    var cf = ov.querySelector('[data-f="code"]');
+    if (b.dataset.code === "back") { cf.hidden = true; cf.reset(); ov.querySelector('[data-f="signup"]').hidden = false; return; }
+    b.disabled = true;
+    A.resendSignup(cf.dataset.email).then(function (r) { b.disabled = false; msg(cf, r.devCode ? "미리보기라 메일 대신 여기에 보여요: " + r.devCode : "코드를 다시 보냈어요."); }, function (er) { b.disabled = false; msg(cf, er.userMessage || "보내지 못했어요.", true); });
+  });
   /* "대학생입니다": the e-mail field then takes only a university address */
   function studentMode(f) {
     var on = f.student.checked, lbl = f.querySelector('[data-v="emailLbl"]');

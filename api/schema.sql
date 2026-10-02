@@ -61,3 +61,13 @@ CREATE TABLE IF NOT EXISTS subs (       -- the monthly subscription (NICEPAY bil
   created INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS subs_due ON subs (status, next);
+CREATE TABLE IF NOT EXISTS signups (    -- a sign-up waiting for the code sent to its address; the account is made by the code
+  email TEXT PRIMARY KEY,
+  pass TEXT NOT NULL,                    -- already hashed
+  student INTEGER NOT NULL DEFAULT 0,
+  state TEXT NOT NULL DEFAULT '{}',
+  code TEXT NOT NULL,                    -- sha-256
+  expires INTEGER NOT NULL,
+  tries INTEGER NOT NULL DEFAULT 0,
+  sent INTEGER NOT NULL
+);
