@@ -9,6 +9,8 @@
   var side = [].slice.call(ov.querySelectorAll(".info-side [data-to]")), pages = [].slice.call(ov.querySelectorAll(".info-page"));
   function $(s, r) { return (r || ov).querySelector(s); }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  /* the pass in the account list: "~26.11.01" (until that day) */
+  function upto(ms) { var d = new Date(ms); return "~" + String(d.getFullYear()).slice(2) + "." + String(d.getMonth() + 1).padStart(2, "0") + "." + String(d.getDate()).padStart(2, "0"); }
   function day(ms) { var d = new Date(ms); return d.getFullYear() + "." + String(d.getMonth() + 1).padStart(2, "0") + "." + String(d.getDate()).padStart(2, "0"); }
   function trialText(u) { return u.trialUntil > Date.now() ? day(u.trialUntil) + "까지" : "없음"; }
   var STU = { none: "안 함", pending: "관리자 확인 중", verified: "확인됨" };
@@ -55,7 +57,7 @@
     $('[data-v="email"]').textContent = me.email;
     /* the pass now: paid days, else the free student month, else none */
     var paid = me.paidUntil > Date.now(), free = me.trialUntil > Date.now();
-    $('[data-v="plan"]').textContent = paid ? day(me.paidUntil) + "까지" : free ? "무료 · " + day(me.trialUntil) + "까지" : "없음";
+    $('[data-v="plan"]').textContent = paid ? upto(me.paidUntil) : free ? "무료 " + upto(me.trialUntil) : "없음";
     var st = $('[data-v="stuState"]'), done = me.student === "verified", wait = me.student === "pending";
     st.textContent = done ? "확인했어요 (" + me.uniEmail + "). 무료 이용은 " + trialText(me) + "." : wait ? "관리자가 확인하고 있어요. 확인되면 한 달이 열려요." : "학교 메일로 코드를 받아 넣으면 첫 한 달이 무료예요. 학교 메일 하나로 한 번만 받을 수 있어요.";
     ov.querySelector('[data-f="send"]').hidden = done || wait;
