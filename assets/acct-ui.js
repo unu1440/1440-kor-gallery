@@ -58,6 +58,11 @@
     /* the pass now: paid days, else the free student month, else none */
     var paid = me.paidUntil > Date.now(), free = me.trialUntil > Date.now();
     $('[data-v="plan"]').textContent = paid ? upto(me.paidUntil) : free ? "무료 " + upto(me.trialUntil) : "없음";
+    /* the subscription: on (card, next charge, stop) or off (the price, and the card form when asked) */
+    var sb = me.sub, on = !!(sb && sb.status === "active");
+    $('[data-v="subState"]').textContent = on ? "구독 중 · " + sb.card + " · 다음 결제 " + upto(sb.next).slice(1) : sb && sb.status === "failed" ? "카드 결제가 되지 않아 구독이 멈췄어요. 카드를 다시 등록해 주세요." : sb && sb.status === "canceled" ? "해지했어요." + (paid ? " " + upto(me.paidUntil) + " 까지 쓸 수 있어요." : "") : "";
+    $('[data-v="subOn"]').hidden = !on; $('[data-v="subOff"]').hidden = on;
+    if (on) $('[data-f="sub"]').hidden = true;
     var st = $('[data-v="stuState"]'), done = me.student === "verified", wait = me.student === "pending";
     st.textContent = done ? "확인했어요 (" + me.uniEmail + "). 무료 이용은 " + trialText(me) + "." : wait ? "관리자가 확인하고 있어요. 확인되면 한 달이 열려요." : "학교 메일로 코드를 받아 넣으면 첫 한 달이 무료예요. 학교 메일 하나로 한 번만 받을 수 있어요.";
     ov.querySelector('[data-f="send"]').hidden = done || wait;
@@ -94,6 +99,14 @@
       });
     },
     verify: function (f) { run(f, A.verifyCode(f.code.value), function () { f.reset(); f.hidden = true; msg(ov.querySelector('[data-f="send"]'), ""); fill(); }); },
+    sub: function (f) {
+      var ex = f.exp.value.replace(/\D/g, "");
+      if (!f.agree.checked) { msg(f, "자동 결제에 동의해 주세요.", true); return; }
+      if (ex.length !== 4) { msg(f, "유효기간을 MM/YY로 적어 주세요.", true); f.exp.focus(); return; }
+      run(f, A.subscribe({ cardNo: f.cardNo.value, expMonth: ex.slice(0, 2), expYear: ex.slice(2), idNo: f.idNo.value, cardPw: f.cardPw.value, agree: true }), function () {
+        f.reset(); f.hidden = true; fill(); var m = $('[data-v="subMsg"]'); m.textContent = "구독을 시작했어요. 첫 달을 결제했어요."; m.classList.remove("err");
+      });
+    },
     request: function (f) { run(f, A.request({ school: f.school.value, uniEmail: f.uni.value }), function () { f.reset(); fill(); }); }
   };
   /* "대학생입니다": the e-mail field then takes only a university address */
@@ -105,6 +118,22 @@
   }
   (function () { var f = ov.querySelector('[data-f="signup"]'); f.student.addEventListener("change", function () { studentMode(f); f.email.focus(); }); f.email.addEventListener("input", function () { if (f.student.checked) studentMode(f); }); })();
   [].forEach.call(ov.querySelectorAll("form[data-f]"), function (f) { f.addEventListener("submit", function (e) { e.preventDefault(); FORMS[f.dataset.f](f); }); });
+
+  /* the subscription: the price opens the card form; 해지 stops it (the days already paid stay) */
+  ov.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-sub]"); if (!b) return; e.preventDefault();
+    var f = $('[data-f="sub"]'), m = $('[data-v="subMsg"]'); m.textContent = ""; m.classList.remove("err");
+    if (b.dataset.sub === "open") { f.hidden = !f.hidden; if (!f.hidden) { msg(f, ""); try { f.cardNo.focus(); } catch (er) {} } return; }
+    var me = A.user; if (!confirm("구독을 해지할까요?" + (me && me.paidUntil > Date.now() ? " " + upto(me.paidUntil) + " 까지는 그대로 쓸 수 있어요." : ""))) return;
+    b.disabled = true;
+    A.unsubscribe().then(function () { b.disabled = false; fill(); }, function (er) { b.disabled = false; m.textContent = er.userMessage || "해지하지 못했어요."; m.classList.add("err"); });
+  });
+  /* the card fields take digits only; the expiry gets its slash */
+  (function () {
+    var f = $('[data-f="sub"]'); if (!f) return;
+    ["cardNo", "idNo", "cardPw"].forEach(function (n) { f[n].addEventListener("input", function () { var v = f[n].value.replace(/\D/g, ""); if (n === "cardNo") v = v.slice(0, 16).replace(/(\d{4})(?=\d)/g, "$1 "); if (f[n].value !== v) f[n].value = v; }); });
+    f.exp.addEventListener("input", function () { var v = f.exp.value.replace(/\D/g, "").slice(0, 4); v = v.length > 2 ? v.slice(0, 2) + "/" + v.slice(2) : v; if (f.exp.value !== v) f.exp.value = v; });
+  })();
 
   /* paying: the window is NICEPAY's; when it is done NICEPAY brings the person back here with ?pay=ok or ?pay=fail */
   ov.addEventListener("click", function (e) {

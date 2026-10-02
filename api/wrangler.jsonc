@@ -13,6 +13,8 @@
   "compatibility_date": "2025-09-01",
   "workers_dev": false,
   "routes": [{ "pattern": "1440.kor.gallery/api/*", "zone_name": "kor.gallery" }],
+  // the monthly subscription is renewed once a day (00:15 UTC = 09:15 KST): see renewSubs in worker.js
+  "triggers": { "crons": ["15 0 * * *"] },
   "vars": {
     "ADMIN_EMAILS": "1440unu@kor.gallery",
     "MAIL_FROM": "1440 <no-reply@kor.gallery>",

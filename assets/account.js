@@ -187,6 +187,15 @@
         });
       });
     },
+    /* the monthly subscription: the card goes to our server once (over HTTPS) and on to NICEPAY as a billing key */
+    subscribe: function (card) {
+      if (mode !== "server") return Promise.reject(err("결제는 1440.kor.gallery에서 할 수 있어요."));
+      return api("POST", "/api/sub/start", card).then(function (r) { me = r.user || me; emit(); return me; });
+    },
+    unsubscribe: function () {
+      if (mode !== "server") return Promise.reject(err("결제는 1440.kor.gallery에서 할 수 있어요."));
+      return api("POST", "/api/sub/cancel", {}).then(function (r) { me = r.user || me; emit(); return me; });
+    },
     payments: function () { return mode === "server" ? api("GET", "/api/pay/history") : Promise.resolve({ payments: [] }); },
     isUni: function (email) { return UNI.test(String(email).split("@")[1] || ""); }
   };

@@ -179,6 +179,24 @@
           <li><span class="b"></span><span class="t">이메일</span><span class="v" data-v="email"></span></li>
           <li><span class="b"></span><span class="t">이용권</span><span class="v" data-v="plan"></span></li>
         </ul>
+        <section class="pay sub">
+          <h2>구독</h2>
+          <p class="dim" data-v="subState"></p>
+          <ul class="ck" data-v="subOff">
+            <li><span class="b"></span><span class="t">매월</span><span class="v"><button type="button" class="u" data-sub="open">4,900₩</button></span></li>
+          </ul>
+          <form class="acct-f" data-f="sub" hidden novalidate autocomplete="on">
+            <label class="fld"><span>카드 번호</span><input name="cardNo" inputmode="numeric" autocomplete="cc-number" maxlength="19" required></label>
+            <label class="fld"><span>유효기간 <em>MM/YY</em></span><input name="exp" inputmode="numeric" autocomplete="cc-exp" maxlength="5" placeholder="MM/YY" required></label>
+            <label class="fld"><span>생년월일 <em>6자리 · 법인은 사업자번호</em></span><input name="idNo" inputmode="numeric" maxlength="10" autocomplete="off" required></label>
+            <label class="fld"><span>비밀번호 <em>앞 2자리</em></span><input name="cardPw" type="password" inputmode="numeric" maxlength="2" autocomplete="off" required></label>
+            <label class="ckx"><input type="checkbox" name="agree" required><span>매월 4,900₩ 자동 결제에 동의합니다 <em>이용권이 끝나는 날 결제 · 언제든 해지</em></span></label>
+            <button class="acct-go" type="submit">구독 시작 →</button>
+            <p class="acct-msg" role="status"></p>
+          </form>
+          <p data-v="subOn" hidden><button type="button" class="u" data-sub="cancel">해지</button></p>
+          <p class="acct-msg" role="status" data-v="subMsg"></p>
+        </section>
         <section class="pay">
           <h2>이용권</h2>
           <p class="dim">카드나 간편결제로 결제한 만큼 이용 기간이 늘어납니다. 자동으로 다시 결제되지 않습니다.</p>
@@ -245,7 +263,7 @@
 
 <script src="assets/common.js?v=5"></script>
 <script src="assets/site.js?v=20"></script>
-<script src="assets/account.js?v=6"></script>
-<script src="assets/acct-ui.js?v=6"></script>
+<script src="assets/account.js?v=7"></script>
+<script src="assets/acct-ui.js?v=7"></script>
 </body>
 </html>

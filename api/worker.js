@@ -11,6 +11,9 @@ const enc = new TextEncoder();
 /* what can be bought: the amount is decided here, never by the page */
 const PLANS = { month: { amount: 4900, days: 30, goods: "1440 이용권 30일" }, year: { amount: 46000, days: 365, goods: "1440 이용권 365일" } };
 
+/* the monthly subscription (NICEPAY billing): charged when the pass runs out, renewed by the daily cron */
+const SUB = { amount: 4900, days: 30, goods: "1440 월 구독", tries: 3 };
+
 export const UNI = /(^|\.)(ac\.[a-z]{2}|edu(\.[a-z]{2})?)$/i; /* snu.ac.kr, mit.edu, unimelb.edu.au, ox.ac.uk */
 export function uniDomain(email) { const d = String(email).split("@")[1] || ""; return UNI.test(d); }
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[a-z]{2,}$/i;
@@ -68,6 +71,72 @@ async function sendMail(env, to, subject, text) {
   if (!r.ok) throw new Error("mail " + r.status);
 }
 
+/* ---------- NICEPAY ---------- */
+function toHex(buf) { return [...new Uint8Array(buf)].map((c) => c.toString(16).padStart(2, "0")).join(""); }
+function niceApi(env) { return env.NICEPAY_API || "https://sandbox-api.nicepay.co.kr"; }
+async function nice(env, path, data) {
+  const r = await fetch(niceApi(env) + path, { method: "POST", headers: { "content-type": "application/json;charset=utf-8", authorization: "Basic " + btoa(env.NICEPAY_CLIENT_KEY + ":" + env.NICEPAY_SECRET_KEY) }, body: JSON.stringify(data) });
+  return r.json().catch(() => ({ resultMsg: "NICEPAY " + r.status }));
+}
+function newOrder(tag) { return "1440-" + tag + Date.now().toString(36) + "-" + b64(rand(6)).replace(/[^a-zA-Z0-9]/g, ""); }
+/* card details for the billing key: AES-256-CBC (encMode A2: the secret key, IV = its first 16 characters), or, for a
+   16-character key, AES-128-ECB (each block alone = one-block CBC with a zero IV). Hex out, PKCS#7 padding. */
+export async function encCard(plain, secret) {
+  const data = enc.encode(plain);
+  if (secret.length >= 32) {
+    const key = await crypto.subtle.importKey("raw", enc.encode(secret.slice(0, 32)), "AES-CBC", false, ["encrypt"]);
+    return { encData: toHex(await crypto.subtle.encrypt({ name: "AES-CBC", iv: enc.encode(secret.slice(0, 16)) }, key, data)), encMode: "A2" };
+  }
+  const key = await crypto.subtle.importKey("raw", enc.encode(secret.slice(0, 16)), "AES-CBC", false, ["encrypt"]);
+  const n = 16 - (data.length % 16), padded = new Uint8Array(data.length + n); padded.set(data); padded.fill(n, data.length);
+  let out = "";
+  for (let i = 0; i < padded.length; i += 16) out += toHex((await crypto.subtle.encrypt({ name: "AES-CBC", iv: new Uint8Array(16) }, key, padded.slice(i, i + 16))).slice(0, 16));
+  return { encData: out };
+}
+/* one month on the billing key: the order is kept first, the pass grows only on a real "paid" */
+async function chargeSub(env, user, bid) {
+  const orderId = newOrder("s"), ediDate = new Date().toISOString();
+  await env.DB.prepare("INSERT INTO payments (order_id, user_id, plan, amount, status, created) VALUES (?, ?, 'sub', ?, 'ready', ?)").bind(orderId, user.id, SUB.amount, Date.now()).run();
+  const a = await nice(env, "/v1/subscribe/" + encodeURIComponent(bid) + "/payments", { orderId, amount: SUB.amount, goodsName: SUB.goods, cardQuota: "0", useShopInterest: false, buyerEmail: user.email, ediDate, signData: await hex(orderId + bid + ediDate + env.NICEPAY_SECRET_KEY) });
+  if (a.resultCode !== "0000" || a.status !== "paid" || +a.amount !== SUB.amount) {
+    await env.DB.prepare("UPDATE payments SET status = 'failed', tid = ?, message = ? WHERE order_id = ?").bind(a.tid || null, String(a.resultMsg || "").slice(0, 200), orderId).run();
+    return { ok: false, msg: a.resultMsg || "카드 결제가 되지 않았어요." };
+  }
+  const u = await env.DB.prepare("SELECT paid_until FROM users WHERE id = ?").bind(user.id).first(), until = Math.max((u && u.paid_until) || 0, Date.now()) + SUB.days * DAY;
+  await env.DB.prepare("UPDATE payments SET status = 'paid', tid = ?, paid_at = ? WHERE order_id = ?").bind(a.tid || null, Date.now(), orderId).run();
+  await env.DB.prepare("UPDATE users SET paid_until = ? WHERE id = ?").bind(until, user.id).run();
+  return { ok: true, until };
+}
+async function expireBid(env, bid) {
+  const orderId = newOrder("x"), ediDate = new Date().toISOString();
+  try { await nice(env, "/v1/subscribe/" + encodeURIComponent(bid) + "/expire", { orderId, ediDate, signData: await hex(orderId + bid + ediDate + env.NICEPAY_SECRET_KEY) }); } catch (e) {}
+}
+async function fullUser(env, u) {
+  const s = await env.DB.prepare("SELECT status, card, next FROM subs WHERE user_id = ?").bind(u.id).first();
+  return { ...publicUser(u), admin: isAdmin(env, u), sub: s ? { status: s.status, card: s.card || "", next: s.status === "active" ? s.next : 0, amount: SUB.amount } : null };
+}
+function ymd(ms) { const d = new Date(ms + 9 * 3600000); return String(d.getUTCFullYear()).slice(2) + "." + String(d.getUTCMonth() + 1).padStart(2, "0") + "." + String(d.getUTCDate()).padStart(2, "0"); }
+/* the daily cron: every active subscription whose pass ends within a day is charged; a card that fails is tried again
+   on the next runs, and after SUB.tries failures the subscription stops (the billing key is deleted) */
+export async function renewSubs(env, now = Date.now()) {
+  const due = await env.DB.prepare("SELECT s.*, u.email FROM subs s JOIN users u ON u.id = s.user_id WHERE s.status = 'active' AND s.next <= ?").bind(now + DAY).all();
+  let paid = 0, failed = 0;
+  for (const s of due.results || []) {
+    const r = await chargeSub(env, { id: s.user_id, email: s.email }, s.bid);
+    if (r.ok) {
+      paid++; await env.DB.prepare("UPDATE subs SET next = ?, tries = 0 WHERE user_id = ?").bind(r.until, s.user_id).run();
+      try { await sendMail(env, s.email, "1440 구독 결제 4,900₩", "1440 월 구독이 결제되었습니다.\n\n금액 4,900₩ · " + (s.card || "카드") + "\n이용 기간 ~" + ymd(r.until) + "\n\n해지는 1440.kor.gallery → 계정 → 구독에서 할 수 있습니다."); } catch (e) {}
+    } else {
+      failed++; const tries = (s.tries || 0) + 1;
+      if (tries >= SUB.tries) {
+        await env.DB.prepare("UPDATE subs SET status = 'failed', bid = '', tries = ? WHERE user_id = ?").bind(tries, s.user_id).run(); await expireBid(env, s.bid);
+        try { await sendMail(env, s.email, "1440 구독이 멈췄어요", "등록한 카드로 결제가 되지 않아 1440 월 구독을 멈췄습니다 (" + r.msg + ").\n\n1440.kor.gallery → 계정 → 구독에서 카드를 다시 등록하면 이어서 쓸 수 있습니다."); } catch (e) {}
+      } else await env.DB.prepare("UPDATE subs SET tries = ?, next = ? WHERE user_id = ?").bind(tries, now + DAY / 2, s.user_id).run();
+    }
+  }
+  return { paid, failed };
+}
+
 async function body(req) { try { return await req.json(); } catch (e) { return {}; } }
 
 const routes = {
@@ -119,7 +188,43 @@ const routes = {
     return json({ payments: r.results || [] });
   },
 
-  "GET /api/me": async (env, req, u) => json({ user: u ? { ...publicUser(u), admin: isAdmin(env, u) } : null }),
+  /* ---------- the monthly subscription: the card becomes a billing key (BID) once, the first month is charged at once,
+     then the cron charges it when the pass runs out. Card details only pass through (encrypted for NICEPAY at once,
+     never stored or logged): what is kept is the key, the card company and the last four digits. ---------- */
+  "POST /api/sub/start": async (env, req, u) => {
+    if (!u) return fail("로그인해 주세요.", 401);
+    if (!env.NICEPAY_CLIENT_KEY || !env.NICEPAY_SECRET_KEY) return fail("결제는 준비 중이에요.", 503);
+    const d = await body(req), num = (v) => String(v == null ? "" : v).replace(/\D/g, "");
+    const c = { cardNo: num(d.cardNo), expYear: num(d.expYear).slice(-2), expMonth: num(d.expMonth).padStart(2, "0"), idNo: num(d.idNo), cardPw: num(d.cardPw) };
+    if (!d.agree) return fail("자동 결제에 동의해 주세요.");
+    if (!/^\d{14,16}$/.test(c.cardNo)) return fail("카드 번호를 확인해 주세요.");
+    if (!/^\d{2}$/.test(c.expYear) || !/^(0[1-9]|1[0-2])$/.test(c.expMonth)) return fail("유효기간을 확인해 주세요.");
+    if (!/^(\d{6}|\d{10})$/.test(c.idNo)) return fail("생년월일 6자리(법인은 사업자번호 10자리)를 적어 주세요.");
+    if (!/^\d{2}$/.test(c.cardPw)) return fail("비밀번호 앞 2자리를 적어 주세요.");
+    const cur = await env.DB.prepare("SELECT status FROM subs WHERE user_id = ?").bind(u.id).first();
+    if (cur && cur.status === "active") return fail("이미 구독 중이에요.", 409);
+    const orderId = newOrder("b"), ediDate = new Date().toISOString();
+    const e = await encCard("cardNo=" + c.cardNo + "&expYear=" + c.expYear + "&expMonth=" + c.expMonth + "&idNo=" + c.idNo + "&cardPw=" + c.cardPw, env.NICEPAY_SECRET_KEY);
+    const r = await nice(env, "/v1/subscribe/regist", { ...e, orderId, buyerEmail: u.email, ediDate, signData: await hex(orderId + ediDate + env.NICEPAY_SECRET_KEY) });
+    if (r.resultCode !== "0000" || !r.bid) return fail(r.resultMsg || "카드를 등록하지 못했어요.", 402);
+    const p = await chargeSub(env, u, r.bid);
+    if (!p.ok) { await expireBid(env, r.bid); return fail(p.msg, 402); }
+    const card = String(r.cardName || "카드").replace(/[\[\]]/g, "").slice(0, 12) + " ··" + c.cardNo.slice(-4);
+    await env.DB.prepare("INSERT INTO subs (user_id, bid, card, status, next, tries, created) VALUES (?, ?, ?, 'active', ?, 0, ?) ON CONFLICT(user_id) DO UPDATE SET bid = excluded.bid, card = excluded.card, status = 'active', next = excluded.next, tries = 0")
+      .bind(u.id, r.bid, card, p.until, Date.now()).run();
+    return json({ user: await fullUser(env, await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(u.id).first()) });
+  },
+  /* stopping: no more charges; the days already paid stay */
+  "POST /api/sub/cancel": async (env, req, u) => {
+    if (!u) return fail("로그인해 주세요.", 401);
+    const s = await env.DB.prepare("SELECT * FROM subs WHERE user_id = ?").bind(u.id).first();
+    if (!s || s.status !== "active") return fail("구독 중이 아니에요.", 404);
+    await env.DB.prepare("UPDATE subs SET status = 'canceled', bid = '' WHERE user_id = ?").bind(u.id).run();
+    await expireBid(env, s.bid);
+    return json({ user: await fullUser(env, u) });
+  },
+
+  "GET /api/me": async (env, req, u) => json({ user: u ? await fullUser(env, u) : null }),
 
   "POST /api/signup": async (env, req) => {
     const d = await body(req), email = String(d.email || "").trim().toLowerCase(), pass = String(d.password || "");
@@ -135,7 +240,7 @@ const routes = {
     const id = b64(rand(12)), state = JSON.stringify(d.state && typeof d.state === "object" ? d.state : {}).slice(0, 8000);
     await env.DB.prepare("INSERT INTO users (id, email, nick, pass, state, created) VALUES (?, ?, ?, ?, ?, ?)").bind(id, email, nick, await hashPass(pass), state, Date.now()).run();
     const u = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(id).first();
-    return json({ user: { ...publicUser(u), admin: isAdmin(env, u) } }, 200, { "set-cookie": await startSession(env, id) });
+    return json({ user: await fullUser(env, u) }, 200, { "set-cookie": await startSession(env, id) });
   },
 
   "POST /api/login": async (env, req) => {
@@ -143,7 +248,7 @@ const routes = {
     if (await tooMany(env, "login:" + email, 8, 15 * 60000) || await tooMany(env, "ip:" + ip, 30, 15 * 60000)) return fail("잠시 후 다시 해 주세요.", 429);
     const u = await env.DB.prepare("SELECT * FROM users WHERE email = ?").bind(email).first();
     if (!u || !(await checkPass(String(d.password || ""), u.pass))) { await note(env, "login:" + email); await note(env, "ip:" + ip); return fail("이메일이나 비밀번호가 맞지 않아요.", 401); }
-    return json({ user: { ...publicUser(u), admin: isAdmin(env, u) } }, 200, { "set-cookie": await startSession(env, u.id) });
+    return json({ user: await fullUser(env, u) }, 200, { "set-cookie": await startSession(env, u.id) });
   },
 
   "POST /api/logout": async (env, req) => {
@@ -235,6 +340,8 @@ const routes = {
 };
 
 export default {
+  /* the daily renewal (api/wrangler.jsonc → triggers) */
+  async scheduled(event, env, ctx) { ctx.waitUntil(renewSubs(env)); },
   async fetch(req, env) {
     const url = new URL(req.url), key = req.method + " " + url.pathname.replace(/\/+$/, ""), fn = routes[key];
     if (!fn) return fail("not found", 404);
