@@ -63,12 +63,12 @@ async function tooMany(env, key, max, win) {
 async function note(env, key) { await env.DB.prepare("INSERT INTO attempts (key, at) VALUES (?, ?)").bind(key, Date.now()).run(); }
 
 async function sendMail(env, to, subject, text) {
-  if (!env.RESEND_API_KEY) throw new Error("no mail key");
+  if (!env.RESEND_API_KEY) { console.log("resend: no RESEND_API_KEY"); throw new Error("no mail key"); }
   const r = await fetch("https://api.resend.com/emails", {
     method: "POST", headers: { authorization: "Bearer " + env.RESEND_API_KEY, "content-type": "application/json" },
     body: JSON.stringify({ from: env.MAIL_FROM || "1440 <no-reply@kor.gallery>", to: [to], subject, text })
   });
-  if (!r.ok) throw new Error("mail " + r.status);
+  if (!r.ok) { const why = (await r.text().catch(() => "")).slice(0, 300); console.log("resend " + r.status + " " + why); throw new Error("mail " + r.status); } /* seen with: npx wrangler tail -c api/wrangler.jsonc */
 }
 
 /* ---------- NICEPAY ---------- */
