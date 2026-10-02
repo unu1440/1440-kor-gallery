@@ -24,13 +24,14 @@
   }
   function show(id) {
     var me = A.user;
-    if (!me && /^(account|student|admin)$/.test(id)) id = "login";
+    if (!me && /^(account|student|admin|refund)$/.test(id)) id = "login";
     if (me && /^(login|signup)$/.test(id)) id = "account";
     if (id === "admin" && !(me && me.admin)) id = "account";
     pages.forEach(function (p) { p.classList.toggle("on", p.id === "a-" + id); });
     side.forEach(function (a) { a.classList.toggle("on", a.dataset.to === id); });
     if (id === "account" || id === "student") fill();
     if (id === "admin") admin();
+    if (id === "refund") refundBox();
     var f = $("#a-" + id + " input:not([type=checkbox])"); if (f && isOpen() && matchMedia("(hover: hover)").matches) setTimeout(function () { try { f.focus({ preventScroll: true }); } catch (e) {} }, 350);
   }
   window.ACCT_UI = { close: function () { if (isOpen()) setOpen(false); }, open: setOpen };
@@ -42,6 +43,7 @@
     /* Student only for someone who signed up with a school address and is not checked yet */
     ov.classList.toggle("stu", !!(me && me.student !== "verified" && A.isUni(me.email)));
     var hs = $('[data-v="hubSide"]'); if (hs) hs.href = A.hubUrl();
+    if (me) refundBox(); else ov.classList.remove("buyer");
     if (!me) slot.innerHTML = '<a href="#" id="loginLink" aria-expanded="' + isOpen() + '" aria-controls="acctOv">Login</a>';
     else slot.innerHTML = '<a href="#" id="nickLink" class="nick" aria-expanded="' + isOpen() + '" aria-controls="acctOv" title="계정">' + esc(me.email) + '</a>';
     var l = slot.firstChild;
@@ -63,7 +65,6 @@
     $('[data-v="subState"]').textContent = on ? "구독 중 · " + sb.card + " · 다음 결제 " + upto(sb.next).slice(1) : sb && sb.status === "failed" ? "카드 결제가 되지 않아 구독이 멈췄어요. 카드를 다시 등록해 주세요." : sb && sb.status === "canceled" ? "해지했어요." + (paid ? " " + upto(me.paidUntil) + " 까지 쓸 수 있어요." : "") : "";
     $('[data-v="subOn"]').hidden = !on; $('[data-v="subOff"]').hidden = on;
     if (on) $('[data-f="sub"]').hidden = true;
-    refundBox();
     var st = $('[data-v="stuState"]'), done = me.student === "verified", wait = me.student === "pending";
     st.textContent = done ? "확인했어요 (" + me.uniEmail + "). 무료 이용은 " + trialText(me) + "." : wait ? "관리자가 확인하고 있어요. 확인되면 한 달이 열려요." : "학교 메일로 코드를 받아 넣으면 첫 한 달이 무료예요. 학교 메일 하나로 한 번만 받을 수 있어요.";
     ov.querySelector('[data-f="send"]').hidden = done || wait;
@@ -150,10 +151,11 @@
   function refundBox() {
     var box = $('[data-v="rfBox"]');
     A.refundQuote().then(function (q) {
-      RF = q; var said = !!$('[data-v="rfMsg"]').textContent;
+      RF = q; var me = A.user, said = !!$('[data-v="rfMsg"]').textContent;
+      ov.classList.toggle("buyer", !!q || !!(me && me.sub && me.sub.status === "active") || said);
       box.hidden = !q && !said; $('[data-v="rfText"]').hidden = !q; $('[data-refund]').hidden = !q; if (!q) return;
       var d = new Date(q.paidAt), when = (d.getMonth() + 1) + "." + String(d.getDate()).padStart(2, "0");
-      var head = "최근 결제 · " + PLAN[q.plan] + " " + won(q.amount) + " · " + when + ". ";
+      var head = "최근 결제 · " + PLAN[q.plan] + " " + won(q.amount) + " · " + when + " — ";
       $('[data-v="rfText"]').textContent = head + (q.rule === "today" ? "결제한 날이라 전액 돌려 드려요." : q.rule === "sub" ? "구독은 돈을 돌려 드리지 않고 멈춰요. 이미 낸 기간은 그대로 쓸 수 있어요." : "쓰지 않은 " + q.daysBack + "일만큼 돌려 드려요.");
       var b = $('[data-refund]'); b.textContent = q.rule === "sub" ? "구독 멈추기" : won(q.refund) + " 환불"; b.hidden = q.rule !== "sub" && q.refund <= 0;
     }, function () { box.hidden = true; });

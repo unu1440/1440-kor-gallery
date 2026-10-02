@@ -396,8 +396,8 @@ html.intro .minute { animation: none; }
 .bar .menu .acct .hub::before { content: ""; display: inline-block; width: 0.42em; height: 0.42em; margin-right: 0.45em; vertical-align: 0.12em; background: currentColor; }
 @media (hover: hover) { .bar .menu .acct:hover .hub { opacity: 1; filter: none; pointer-events: auto; } }
 .bar .menu .acct:focus-within .hub, .bar .menu .acct.peek .hub { opacity: 1; filter: none; pointer-events: auto; }
-.acct-ov .info-side .m, .acct-ov .info-side .a, .acct-ov .info-side .s, .acct-ov.in .info-side .g { display: none; }
-.acct-ov.in .info-side .m, .acct-ov.in.is-admin .info-side .a, .acct-ov.in.stu .info-side .s { display: inline; }
+.acct-ov .info-side .m, .acct-ov .info-side .a, .acct-ov .info-side .s, .acct-ov .info-side .r, .acct-ov.in .info-side .g { display: none; }
+.acct-ov.in .info-side .m, .acct-ov.in.is-admin .info-side .a, .acct-ov.in.stu .info-side .s, .acct-ov.in.buyer .info-side .r { display: inline; }
 .acct-f { display: grid; gap: 1.05em; max-width: 26em; }
 .acct-f[hidden], .acct-ov [hidden] { display: none; }
 .fld { display: grid; gap: 0.2em; }
