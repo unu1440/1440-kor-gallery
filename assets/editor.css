@@ -449,3 +449,20 @@ button.ed-pr.tool .nm em { margin-left: auto; padding-left: 0.5em; }
 .ed-sw[aria-checked="true"]::after { transform: translateX(0.9em); }
 @media (max-width: 760px) { .ed-pop, .ed-tip { background: rgba(248, 248, 246, .97); } }
 @media (prefers-reduced-motion: reduce) { .ed-pop:not([hidden]), .ed-tip:not([hidden]) { animation: none; } }
+
+/* ---- the top bar lines up with the site's header: same height (--bar-h), same side gutter, same type size and paper.
+   The mark sits where "1440" sits on the other pages; pointed at, it melts into ← (back to the forms), the way "1440" melts
+   into the mark on the front page ---- */
+body.editing, .ed { background: #f8f8f6; }
+.ed { --top: var(--bar-h, 3.2em); }
+.ed-top { padding-inline: var(--gutter, 1.2em); background: #f8f8f6; border-bottom-color: rgba(0, 0, 0, .08); font-size: clamp(12px, 0.18vw + 11.2px, 13.5px); }
+.ed-top .ed-l { gap: 0.9em; }
+.ed-home { display: inline-grid; align-items: center; justify-items: start; gap: 0; font-weight: 500; }
+.ed-home > * { grid-area: 1 / 1; transition: opacity .8s ease, filter .9s cubic-bezier(.2, .7, .2, 1); }
+.ed-home .ed-logo { width: 1.6em; height: 1.6em; }
+.ed-home .bk { justify-self: center; opacity: 0; filter: blur(5px); }
+@media (hover: hover) {
+  .ed-home:hover .ed-logo, .ed-home:focus-visible .ed-logo { opacity: 0; filter: blur(5px); }
+  .ed-home:hover .bk, .ed-home:focus-visible .bk { opacity: 1; filter: none; }
+}
+@media (max-width: 760px) { .ed { --top: var(--bar-h, 3.1em); } .ed-top { padding-inline: var(--gutter, 0.8em); } }
