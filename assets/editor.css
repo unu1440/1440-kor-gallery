@@ -466,3 +466,27 @@ body.editing, .ed { background: #f8f8f6; }
   .ed-home:hover .bk, .ed-home:focus-visible .bk { opacity: 1; filter: none; }
 }
 @media (max-width: 760px) { .ed { --top: var(--bar-h, 3.1em); } .ed-top { padding-inline: var(--gutter, 0.8em); } }
+
+/* ---- 공개하기 steps: fields, checks and the passes, in the same words-only look ---- */
+.ed-fld { display: grid; gap: 0.2em; }
+.ed-fld > span { font-size: 0.86em; color: rgba(0, 0, 0, .45); }
+.ed-fld em, .ed-ck em { font-style: normal; color: rgba(0, 0, 0, .38); margin-left: 0.35em; }
+.ed-fld input { border: 0; border-bottom: 1px solid rgba(0, 0, 0, .18); border-radius: 0; background: none; padding: 0.3em 0; font-size: max(16px, 1em); outline: none; transition: border-color .3s; }
+.ed-fld input:focus { border-bottom-color: #000; }
+.ed-ck { display: grid; grid-template-columns: 1.3em minmax(0, 1fr); align-items: start; font-size: 0.92em; cursor: pointer; }
+.ed-ck input { -webkit-appearance: none; appearance: none; width: 0.72em; height: 0.72em; margin: 0.38em 0 0; border: 1px solid #000; border-radius: 0; background: none; cursor: pointer; }
+.ed-ck input:checked { background: #000; }
+.ed-ck a { color: inherit; text-decoration: underline; text-decoration-color: rgba(0, 0, 0, .25); text-underline-offset: 0.2em; }
+.ed-plans { display: grid; }
+.ed-plan { display: flex; justify-content: space-between; gap: 1em; padding: 0.55em 0; color: rgba(0, 0, 0, .7); transition: color .4s; }
+.ed-plan + .ed-plan { border-top: 1px solid rgba(0, 0, 0, .07); }
+.ed-plan:hover, .ed-plan:focus-visible { color: #000; outline: none; }
+.ed-plan span:last-child { font-variant-numeric: tabular-nums; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 0.22em; transition: text-decoration-color .4s; }
+.ed-plan:hover span:last-child { text-decoration-color: currentColor; }
+.ed-done { margin: 0; font-size: max(16px, 1.1em); }
+.ed-pmsg:empty { display: none; }
+.ed-pmsg.err { color: #b8231a; }
+.ed-dlg-box[data-step] > * { animation: edRise .9s cubic-bezier(.2, .7, .2, 1) both; }
+@media (prefers-reduced-motion: reduce) { .ed-dlg-box[data-step] > * { animation: none; } }
+.ed-dlg .ed-fld input:focus-visible { outline: none; }
+.ed-dlg .ed-ck input:focus-visible { outline: 1px solid rgba(0, 0, 0, .5); outline-offset: 2px; }

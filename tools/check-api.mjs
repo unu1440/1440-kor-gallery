@@ -232,5 +232,19 @@ const sig = async (tid, amount, ediDate) => hex(tid + amount + ediDate + env.NIC
   r = await g("POST", "/api/sub/start", card); q = (await g("GET", "/api/pay/refund")).body.quote;
   r = await g("POST", "/api/pay/refund", { orderId: q.orderId }); t("sub same day: all back, stopped", q.rule === "today" && r.body.refunded === 4900 && r.body.user.sub.status === "canceled", { q, r });
 }
+
+// paying from the editor: back to the form that was being published, never to another site
+{ const W3 = await import(pathToFileURL(copy).href);
+  t("back: editor", W3.safeBack("/templates.html?edit=943&site=test&c=2") === "/templates.html?edit=943&site=test&c=2");
+  t("back: no other host", W3.safeBack("//evil.com/x") === "/" && W3.safeBack("https://evil.com") === "/" && W3.safeBack("/templates.html?x=<s>") === "/" && W3.safeBack("") === "/");
+  const h = jar(); await join(h, { email: "pub@mail.com", password: "12345678" });
+  const o = (await h("POST", "/api/pay/order", { plan: "month", back: "/templates.html?edit=12&site=pub" })).body;
+  t("order keeps back", o.back === "/templates.html?edit=12&site=pub", o);
+  r = await post({ authResultCode: "0000", authResultMsg: "ok", tid: "TB1", clientId: "S2_test", orderId: o.orderId, amount: "4900", authToken: "TOK", mallReserved: o.back, signature: await hex("TOK" + "S2_test" + "4900" + env.NICEPAY_SECRET_KEY) });
+  t("paid: back to the editor", r.to === "/templates.html?edit=12&site=pub&pay=ok", r);
+  const o2 = (await h("POST", "/api/pay/order", { plan: "month", back: "/templates.html?edit=12&site=pub" })).body;
+  r = await post({ authResultCode: "9999", authResultMsg: "취소", orderId: o2.orderId, mallReserved: "https://evil.com" });
+  t("failed: never to another site", r.to.indexOf("/?pay=fail") === 0, r);
+}
 console.log(ok + " passed, " + bad + " failed");
 if (bad) process.exit(1);

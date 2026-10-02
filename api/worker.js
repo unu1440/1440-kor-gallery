@@ -181,6 +181,9 @@ async function sendSignupCode(env, email, p, ip) {
   return json({ pending: true, email });
 }
 
+/* a page of this site to come back to after paying: the first page or the editor, nothing else (no other host) */
+export function safeBack(b) { b = String(b || ""); return /^\/(templates\.html)?(\?[A-Za-z0-9=&%._~-]*)?$/.test(b) ? b : "/"; }
+
 async function body(req) { try { return await req.json(); } catch (e) { return {}; } }
 
 const routes = {
@@ -199,12 +202,14 @@ const routes = {
     const d = await body(req), plan = PLANS[d.plan]; if (!plan) return fail("요금제를 골라 주세요.");
     const orderId = "1440-" + Date.now().toString(36) + "-" + b64(rand(6)).replace(/[^a-zA-Z0-9]/g, "");
     await env.DB.prepare("INSERT INTO payments (order_id, user_id, plan, amount, status, created) VALUES (?, ?, ?, ?, 'ready', ?)").bind(orderId, u.id, d.plan, plan.amount, Date.now()).run();
-    return json({ orderId, method: "cardAndEasyPay", amount: plan.amount, goodsName: plan.goods, clientId: env.NICEPAY_CLIENT_KEY, returnUrl: new URL(req.url).origin + "/api/pay/return", buyerEmail: u.email, buyerName: u.nick });
+    return json({ orderId, back: safeBack(d.back), method: "cardAndEasyPay", amount: plan.amount, goodsName: plan.goods, clientId: env.NICEPAY_CLIENT_KEY, returnUrl: new URL(req.url).origin + "/api/pay/return", buyerEmail: u.email, buyerName: u.nick });
   },
 
   "POST /api/pay/return": async (env, req) => {
-    const back = (q) => new Response(null, { status: 303, headers: { location: "/?pay=" + q, "cache-control": "no-store" } });
-    let f; try { f = await req.formData(); } catch (e) { return back("fail&m=" + encodeURIComponent("결제 정보를 읽지 못했어요.")); }
+    let f = null; try { f = await req.formData(); } catch (e) {}
+    /* where the person came from (the first page, or the editor they were publishing from), carried by NICEPAY in mallReserved */
+    const to = safeBack(f && f.get("mallReserved")), back = (q) => new Response(null, { status: 303, headers: { location: to + (to.indexOf("?") >= 0 ? "&" : "?") + "pay=" + q, "cache-control": "no-store" } });
+    if (!f) return back("fail&m=" + encodeURIComponent("결제 정보를 읽지 못했어요."));
     const g = (k) => String(f.get(k) || ""), orderId = g("orderId"), tid = g("tid"), amount = g("amount");
     const o = await env.DB.prepare("SELECT * FROM payments WHERE order_id = ?").bind(orderId).first();
     if (!o || o.status !== "ready") return back("fail&m=" + encodeURIComponent("주문을 찾을 수 없어요."));
