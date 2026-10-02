@@ -91,9 +91,12 @@ t("throttle", (await d("POST", "/api/login", { email: "kim@mail.com", password: 
 // paying: an order, NICEPAY's post back, the approval, the pass
 const hex = async (x) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(x)))].map((c) => c.toString(16).padStart(2, "0")).join("");
 const post = async (fields, origin) => { const r = await W.fetch(new Request(O + "/api/pay/return", { method: "POST", headers: { origin: origin || "https://pay.nicepay.co.kr", "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams(fields) }), env); return { status: r.status, to: r.headers.get("location") }; };
-t("order needs login", (await jar()("POST", "/api/pay/order", { plan: "month" })).status === 401);
-t("unknown plan", (await a("POST", "/api/pay/order", { plan: "forever" })).status === 400);
-r = await a("POST", "/api/pay/order", { plan: "month" }); t("order", r.status === 200 && r.body.amount === 4900 && r.body.clientId === "S2_test" && /\/api\/pay\/return$/.test(r.body.returnUrl), r);
+t("order needs login", (await jar()("POST", "/api/pay/order", { plan: "month", method: "kakaopay" })).status === 401);
+t("unknown plan", (await a("POST", "/api/pay/order", { plan: "forever", method: "kakaopay" })).status === 400);
+t("easy pay only", (await a("POST", "/api/pay/order", { plan: "month", method: "card" })).status === 400 && (await a("POST", "/api/pay/order", { plan: "month" })).status === 400);
+r = await a("GET", "/api/pay/plans"); t("easy pay list", r.body.methods.map((x) => x.method).join() === "naverpayCard,kakaopay,samsungpayCard,payco,ssgpay", r);
+env.NICEPAY_EASYPAY = "kakaopay, naverpayCard"; t("easy pay narrowed", (await a("GET", "/api/pay/plans")).body.methods.length === 2 && (await a("POST", "/api/pay/order", { plan: "month", method: "payco" })).status === 400); delete env.NICEPAY_EASYPAY;
+r = await a("POST", "/api/pay/order", { plan: "month", method: "kakaopay" }); t("order", r.body.method === "kakaopay" && r.status === 200 && r.body.amount === 4900 && r.body.clientId === "S2_test" && /\/api\/pay\/return$/.test(r.body.returnUrl), r);
 const o1 = r.body, good = { authResultCode: "0000", authResultMsg: "ok", tid: "T123", clientId: "S2_test", orderId: o1.orderId, amount: "4900", authToken: "TOK" };
 t("bad signature", (await post({ ...good, signature: "nope" })).to.indexOf("fail") >= 0);
 t("changed amount", (await post({ ...good, amount: "100", signature: await hex("TOK" + "S2_test" + "100" + env.NICEPAY_SECRET_KEY) })).to.indexOf("fail") >= 0);
@@ -101,9 +104,9 @@ r = await post({ ...good, signature: await hex("TOK" + "S2_test" + "4900" + env.
 t("approval call", approvals.length === 1 && approvals[0].url === "https://sandbox-api.nicepay.co.kr/v1/payments/T123" && approvals[0].auth === "Basic " + btoa("S2_test:" + env.NICEPAY_SECRET_KEY) && approvals[0].body.amount === 4900, approvals);
 let me1 = (await a("GET", "/api/me")).body.user; t("pass 30 days", me1.paidUntil > Date.now() + 29 * 86400000 && me1.paidUntil < Date.now() + 31 * 86400000, me1);
 t("same order twice", (await post({ ...good, signature: await hex("TOK" + "S2_test" + "4900" + env.NICEPAY_SECRET_KEY) })).to.indexOf("fail") >= 0 && approvals.length === 1);
-r = await a("POST", "/api/pay/order", { plan: "year" }); const o2 = r.body;
+r = await a("POST", "/api/pay/order", { plan: "year", method: "naverpayCard" }); const o2 = r.body;
 t("cancelled window", (await post({ authResultCode: "9999", authResultMsg: "취소", orderId: o2.orderId })).to.indexOf("fail") >= 0);
-r = await a("POST", "/api/pay/order", { plan: "year" });
+r = await a("POST", "/api/pay/order", { plan: "year", method: "naverpayCard" });
 await post({ ...good, orderId: r.body.orderId, amount: "46000", tid: "T456", signature: await hex("TOK" + "S2_test" + "46000" + env.NICEPAY_SECRET_KEY) });
 me1 = (await a("GET", "/api/me")).body.user; t("year adds on", me1.paidUntil > Date.now() + 394 * 86400000, me1);
 r = await a("GET", "/api/pay/history"); t("history", r.body.payments.filter((x) => x.status === "paid").length === 2 && r.body.payments.length === 3, r);

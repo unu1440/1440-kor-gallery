@@ -135,11 +135,25 @@
     f.exp.addEventListener("input", function () { var v = f.exp.value.replace(/\D/g, "").slice(0, 4); v = v.length > 2 ? v.slice(0, 2) + "/" + v.slice(2) : v; if (f.exp.value !== v) f.exp.value = v; });
   })();
 
-  /* paying: the window is NICEPAY's; when it is done NICEPAY brings the person back here with ?pay=ok or ?pay=fail */
+  /* paying: easy pay only. The price shows the easy pays (one brand per NICEPAY window); the brand opens the window.
+     When it is done NICEPAY brings the person back here with ?pay=ok or ?pay=fail */
+  var payPlan = null;
   ov.addEventListener("click", function (e) {
-    var b = e.target.closest("[data-pay]"); if (!b) return; e.preventDefault();
-    var m = $('[data-v="payMsg"]'); m.textContent = "결제창을 여는 중…"; m.classList.remove("err"); b.disabled = true;
-    A.pay(b.dataset.pay).then(function () { m.textContent = ""; b.disabled = false; }, function (er) { b.disabled = false; m.textContent = er.userMessage || "결제를 시작하지 못했어요."; m.classList.add("err"); });
+    var ez = $('[data-v="ezp"]'), m = $('[data-v="payMsg"]');
+    var b = e.target.closest("[data-pay]");
+    if (b) {
+      e.preventDefault(); m.textContent = ""; m.classList.remove("err");
+      if (payPlan === b.dataset.pay && !ez.hidden) { ez.hidden = true; payPlan = null; return; }
+      payPlan = b.dataset.pay;
+      A.payMethods().then(function (list) {
+        ez.innerHTML = list.map(function (x) { return '<button type="button" class="u" data-ez="' + esc(x.method) + '">' + esc(x.name) + '</button>'; }).join('<span class="sep"> · </span>');
+        ez.hidden = false;
+      });
+      return;
+    }
+    var z = e.target.closest("[data-ez]"); if (!z || !payPlan) return; e.preventDefault();
+    m.textContent = "결제창을 여는 중…"; m.classList.remove("err"); z.disabled = true;
+    A.pay(payPlan, z.dataset.ez).then(function () { m.textContent = ""; z.disabled = false; }, function (er) { z.disabled = false; m.textContent = er.userMessage || "결제를 시작하지 못했어요."; m.classList.add("err"); });
   });
   (function () {
     var q = new URLSearchParams(location.search), r = q.get("pay"); if (!r) return;

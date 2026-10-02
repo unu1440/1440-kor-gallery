@@ -175,12 +175,17 @@
     },
     state: stateNow, saveState: saveState, touch: touch, hubUrl: hubUrl, formUrl: formUrl, sameForm: sameForm,
     /* paying (only with the server): the server makes the order, NICEPAY's window takes the card, the server approves */
-    pay: function (plan) {
+    /* the easy pays the one-off pass can be paid with (the server knows which are signed with NICEPAY) */
+    payMethods: function () {
+      var dflt = [{ method: "naverpayCard", name: "네이버페이" }, { method: "kakaopay", name: "카카오페이" }, { method: "samsungpayCard", name: "삼성페이" }, { method: "payco", name: "페이코" }, { method: "ssgpay", name: "SSG페이" }];
+      return mode === "server" ? api("GET", "/api/pay/plans").then(function (r) { return r.methods || dflt; }, function () { return dflt; }) : Promise.resolve(dflt);
+    },
+    pay: function (plan, method) {
       if (mode !== "server") return Promise.reject(err("결제는 1440.kor.gallery에서 할 수 있어요."));
-      return api("POST", "/api/pay/order", { plan: plan }).then(function (o) {
+      return api("POST", "/api/pay/order", { plan: plan, method: method }).then(function (o) {
         return loadPay().then(function () {
           return new Promise(function (done, no) {
-            window.AUTHNICE.requestPay({ clientId: o.clientId, method: "cardAndEasyPay", skinType: "gray", logoImgUrl: location.origin + "/assets/logo-pay.png", orderId: o.orderId, amount: o.amount, goodsName: o.goodsName, returnUrl: o.returnUrl, buyerEmail: o.buyerEmail, buyerName: o.buyerName,
+            window.AUTHNICE.requestPay({ clientId: o.clientId, method: o.method, skinType: "gray", logoImgUrl: location.origin + "/assets/logo-pay.png", orderId: o.orderId, amount: o.amount, goodsName: o.goodsName, returnUrl: o.returnUrl, buyerEmail: o.buyerEmail, buyerName: o.buyerName,
               fnError: function (r) { no(err((r && r.errorMsg) || "결제창을 닫았어요.")); } });
             done();
           });

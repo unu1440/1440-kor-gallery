@@ -431,4 +431,7 @@ html.intro .minute { animation: none; }
 .acct-ov .pay { display: grid; gap: 0.6em; border-top: 1px solid var(--ink-4); padding-top: 1.1em; margin-top: 0.6em; }
 .acct-ov .pay .ck .v { text-align: right; }
 .acct-ov .pay button[disabled] { opacity: .35; cursor: default; }
+/* the easy pays under the pass prices: a quiet line of names, out of a blur */
+.acct-ov .ezp { margin: 0; text-align: right; color: var(--ink-3); animation: riseIn .9s var(--slow) both; }
+.acct-ov .ezp .sep { color: var(--ink-4); }
 .info-page .rule { border-top: 1px solid var(--ink-4); padding-top: 1.2em; margin-top: 0.4em; }
