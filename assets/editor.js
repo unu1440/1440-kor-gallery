@@ -142,11 +142,12 @@
       '<button type="button" data-p="site" data-tip="사이트 설정" aria-label="사이트 설정" aria-pressed="false">설정</button>' +
     '</nav>' +
       '<div class="ed-r">' +
+        '<button type="button" class="ed-pub ed-pub-mob" id="edPubMob">공개하기</button>' +
         '<button type="button" class="ed-ic" id="edPreview" aria-pressed="false" aria-label="미리보기 ' + CMD + '\\" title="미리보기 ' + CMD + '\\">' + IC.point + '</button>' +
         '<button type="button" class="ed-ic ed-dev-desk" id="edDevice" aria-pressed="false" aria-label="폰 화면으로 보기" title="폰 화면 ' + CMD + '⇧X">' + IC.mob + '</button>' +
         '</div>' +
     '</header>' +
-    '<aside class="ed-files" id="edFiles" aria-label="폴더"></aside><div class="ed-save" id="edSave" role="status"></div>' +
+    '<aside class="ed-files" id="edFiles" aria-label="폴더"></aside><div class="ed-save"><span class="ed-save-t" id="edSave" role="status"></span><button type="button" class="ed-pub" id="edPub" title="공개하기 ' + CMD + 'P">공개하기</button></div>' +
     '<div class="ed-3d" id="ed3d" hidden></div>' +
     '<div class="ed-rs" id="edRs" role="separator" aria-orientation="vertical" aria-label="폭 조절" tabindex="0"></div>' +
     '<div class="ed-canvas ed-edit" id="edCanvas"></div>' +
@@ -181,6 +182,7 @@
     }, now ? 0 : 500);
     showSave(true);
   }
+  $("#edPub").addEventListener("click", publish); $("#edPubMob").addEventListener("click", publish);
   function undoState() {} /* undo and redo are keys only (Ctrl/⌘+Z, ⇧Z): the bar has no buttons for them */
   function travel(d) {
     var to = hp + d; if (to < 0 || to >= hist.length) return;
