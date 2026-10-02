@@ -63,6 +63,7 @@
     $('[data-v="subState"]').textContent = on ? "구독 중 · " + sb.card + " · 다음 결제 " + upto(sb.next).slice(1) : sb && sb.status === "failed" ? "카드 결제가 되지 않아 구독이 멈췄어요. 카드를 다시 등록해 주세요." : sb && sb.status === "canceled" ? "해지했어요." + (paid ? " " + upto(me.paidUntil) + " 까지 쓸 수 있어요." : "") : "";
     $('[data-v="subOn"]').hidden = !on; $('[data-v="subOff"]').hidden = on;
     if (on) $('[data-f="sub"]').hidden = true;
+    refundBox();
     var st = $('[data-v="stuState"]'), done = me.student === "verified", wait = me.student === "pending";
     st.textContent = done ? "확인했어요 (" + me.uniEmail + "). 무료 이용은 " + trialText(me) + "." : wait ? "관리자가 확인하고 있어요. 확인되면 한 달이 열려요." : "학교 메일로 코드를 받아 넣으면 첫 한 달이 무료예요. 학교 메일 하나로 한 번만 받을 수 있어요.";
     ov.querySelector('[data-f="send"]').hidden = done || wait;
@@ -142,6 +143,28 @@
   }
   (function () { var f = ov.querySelector('[data-f="signup"]'); f.student.addEventListener("change", function () { studentMode(f); f.email.focus(); }); f.email.addEventListener("input", function () { if (f.student.checked) studentMode(f); }); })();
   [].forEach.call(ov.querySelectorAll("form[data-f]"), function (f) { f.addEventListener("submit", function (e) { e.preventDefault(); FORMS[f.dataset.f](f); }); });
+
+  /* refunds (the 1440 rules): the latest payment, what it would give back, and the button */
+  var RF = null, PLAN = { month: "30일권", year: "1년권", sub: "구독" };
+  function won(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "₩"; }
+  function refundBox() {
+    var box = $('[data-v="rfBox"]');
+    A.refundQuote().then(function (q) {
+      RF = q; var said = !!$('[data-v="rfMsg"]').textContent;
+      box.hidden = !q && !said; $('[data-v="rfText"]').hidden = !q; $('[data-refund]').hidden = !q; if (!q) return;
+      var d = new Date(q.paidAt), when = (d.getMonth() + 1) + "." + String(d.getDate()).padStart(2, "0");
+      var head = "최근 결제 · " + PLAN[q.plan] + " " + won(q.amount) + " · " + when + ". ";
+      $('[data-v="rfText"]').textContent = head + (q.rule === "today" ? "결제한 날이라 전액 돌려 드려요." : q.rule === "sub" ? "구독은 돈을 돌려 드리지 않고 멈춰요. 이미 낸 기간은 그대로 쓸 수 있어요." : "쓰지 않은 " + q.daysBack + "일만큼 돌려 드려요.");
+      var b = $('[data-refund]'); b.textContent = q.rule === "sub" ? "구독 멈추기" : won(q.refund) + " 환불"; b.hidden = q.rule !== "sub" && q.refund <= 0;
+    }, function () { box.hidden = true; });
+  }
+  ov.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-refund]"); if (!b || !RF) return; e.preventDefault();
+    var m = $('[data-v="rfMsg"]'); m.textContent = ""; m.classList.remove("err");
+    if (!confirm(RF.rule === "sub" ? "구독을 멈출까요? 이미 낸 기간은 그대로 쓸 수 있어요." : won(RF.refund) + "을 환불할까요? 이용권에서 " + RF.daysBack + "일이 빠져요.")) return;
+    b.disabled = true;
+    A.refund(RF.orderId).then(function (r) { b.disabled = false; m.textContent = r.refunded > 0 ? won(r.refunded) + "을 환불했어요. 카드사에 따라 며칠 걸릴 수 있어요." : "구독을 멈췄어요."; fill(); }, function (er) { b.disabled = false; m.textContent = er.userMessage || "환불하지 못했어요."; m.classList.add("err"); });
+  });
 
   /* the subscription: the price opens the card form; 해지 stops it (the days already paid stay) */
   ov.addEventListener("click", function (e) {

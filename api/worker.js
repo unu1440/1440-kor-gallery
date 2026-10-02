@@ -120,6 +120,23 @@ async function undoPayment(env, o, cancelled) {
     if (s) { await env.DB.prepare("UPDATE subs SET status = 'canceled', bid = '' WHERE user_id = ?").bind(o.user_id).run(); await expireBid(env, s.bid); }
   }
 }
+/* ---------- refunds the person asks for (the rules of 1440):
+   1. on the day of buying (KST): the whole amount back, and the days it bought go
+   2. a 30-day or 1-year pass after that day: the unused days back (a day already begun counts as used)
+   3. the subscription after that day: no money back; it stops, and the days already paid stay
+   Only the latest payment can be taken back: its days are the last part of the pass. ---------- */
+function kstDay(ms) { return new Date(ms + 9 * 3600000).toISOString().slice(0, 10); }
+async function refundQuote(env, u, now = Date.now()) {
+  const o = await env.DB.prepare("SELECT * FROM payments WHERE user_id = ? AND status = 'paid' ORDER BY paid_at DESC LIMIT 1").bind(u.id).first();
+  if (!o) return null;
+  const days = DAYS_OF[o.plan] || 0, me = await env.DB.prepare("SELECT paid_until FROM users WHERE id = ?").bind(u.id).first();
+  const left = Math.max(0, Math.floor((((me && me.paid_until) || 0) - now) / DAY)); /* whole unused days on the pass */
+  const q = { orderId: o.order_id, plan: o.plan, amount: o.amount, paidAt: o.paid_at, days };
+  if (kstDay(o.paid_at) === kstDay(now)) return { ...q, rule: "today", refund: o.amount, daysBack: days };
+  if (o.plan === "sub") return (await env.DB.prepare("SELECT 1 FROM subs WHERE user_id = ? AND status = 'active'").bind(u.id).first()) ? { ...q, rule: "sub", refund: 0, daysBack: 0 } : null;
+  const unused = Math.min(days, left);
+  return { ...q, rule: "prorate", refund: Math.floor(o.amount * unused / days), daysBack: unused };
+}
 async function expireBid(env, bid) {
   const orderId = newOrder("x"), ediDate = new Date().toISOString();
   try { await nice(env, "/v1/subscribe/" + encodeURIComponent(bid) + "/expire", { orderId, ediDate, signData: await hex(orderId + bid + ediDate + env.NICEPAY_SECRET_KEY) }); } catch (e) {}
@@ -222,6 +239,34 @@ const routes = {
     if (!o || o.status !== "paid") return ok();
     await undoPayment(env, o, Math.max(0, o.amount - Math.max(0, +h.balanceAmt || 0)));
     return ok();
+  },
+
+  /* what a refund of the latest payment would give back, by the rules above */
+  "GET /api/pay/refund": async (env, req, u) => {
+    if (!u) return fail("로그인해 주세요.", 401);
+    return json({ quote: await refundQuote(env, u) });
+  },
+  "POST /api/pay/refund": async (env, req, u) => {
+    if (!u) return fail("로그인해 주세요.", 401);
+    const d = await body(req), q = await refundQuote(env, u);
+    if (!q || q.orderId !== String(d.orderId || "")) return fail("환불할 결제가 없어요. 화면을 새로 고쳐 주세요.", 409);
+    const o = await env.DB.prepare("SELECT * FROM payments WHERE order_id = ?").bind(q.orderId).first();
+    const stopSub = async () => { const s = await env.DB.prepare("SELECT * FROM subs WHERE user_id = ? AND status = 'active'").bind(u.id).first(); if (s) { await env.DB.prepare("UPDATE subs SET status = 'canceled', bid = '' WHERE user_id = ?").bind(u.id).run(); await expireBid(env, s.bid); } };
+    if (q.refund > 0) {
+      /* the payment is marked first, so NICEPAY's webhook for this same cancel finds nothing left to undo */
+      const full = q.refund >= o.amount;
+      await env.DB.prepare("UPDATE payments SET status = ?, message = ? WHERE order_id = ? AND status = 'paid'").bind(full ? "cancelled" : "partial", "환불 " + q.refund + "원", o.order_id).run();
+      const ediDate = new Date().toISOString();
+      const r = await nice(env, "/v1/payments/" + encodeURIComponent(o.tid) + "/cancel", { reason: q.rule === "today" ? "구매 당일 환불" : "남은 기간 환불", orderId: o.order_id, ...(full ? {} : { cancelAmt: q.refund }), ediDate, signData: await hex(o.tid + ediDate + env.NICEPAY_SECRET_KEY) });
+      if (r.resultCode !== "0000") {
+        await env.DB.prepare("UPDATE payments SET status = 'paid', message = ? WHERE order_id = ?").bind(String(r.resultMsg || "").slice(0, 200), o.order_id).run();
+        return fail(r.resultMsg || "환불하지 못했어요. 잠시 후 다시 해 주세요.", 502);
+      }
+      const me = await env.DB.prepare("SELECT paid_until FROM users WHERE id = ?").bind(u.id).first(), back = (me && me.paid_until || 0) - q.daysBack * DAY;
+      await env.DB.prepare("UPDATE users SET paid_until = ? WHERE id = ?").bind(back > Date.now() ? back : null, u.id).run();
+    } else if (q.rule === "sub") await env.DB.prepare("UPDATE payments SET message = '환불 요청: 구독 멈춤' WHERE order_id = ?").bind(o.order_id).run();
+    if (o.plan === "sub") await stopSub();
+    return json({ refunded: q.refund, rule: q.rule, user: await fullUser(env, await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(u.id).first()) });
   },
 
   "GET /api/pay/history": async (env, req, u) => {

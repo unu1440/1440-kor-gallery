@@ -217,6 +217,9 @@
       if (mode !== "server") return Promise.reject(err("결제는 1440.kor.gallery에서 할 수 있어요."));
       return api("POST", "/api/sub/cancel", {}).then(function (r) { me = r.user || me; emit(); return me; });
     },
+    /* refunds by the 1440 rules: what the latest payment would give back, and doing it */
+    refundQuote: function () { return mode === "server" ? api("GET", "/api/pay/refund").then(function (r) { return r.quote; }) : Promise.resolve(null); },
+    refund: function (orderId) { return api("POST", "/api/pay/refund", { orderId: orderId }).then(function (r) { me = r.user || me; emit(); return r; }); },
     payments: function () { return mode === "server" ? api("GET", "/api/pay/history") : Promise.resolve({ payments: [] }); },
     isUni: function (email) { return UNI.test(String(email).split("@")[1] || ""); }
   };

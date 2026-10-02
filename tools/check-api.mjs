@@ -19,10 +19,11 @@ const mails = [];
 /* Resend gets mail; NICEPAY's approval answers like the sandbox (it says what it was asked) */
 const approvals = [];
 /* NICEPAY billing: the fake opens encData with the secret key, so the test proves the card was sent right */
-const subCalls = []; let cardFails = 0;
+const subCalls = [], cancels = []; let cardFails = 0;
 import crypto2 from "node:crypto";
 function openCard(hexData, secret) { const d = crypto2.createDecipheriv("aes-256-cbc", Buffer.from(secret.slice(0, 32)), Buffer.from(secret.slice(0, 16))); return Buffer.concat([d.update(Buffer.from(hexData, "hex")), d.final()]).toString(); }
 globalThis.fetch = async (url, init) => {
+  if (/\/v1\/payments\/[^/]+\/cancel$/.test(String(url))) { const b = JSON.parse(init.body); cancels.push({ url: String(url), body: b }); return new Response(JSON.stringify({ resultCode: "0000", status: b.cancelAmt ? "partialCancelled" : "cancelled" })); }
   if (String(url).indexOf("/v1/subscribe/") >= 0) {
     const b = JSON.parse(init.body), u = String(url); subCalls.push({ url: u, body: b, auth: init.headers.authorization });
     if (/\/regist$/.test(u)) { const plain = openCard(b.encData, env.NICEPAY_SECRET_KEY); subCalls[subCalls.length - 1].plain = plain; return new Response(JSON.stringify(/cardNo=4000000000000000/.test(plain) ? { resultCode: "F112", resultMsg: "유효하지않은 카드번호" } : { resultCode: "0000", bid: "BIKY" + subCalls.length, cardName: "[신한]", tid: "R1", orderId: b.orderId })); }
@@ -196,6 +197,40 @@ const sig = async (tid, amount, ediDate) => hex(tid + amount + ediDate + env.NIC
   await hookPost({ tid: subTid, status: "cancelled", amount: 4900, balanceAmt: 0, ediDate: ed, signature: await sig(subTid, 4900, ed) });
   const afterSub = (await f("GET", "/api/me")).body.user;
   t("hook: subscription charge taken back stops it", afterSub.sub.status === "canceled" && Math.abs(withSub.paidUntil - afterSub.paidUntil - 30 * 86400000) < 5, { withSub, afterSub });
+}
+
+// refunds by the 1440 rules
+{ const g = jar(), em = "rf@mail.com"; await join(g, { email: em, password: "12345678" });
+  const uid = db.prepare("SELECT id FROM users WHERE email = ?").get(em).id;
+  const buy = async (plan, tid) => { const o = (await g("POST", "/api/pay/order", { plan })).body; const amt = String(o.amount); await post({ authResultCode: "0000", authResultMsg: "ok", tid, clientId: "S2_test", orderId: o.orderId, amount: amt, authToken: "TOK", signature: await hex("TOK" + "S2_test" + amt + env.NICEPAY_SECRET_KEY) }); return o.orderId; };
+  t("nothing to refund", (await g("GET", "/api/pay/refund")).body.quote === null);
+  // 1. the same day: all of it, and the days go
+  await buy("month", "RA1");
+  let q = (await g("GET", "/api/pay/refund")).body.quote; t("same day quote", q.rule === "today" && q.refund === 4900 && q.daysBack === 30, q);
+  r = await g("POST", "/api/pay/refund", { orderId: q.orderId });
+  t("same day refund", r.status === 200 && r.body.refunded === 4900 && r.body.user.paidUntil === 0 && !cancels[cancels.length - 1].body.cancelAmt && cancels[cancels.length - 1].url.endsWith("/v1/payments/RA1/cancel"), r);
+  const c1 = cancels[cancels.length - 1]; t("cancel signed", c1.body.signData === await hex("RA1" + c1.body.ediDate + env.NICEPAY_SECRET_KEY));
+  // the webhook for that same cancel comes after: nothing more is taken
+  const ed = "2026-10-02T16:00:00+0900"; await hookPost({ tid: "RA1", status: "cancelled", amount: 4900, balanceAmt: 0, ediDate: ed, signature: await sig("RA1", 4900, ed) });
+  t("webhook after own refund does nothing", (await g("GET", "/api/me")).body.user.paidUntil === 0);
+  // 2. a year pass, bought 100 days ago: the 265 unused days back
+  await buy("year", "RA2");
+  db.prepare("UPDATE payments SET paid_at = ? WHERE tid = 'RA2'").run(Date.now() - 100 * 86400000 - 3600000);
+  db.prepare("UPDATE users SET paid_until = ? WHERE id = ?").run(Date.now() + 265 * 86400000 - 3600000, uid);
+  q = (await g("GET", "/api/pay/refund")).body.quote; t("year prorate quote", q.rule === "prorate" && q.daysBack === 264 && q.refund === Math.floor(46000 * 264 / 365), q);
+  r = await g("POST", "/api/pay/refund", { orderId: q.orderId }); t("year prorate refund", r.status === 200 && cancels[cancels.length - 1].body.cancelAmt === Math.floor(46000 * 264 / 365) && r.body.user.paidUntil > Date.now() && r.body.user.paidUntil < Date.now() + 86400000, r);
+  t("prorated payment marked partial", db.prepare("SELECT status FROM payments WHERE tid = 'RA2'").get().status === "partial");
+  t("stale refund refused", (await g("POST", "/api/pay/refund", { orderId: q.orderId })).status === 409);
+  // 3. the subscription after its first day: no money, it stops, the days stay
+  await g("POST", "/api/sub/start", card);
+  db.prepare("UPDATE payments SET paid_at = ? WHERE plan = 'sub' AND user_id = ?").run(Date.now() - 5 * 86400000, uid);
+  const before = (await g("GET", "/api/me")).body.user.paidUntil, nC = cancels.length;
+  q = (await g("GET", "/api/pay/refund")).body.quote; t("sub quote", q.rule === "sub" && q.refund === 0, q);
+  r = await g("POST", "/api/pay/refund", { orderId: q.orderId }); t("sub refund stops, days stay", r.status === 200 && r.body.refunded === 0 && r.body.user.sub.status === "canceled" && r.body.user.paidUntil === before && cancels.length === nC, r);
+  t("nothing more after", (await g("GET", "/api/pay/refund")).body.quote === null);
+  // 1 again, for the subscription: the same day gives all of it back
+  r = await g("POST", "/api/sub/start", card); q = (await g("GET", "/api/pay/refund")).body.quote;
+  r = await g("POST", "/api/pay/refund", { orderId: q.orderId }); t("sub same day: all back, stopped", q.rule === "today" && r.body.refunded === 4900 && r.body.user.sub.status === "canceled", { q, r });
 }
 console.log(ok + " passed, " + bad + " failed");
 if (bad) process.exit(1);
