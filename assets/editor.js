@@ -128,7 +128,7 @@
   root.className = "ed";
   root.innerHTML =
     '<header class="ed-top">' +
-      '<div class="ed-l"><button type="button" class="ed-home" id="edBack" aria-label="템플릿 다시 고르기" title="템플릿 다시 고르기">← <svg class="ed-logo" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15.25" fill="#fff" stroke="#111" stroke-width="1.5"/><path d="M16 .75a15.25 15.25 0 0 0 0 30.5z" fill="#111"/><text x="9.4" y="19.6" font-family="Arial,Helvetica,sans-serif" font-size="9.6" font-weight="700" fill="#fff" text-anchor="middle">14</text><text x="22.6" y="19.6" font-family="Arial,Helvetica,sans-serif" font-size="9.6" font-weight="700" fill="#111" text-anchor="middle">40</text></svg></button><span class="ed-no">' + T.tag(N) + '</span>' +
+      '<div class="ed-l"><button type="button" class="ed-home" id="edBack" aria-label="템플릿 다시 고르기" title="템플릿 다시 고르기"><span class="bk" aria-hidden="true">←</span><svg class="ed-logo" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15.25" fill="#fff" stroke="#111" stroke-width="1.5"/><path d="M16 .75a15.25 15.25 0 0 0 0 30.5z" fill="#111"/><text x="9.4" y="19.6" font-family="Arial,Helvetica,sans-serif" font-size="9.6" font-weight="700" fill="#fff" text-anchor="middle">14</text><text x="22.6" y="19.6" font-family="Arial,Helvetica,sans-serif" font-size="9.6" font-weight="700" fill="#111" text-anchor="middle">40</text></svg></button><span class="ed-no">' + T.tag(N) + '</span>' +
       '<img class="ed-fav" id="edFav" alt="" hidden></div>' +
     '<nav class="ed-rail" id="edRail" aria-label="편집 도구">' +
       '<button type="button" id="edFilesBtn" data-tip="패널" aria-label="탐색기·도구·레이어" aria-pressed="false">탐색기 · 도구 · 레이어</button>' +
@@ -142,11 +142,12 @@
       '<button type="button" data-p="site" data-tip="사이트 설정" aria-label="사이트 설정" aria-pressed="false">설정</button>' +
     '</nav>' +
       '<div class="ed-r">' +
+        '<button type="button" class="ed-pub ed-pub-mob" id="edPubMob">공개하기</button>' +
         '<button type="button" class="ed-ic" id="edPreview" aria-pressed="false" aria-label="미리보기 ' + CMD + '\\" title="미리보기 ' + CMD + '\\">' + IC.point + '</button>' +
         '<button type="button" class="ed-ic ed-dev-desk" id="edDevice" aria-pressed="false" aria-label="폰 화면으로 보기" title="폰 화면 ' + CMD + '⇧X">' + IC.mob + '</button>' +
         '</div>' +
     '</header>' +
-    '<aside class="ed-files" id="edFiles" aria-label="폴더"></aside><div class="ed-save" id="edSave" role="status"></div>' +
+    '<aside class="ed-files" id="edFiles" aria-label="폴더"></aside><div class="ed-save"><span class="ed-save-t" id="edSave" role="status"></span><button type="button" class="ed-pub" id="edPub" title="공개하기 ' + CMD + 'P">공개하기</button></div>' +
     '<div class="ed-3d" id="ed3d" hidden></div>' +
     '<div class="ed-rs" id="edRs" role="separator" aria-orientation="vertical" aria-label="폭 조절" tabindex="0"></div>' +
     '<div class="ed-canvas ed-edit" id="edCanvas"></div>' +
@@ -181,6 +182,7 @@
     }, now ? 0 : 500);
     showSave(true);
   }
+  $("#edPub").addEventListener("click", function () { publish(); }); $("#edPubMob").addEventListener("click", function () { publish(); });
   function undoState() {} /* undo and redo are keys only (Ctrl/⌘+Z, ⇧Z): the bar has no buttons for them */
   function travel(d) {
     var to = hp + d; if (to < 0 || to >= hist.length) return;
@@ -714,7 +716,7 @@
     var fo = $("#edFavOff", pb); if (fo) fo.addEventListener("click", function () { S.fav = null; commit(true); applyFav(); refreshPanel(); });
     tt.addEventListener("input", function () { S.title = tt.value; commit(); });
     ds.addEventListener("input", function () { S.desc = ds.value; commit(); });
-    $("#edAddr", pb).addEventListener("click", publish);
+    $("#edAddr", pb).addEventListener("click", function () { publish(); });
     $("#edReset", pb).addEventListener("click", function () { if (!confirm("지금까지 고친 내용을 모두 지우고 처음 템플릿으로 되돌릴까요?")) return; Object.keys(DATA).forEach(function (k) { dbPut(k, null); delete DATA[k]; }); S = fresh(); commit(true); select(null); render(); });
   }
 
@@ -1490,24 +1492,102 @@
   /* ---------- publish: the address is chosen here, at the end ---------- */
   var dlg = $("#edDlg");
   function closeDlg() { dlg.hidden = true; }
-  function publish() {
-    var name = ""; try { name = localStorage.getItem("1440-site-name") || T.site || ""; } catch (e) {}
-    $(".ed-dlg-box", dlg).innerHTML = '<h2 class="ed-h" id="edDlgT" style="font-size:1.4em">공개하기</h2><p class="ed-p2">영문 소문자 · 숫자 · -</p>' +
-      '<div class="ed-addr"><label class="ed-sr" for="edAddrIn">주소</label><input id="edAddrIn" type="text" maxlength="30" value="' + esc(name) + '" placeholder="이름" autocapitalize="off" autocomplete="off" spellcheck="false"><span>.kor.gallery</span></div>' +
-      '<p class="ed-p2" id="edAddrMsg">공개는 준비 중이에요.</p>' +
-      '<div class="ed-dlg-b"><button type="button" class="ed-btn ghost" id="edDlgX">닫기</button><button type="button" class="ed-btn" id="edDlgOk">주소 저장</button></div>';
-    dlg.hidden = false; var inp = $("#edAddrIn");
-    inp.addEventListener("input", function () { var v = inp.value.toLowerCase().replace(/[\s_]+/g, "-").replace(/[^a-z0-9-]/g, "").slice(0, 30); if (v !== inp.value) inp.value = v; });
-    $("#edDlgX").addEventListener("click", closeDlg);
-    $("#edDlgOk").addEventListener("click", function () {
-      var v = inp.value.replace(/^-+|-+$/g, ""), m = $("#edAddrMsg");
-      if (v.length < 2) { m.textContent = "두 글자 이상 적어 주세요."; inp.focus(); return; }
-      try { localStorage.setItem("1440-site-name", v); } catch (e) {}
-      m.textContent = v + ".kor.gallery 주소를 저장했어요. 공개는 준비 중이에요."; T.setHost(v); render();
-    });
+  /* 공개하기 in steps, in the one quiet window: ① the address → ② an account (only without one: sign up with the
+     mail code, or log in) → ③ a pass (only without one: the monthly subscription, 30 days, a year; NICEPAY's window
+     comes back here) → ④ done. Real publishing to 이름.kor.gallery is not there yet, so ④ says so. */
+  var PUB = { email: "" };
+  function acct() { return window.ACCOUNT || null; }
+  function hasPass(u) { var now = Date.now(); return !!u && (u.paidUntil > now || u.trialUntil > now || !!(u.sub && u.sub.status === "active")); }
+  function pubNext() { var A = acct(), u = A && A.user; pubStep(!u ? "join" : !hasPass(u) ? "plan" : "done"); }
+  function publish(step, note) { dlg.hidden = false; pubStep(typeof step === "string" ? step : "addr", note); }
+  function won(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "₩"; }
+  function fld(name, label, attrs) { return '<label class="ed-fld"><span>' + label + '</span><input name="' + name + '" ' + (attrs || "") + '></label>'; }
+  function pubStep(step, note) {
+    var box = $(".ed-dlg-box", dlg), A = acct(), u = A && A.user, host = "", h = "";
+    try { host = localStorage.getItem("1440-site-name") || T.site || ""; } catch (e) {}
+    var title = { addr: "공개하기", join: "공개하기 · 가입", code: "공개하기 · 가입", login: "공개하기 · 로그인", plan: "공개하기 · 이용권", card: "공개하기 · 월 구독", done: "공개하기" }[step];
+    h += '<h2 class="ed-h" id="edDlgT">' + title + '</h2>';
+    if (step === "addr") h += '<div class="ed-addr" title="영문 소문자 · 숫자 · -"><label class="ed-sr" for="edAddrIn">주소</label><input id="edAddrIn" type="text" maxlength="30" value="' + esc(host) + '" placeholder="이름" autocapitalize="off" autocomplete="off" spellcheck="false"><span>.kor.gallery</span></div>';
+    if (step === "join") h += fld("email", "이메일", 'type="email" autocomplete="email"') + fld("password", "비밀번호 <em>8자 이상</em>", 'type="password" autocomplete="new-password"') +
+      '<label class="ed-ck"><input type="checkbox" name="student"><span>대학생입니다 <em>학교 메일이면 첫 한 달 무료</em></span></label>' +
+      '<label class="ed-ck"><input type="checkbox" name="agree"><span><a href="./#terms" target="_blank" rel="noopener">서비스 약관</a>과 <a href="./#privacy" target="_blank" rel="noopener">개인정보 보호정책</a>에 동의합니다</span></label>';
+    if (step === "code") h += '<p class="ed-p2">' + esc(note && note.code ? "미리보기라 메일 대신 여기에 보여요: " + note.code : PUB.email + " 로 코드를 보냈어요. 10분 안에 넣어 주세요.") + '</p>' + fld("code", "코드 <em>6자리</em>", 'inputmode="numeric" autocomplete="one-time-code" maxlength="6"');
+    if (step === "login") h += fld("email", "이메일", 'type="email" autocomplete="email"') + fld("password", "비밀번호", 'type="password" autocomplete="current-password"');
+    if (step === "plan") h += '<div class="ed-plans">' +
+      '<button type="button" class="ed-plan" data-plan="sub"><span>매월 구독</span><span>' + won(4900) + '</span></button>' +
+      '<button type="button" class="ed-plan" data-plan="month"><span>30일</span><span>' + won(4900) + '</span></button>' +
+      '<button type="button" class="ed-plan" data-plan="year"><span>1년</span><span>' + won(46000) + '</span></button></div>' +
+      '<p class="ed-p2">대학생은 학교 메일로 가입하면 첫 한 달이 무료예요.</p>';
+    if (step === "card") h += fld("cardNo", "카드 번호", 'inputmode="numeric" autocomplete="cc-number" maxlength="19"') + fld("exp", "유효기간 <em>MM/YY</em>", 'inputmode="numeric" autocomplete="cc-exp" maxlength="5" placeholder="MM/YY"') +
+      fld("idNo", "생년월일 <em>6자리 · 법인은 사업자번호</em>", 'inputmode="numeric" maxlength="10" autocomplete="off"') + fld("cardPw", "비밀번호 <em>앞 2자리</em>", 'type="password" inputmode="numeric" maxlength="2" autocomplete="off"') +
+      '<label class="ed-ck"><input type="checkbox" name="agree"><span>매월 4,900₩ 자동 결제에 동의합니다 <em>이용권이 끝나는 날 결제 · 언제든 해지</em></span></label>';
+    if (step === "done") h += '<p class="ed-done">' + esc((host || "이름") + ".kor.gallery") + '</p><p class="ed-p2">' + (hasPass(u) ? "이용권까지 준비됐어요. 공개는 곧 열려요." : "주소를 저장했어요. 공개는 곧 열려요.") + '</p>';
+    h += '<p class="ed-p2 ed-pmsg" role="status"></p><div class="ed-dlg-b">';
+    if (step === "join") h += '<button type="button" class="ed-txt" data-go="login">로그인</button>';
+    if (step === "login") h += '<button type="button" class="ed-txt" data-go="join">가입하기</button>';
+    if (step === "code") h += '<button type="button" class="ed-txt" data-go="resend">코드 다시 받기</button>';
+    if (step === "card") h += '<button type="button" class="ed-txt" data-go="plan">뒤로</button>';
+    h += '<button type="button" class="ed-txt" id="edDlgX">' + (step === "done" ? "닫기" : "나중에") + '</button>';
+    var ok = { addr: "다음 →", join: "코드 받기 →", code: "가입 마치기 →", login: "로그인 →", card: "구독 시작 →" }[step];
+    if (ok) h += '<button type="button" class="ed-txt on" id="edDlgOk">' + ok + '</button>';
+    box.innerHTML = h + '</div>';
+    box.dataset.step = step;
+    var m = $(".ed-pmsg", box), say = function (t, bad) { m.textContent = t || ""; m.classList.toggle("err", !!bad); };
+    if (note && note.msg) say(note.msg, note.bad);
+    var f = function (n) { return box.querySelector('[name="' + n + '"]'); }, okB = $("#edDlgOk", box);
+    var busy = function (p, done) { if (okB) okB.disabled = true; say(""); p.then(function (r) { if (okB) okB.disabled = false; done(r); }, function (e) { if (okB) okB.disabled = false; if (e.data && e.data.pending) { PUB.email = e.data.email; pubStep("code", { msg: "메일로 받은 코드를 넣어 가입을 마쳐 주세요." }); return; } say(e.userMessage || "잠시 문제가 생겼어요. 다시 해 주세요.", true); }); };
+    $("#edDlgX", box).addEventListener("click", closeDlg);
+    [].forEach.call(box.querySelectorAll("[data-go]"), function (b) { b.addEventListener("click", function () {
+      if (b.dataset.go !== "resend") { pubStep(b.dataset.go); return; }
+      busy(A.resendSignup(PUB.email), function (r) { say(r.devCode ? "미리보기라 메일 대신 여기에 보여요: " + r.devCode : "코드를 다시 보냈어요."); });
+    }); });
+    var go = {
+      addr: function () {
+        var inp = $("#edAddrIn", box), v = inp.value.replace(/^-+|-+$/g, "");
+        if (v.length < 2) { say("두 글자 이상", true); inp.focus(); return; }
+        try { localStorage.setItem("1440-site-name", v); } catch (e) {}
+        T.setHost(v); render(); if (!A) { pubStep("done"); return; } A.ready.then(pubNext);
+      },
+      join: function () {
+        var em = f("email").value.trim(), stu = f("student").checked;
+        if (stu && !A.isUni(em)) { say("대학생은 학교 메일(.ac.kr, .edu 등)로만 가입할 수 있어요.", true); return; }
+        if (!f("agree").checked) { say("약관과 개인정보 보호정책에 동의해 주세요.", true); return; }
+        busy(A.signup({ email: em, password: f("password").value, student: stu }), function (r) { PUB.email = r.email; pubStep("code", { code: r.devCode }); });
+      },
+      code: function () { busy(A.verifySignup(PUB.email, f("code").value.replace(/\D/g, "")), function () { pubNext(); }); },
+      login: function () { busy(A.login({ email: f("email").value, password: f("password").value }), function () { pubNext(); }); },
+      card: function () {
+        var ex = f("exp").value.replace(/\D/g, "");
+        if (!f("agree").checked) { say("자동 결제에 동의해 주세요.", true); return; }
+        if (ex.length !== 4) { say("유효기간을 MM/YY로 적어 주세요.", true); return; }
+        busy(A.subscribe({ cardNo: f("cardNo").value, expMonth: ex.slice(0, 2), expYear: ex.slice(2), idNo: f("idNo").value, cardPw: f("cardPw").value, agree: true }), function () { pubStep("done"); });
+      }
+    };
+    if (okB) okB.addEventListener("click", function () { go[step](); });
+    /* Enter goes on, like the button */
+    box.onkeydown = function (e) { if (e.key === "Enter" && okB && e.target.tagName === "INPUT" && e.target.type !== "checkbox") { e.preventDefault(); okB.click(); } };
+    if (step === "addr") { var inp = $("#edAddrIn", box); inp.addEventListener("input", function () { var v = inp.value.toLowerCase().replace(/[\s_]+/g, "-").replace(/[^a-z0-9-]/g, "").slice(0, 30); if (v !== inp.value) inp.value = v; }); }
+    if (step === "card") {
+      ["cardNo", "idNo", "cardPw"].forEach(function (n) { f(n).addEventListener("input", function () { var v = f(n).value.replace(/\D/g, ""); if (n === "cardNo") v = v.slice(0, 16).replace(/(\d{4})(?=\d)/g, "$1 "); if (f(n).value !== v) f(n).value = v; }); });
+      f("exp").addEventListener("input", function () { var v = f("exp").value.replace(/\D/g, "").slice(0, 4); v = v.length > 2 ? v.slice(0, 2) + "/" + v.slice(2) : v; if (f("exp").value !== v) f("exp").value = v; });
+    }
+    /* a pass: the subscription asks for a card here; 30 days and a year open NICEPAY's window, which comes back to this form */
+    [].forEach.call(box.querySelectorAll("[data-plan]"), function (b) { b.addEventListener("click", function () {
+      if (b.dataset.plan === "sub") { pubStep("card"); return; }
+      var back = location.pathname + location.search.replace(/([?&])(pay|m)=[^&]*/g, "$1").replace(/[?&]+$/, "").replace(/&&+/g, "&");
+      say("결제창을 여는 중…"); A.pay(b.dataset.plan, back).then(function () { say(""); }, function (e) { say(e.userMessage || "결제를 시작하지 못했어요.", true); });
+    }); });
     if (!dlg._out) { dlg._out = 1; dlg.addEventListener("click", function (e) { if (e.target === dlg) closeDlg(); }); }
-    setTimeout(function () { inp.focus(); }, 0);
+    var first = box.querySelector("input:not([type=checkbox])"); if (first) setTimeout(function () { try { first.focus(); } catch (e) {} }, 0);
   }
+  /* back from NICEPAY's window: the publish window opens again where it was */
+  (function () {
+    var q = new URLSearchParams(location.search), r = q.get("pay"); if (!r || CHECK) return;
+    var clean = location.search.replace(/([?&])(pay|m)=[^&]*/g, "$1").replace(/[?&]+$/, "").replace(/&&+/g, "&");
+    history.replaceState(null, "", location.pathname + clean);
+    var A = acct(); if (!A) return;
+    A.ready.then(function () { if (r === "ok") publish("done"); else publish("plan", { msg: (q.get("m") || "결제하지 못했어요.") + " 다시 해 주세요.", bad: true }); });
+  })();
 
   /* ---------- keys, as in the tools people already know ---------- */
   document.addEventListener("keydown", function (e) {

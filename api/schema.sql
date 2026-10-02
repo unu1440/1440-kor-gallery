@@ -51,3 +51,23 @@ CREATE TABLE IF NOT EXISTS payments (    -- NICEPAY orders: the amount is fixed 
   paid_at INTEGER
 );
 CREATE INDEX IF NOT EXISTS payments_user ON payments (user_id, created);
+CREATE TABLE IF NOT EXISTS subs (       -- the monthly subscription (NICEPAY billing key). No card number is kept.
+  user_id TEXT PRIMARY KEY,
+  bid TEXT NOT NULL,                     -- NICEPAY billing key ('' once stopped)
+  card TEXT,                             -- e.g. "신한 ··1234"
+  status TEXT NOT NULL,                  -- 'active' | 'canceled' | 'failed'
+  next INTEGER NOT NULL,                 -- ms; charged by the daily cron when this is within a day
+  tries INTEGER NOT NULL DEFAULT 0,      -- failed charges in a row
+  created INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS subs_due ON subs (status, next);
+CREATE TABLE IF NOT EXISTS signups (    -- a sign-up waiting for the code sent to its address; the account is made by the code
+  email TEXT PRIMARY KEY,
+  pass TEXT NOT NULL,                    -- already hashed
+  student INTEGER NOT NULL DEFAULT 0,
+  state TEXT NOT NULL DEFAULT '{}',
+  code TEXT NOT NULL,                    -- sha-256
+  expires INTEGER NOT NULL,
+  tries INTEGER NOT NULL DEFAULT 0,
+  sent INTEGER NOT NULL
+);

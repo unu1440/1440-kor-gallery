@@ -22,6 +22,8 @@
   backdrop-filter: blur(18px) saturate(1.2);
   -webkit-backdrop-filter: blur(18px) saturate(1.2);
 }
+/* "1440" sits at the same place as on the front page and in the editor (the side gutter), the rest keeps the even margins */
+.bar-pick .home { margin-left: calc(var(--gutter) - var(--side-r)); }
 .bar-pick .cats-links { grid-column: 2; justify-self: center; }
 .bar-pick .bar-right {
   grid-column: 3;
