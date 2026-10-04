@@ -66,7 +66,7 @@
   /* ---------- the server ---------- */
   function api(method, path, data) {
     return fetch(path, { method: method, credentials: "same-origin", headers: data ? { "content-type": "application/json" } : {}, body: data ? JSON.stringify(data) : undefined })
-      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) { var e = err(j.error || "잠시 문제가 생겼어요."); e.data = j; throw e; } return j; }); });
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) { var e = err(j.error || "잠시 문제가 생겼어요."); e.data = j; e.status = r.status; throw e; } return j; }); });
   }
 
   /* ---------- this browser only (before the server is up) ---------- */
@@ -222,7 +222,15 @@
     refundQuote: function () { return mode === "server" ? api("GET", "/api/pay/refund").then(function (r) { return r.quote; }) : Promise.resolve(null); },
     refund: function (orderId) { return api("POST", "/api/pay/refund", { orderId: orderId }).then(function (r) { me = r.user || me; emit(); return r; }); },
     payments: function () { return mode === "server" ? api("GET", "/api/pay/history") : Promise.resolve({ payments: [] }); },
-    isUni: function (email) { return UNI.test(String(email).split("@")[1] || ""); }
+    isUni: function (email) { return UNI.test(String(email).split("@")[1] || ""); },
+    /* the site (이름.kor.gallery, one per account): the address, a picture put up, publishing */
+    site: function () { return mode === "server" ? api("GET", "/api/site").then(function (r) { return r.site; }) : Promise.resolve(null); },
+    claimSite: function (name) { return api("POST", "/api/site/name", { name: name }).then(function (r) { return r.site; }); },
+    upload: function (blob) {
+      return fetch("/api/media", { method: "PUT", credentials: "same-origin", headers: { "content-type": blob.type || "application/octet-stream" }, body: blob })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) { var e = err(j.error || "사진을 올리지 못했어요."); e.data = j; e.status = r.status; throw e; } return j.url; }); });
+    },
+    publishSite: function (d) { return api("POST", "/api/site/publish", d).then(function (r) { return r.site; }); }
   };
   var payJs = null;
   function loadPay() {

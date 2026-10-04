@@ -7,10 +7,12 @@
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
 
-  var site = clean(new URLSearchParams(location.search).get("site"));
+  /* a published site (이름.kor.gallery): the server puts the snapshot in window.SITE_VIEW and editor.js draws it without tools */
+  var SV = window.SITE_VIEW && +window.SITE_VIEW.n ? window.SITE_VIEW : null;
+  var site = clean(SV ? SV.site : new URLSearchParams(location.search).get("site"));
   /* no address chosen (came straight to the templates): every page uses the same placeholder name */
   var DEF = "loremipsum";
-  var host = (site || DEF) + ".kor.gallery";
+  var host = (SV ? SV.name : site || DEF) + ".kor.gallery";
   var N = esc(site || DEF);
 
   /* the address is chosen later, on the last page, so the header never shows it */
@@ -2130,7 +2132,8 @@
     handExtra: function (n, v) { if (v === undefined) return HAND_EXTRA[n]; if (v && v.length) HAND_EXTRA[n] = v; else delete HAND_EXTRA[n]; },
     setHost: function (v) { host = v + ".kor.gallery"; }
   };
-  if (editN && find(editN)) document.body.classList.add("editing"); /* editor.js takes over the page */
+  if (SV && find(+SV.n)) document.body.classList.add("editing", "site-view"); /* the editor draws the published site */
+  else if (editN && find(editN)) document.body.classList.add("editing"); /* editor.js takes over the page */
   else if (soloN && find(soloN)) openSolo(soloN, new URLSearchParams(location.search).get("m") === "mob");
   else { showShuffle(); watch(); }
 

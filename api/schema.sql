@@ -71,3 +71,18 @@ CREATE TABLE IF NOT EXISTS signups (    -- a sign-up waiting for the code sent t
   tries INTEGER NOT NULL DEFAULT 0,
   sent INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS sites (      -- 이름.kor.gallery: one site per account
+  name TEXT PRIMARY KEY,                 -- the address (lower case letters, digits, -)
+  user_id TEXT NOT NULL UNIQUE,
+  n INTEGER,                             -- the template number of what is published
+  data TEXT,                             -- the published snapshot (JSON): {n, site, s (the editor's changes), media}
+  published INTEGER,                     -- ms; NULL until first published
+  created INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS media (      -- pictures and 3D files put up for a site (R2: m/<sha-256>.<ext>)
+  key TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  created INTEGER NOT NULL,
+  PRIMARY KEY (key, user_id)
+);

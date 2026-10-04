@@ -186,6 +186,146 @@ export function safeBack(b) { b = String(b || ""); return /^\/(templates\.html)?
 
 async function body(req) { try { return await req.json(); } catch (e) { return {}; } }
 
+/* ---------- sites: 이름.kor.gallery ----------
+   One site per account. The editor claims the address, puts the person's pictures up (R2, named by their content),
+   then sends the published snapshot: the template number and the editor's changes, with every picture as /m/<hash>.
+   The same Worker answers *.kor.gallery: it draws the site with the editor's own drawing code (templates.html, in
+   "site view": no tools, the page as visitors use it). A site stays up while its owner has a pass, and for GRACE
+   after it ends; then the daily cron takes it down and deletes its pictures. */
+const GRACE = 7 * DAY;
+const SITE_NAME = /^[a-z0-9](?:[a-z0-9-]{0,28}[a-z0-9])?$/;
+const RESERVED = new Set(["1440", "www", "api", "admin", "mail", "email", "send", "rsend", "img", "static", "assets", "cdn", "app", "help", "support", "blog", "shop", "status", "docs", "dev", "test", "preview", "kor", "gallery", "root", "ftp", "smtp", "imap", "pop", "ns1", "ns2", "1440joljeon", "loremipsum"]);
+export function siteNameError(v) {
+  if (v.length < 2) return "두 글자 이상 적어 주세요.";
+  if (!SITE_NAME.test(v) || v.indexOf("--") >= 0) return "영문 소문자, 숫자, 하이픈(-)만 쓸 수 있어요.";
+  if (RESERVED.has(v)) return "쓸 수 없는 주소예요.";
+  return "";
+}
+const MEDIA_TYPES = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "model/gltf-binary": "glb" };
+const MEDIA_MAX = { glb: 40 * 1048576 }, MEDIA_MAX_IMG = 10 * 1048576, MEDIA_TOTAL = 500 * 1048576;
+const MEDIA_URL = /^\/m\/[a-f0-9]{64}\.(jpg|png|webp|gif|glb)$/;
+/* what a pass gives: paid days, the free student month, or an active subscription */
+async function passNow(env, userId, now = Date.now()) {
+  const u = await env.DB.prepare("SELECT paid_until, trial_until FROM users WHERE id = ?").bind(userId).first();
+  const s = await env.DB.prepare("SELECT status FROM subs WHERE user_id = ?").bind(userId).first();
+  return { until: u ? Math.max(u.paid_until || 0, u.trial_until || 0) : 0, sub: !!(s && s.status === "active") };
+}
+async function canPublish(env, userId, now = Date.now()) { const p = await passNow(env, userId, now); return p.sub || p.until > now; }
+async function siteUp(env, userId, now = Date.now()) { const p = await passNow(env, userId, now); return p.sub || p.until + GRACE > now; }
+function siteOf(row) { return row ? { name: row.name, n: row.n || 0, published: row.published || 0, url: "https://" + row.name + ".kor.gallery" } : null; }
+
+/* the daily cron: a site whose pass ended more than GRACE ago is taken down, with its pictures */
+export async function sweepSites(env, now = Date.now()) {
+  const rows = await env.DB.prepare("SELECT name, user_id FROM sites").all();
+  let gone = 0;
+  for (const r of rows.results || []) {
+    if (await siteUp(env, r.user_id, now)) continue;
+    const ms = await env.DB.prepare("SELECT key FROM media WHERE user_id = ?").bind(r.user_id).all();
+    for (const m of ms.results || []) {
+      const other = await env.DB.prepare("SELECT 1 FROM media WHERE key = ? AND user_id != ?").bind(m.key, r.user_id).first();
+      if (!other && env.MEDIA) { try { await env.MEDIA.delete("m/" + m.key); } catch (e) {} }
+    }
+    await env.DB.prepare("DELETE FROM media WHERE user_id = ?").bind(r.user_id).run();
+    await env.DB.prepare("DELETE FROM sites WHERE user_id = ?").bind(r.user_id).run();
+    gone++;
+  }
+  return { gone };
+}
+
+const siteRoutes = {
+  "GET /api/site": async (env, req, u) => {
+    if (!u) return fail("로그인해 주세요.", 401);
+    return json({ site: siteOf(await env.DB.prepare("SELECT * FROM sites WHERE user_id = ?").bind(u.id).first()) });
+  },
+  /* the address: taken for this account (one site each; a second name moves the site there) */
+  "POST /api/site/name": async (env, req, u) => {
+    if (!u) return fail("로그인해 주세요.", 401);
+    const d = await body(req), name = String(d.name || "").trim().toLowerCase(), why = siteNameError(name);
+    if (why) return fail(why);
+    const other = await env.DB.prepare("SELECT user_id FROM sites WHERE name = ?").bind(name).first();
+    if (other && other.user_id !== u.id) return fail("이미 누가 쓰는 주소예요.", 409);
+    const mine = await env.DB.prepare("SELECT * FROM sites WHERE user_id = ?").bind(u.id).first();
+    if (mine) { if (mine.name !== name) await env.DB.prepare("UPDATE sites SET name = ? WHERE user_id = ?").bind(name, u.id).run(); }
+    else await env.DB.prepare("INSERT INTO sites (name, user_id, created) VALUES (?, ?, ?)").bind(name, u.id, Date.now()).run();
+    return json({ site: siteOf(await env.DB.prepare("SELECT * FROM sites WHERE user_id = ?").bind(u.id).first()) });
+  },
+  /* a picture (or a .glb) for the site: the body is the file itself; it is named by its content, so the same picture is kept once */
+  "PUT /api/media": async (env, req, u) => {
+    if (!u) return fail("로그인해 주세요.", 401);
+    if (!env.MEDIA) return fail("사진을 둘 곳이 아직 없어요.", 503);
+    const type = String(req.headers.get("content-type") || "").split(";")[0].trim().toLowerCase(), ext = MEDIA_TYPES[type];
+    if (!ext) return fail("사진(jpg·png·webp·gif)이나 .glb만 올릴 수 있어요.", 415);
+    const buf = await req.arrayBuffer(), max = MEDIA_MAX[ext] || MEDIA_MAX_IMG;
+    if (!buf.byteLength) return fail("빈 파일이에요.");
+    if (buf.byteLength > max) return fail("파일이 너무 커요 (" + Math.round(max / 1048576) + "MB까지).", 413);
+    const used = await env.DB.prepare("SELECT COALESCE(SUM(size), 0) AS n FROM media WHERE user_id = ?").bind(u.id).first();
+    if (((used && used.n) || 0) + buf.byteLength > MEDIA_TOTAL) return fail("올린 파일이 너무 많아요 (500MB까지).", 413);
+    const key = toHex(await crypto.subtle.digest("SHA-256", buf)) + "." + ext;
+    if (!(await env.MEDIA.head("m/" + key))) await env.MEDIA.put("m/" + key, buf, { httpMetadata: { contentType: type, cacheControl: "public, max-age=31536000, immutable" } });
+    await env.DB.prepare("INSERT OR IGNORE INTO media (key, user_id, size, created) VALUES (?, ?, ?, ?)").bind(key, u.id, buf.byteLength, Date.now()).run();
+    return json({ url: "/m/" + key });
+  },
+  /* publishing: what the editor shows becomes the site */
+  "POST /api/site/publish": async (env, req, u) => {
+    if (!u) return fail("로그인해 주세요.", 401);
+    const site = await env.DB.prepare("SELECT * FROM sites WHERE user_id = ?").bind(u.id).first();
+    if (!site) return fail("먼저 주소를 정해 주세요.", 409);
+    if (!(await canPublish(env, u.id))) return fail("이용권이 있어야 공개할 수 있어요.", 402);
+    const d = await body(req), n = Math.round(+d.n || 0);
+    if (!(n >= 1 && n <= 1440)) return fail("템플릿 번호가 맞지 않아요.");
+    if (!d.s || typeof d.s !== "object" || Array.isArray(d.s)) return fail("공개할 내용이 없어요.");
+    const media = d.media && typeof d.media === "object" ? d.media : {}, keys = [];
+    for (const k of Object.keys(media)) {
+      if (!/^[\w:.-]{1,80}$/.test(k) || !MEDIA_URL.test(String(media[k]))) return fail("사진 주소가 맞지 않아요.");
+      keys.push(String(media[k]).slice(3));
+    }
+    for (const key of new Set(keys)) if (!(await env.DB.prepare("SELECT 1 FROM media WHERE key = ? AND user_id = ?").bind(key, u.id).first())) return fail("올리지 않은 사진이 있어요.");
+    const data = JSON.stringify({ n, site: String(d.site || "").toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 30), s: d.s, media });
+    if (data.length > 400000) return fail("내용이 너무 커요.", 413);
+    const now = Date.now();
+    await env.DB.prepare("UPDATE sites SET n = ?, data = ?, published = ? WHERE user_id = ?").bind(n, data, now, u.id).run();
+    return json({ site: siteOf({ ...site, n, published: now }) });
+  }
+};
+
+/* ---------- *.kor.gallery: the published sites ---------- */
+function attr(s) { return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+function page(status, title, text) {
+  return new Response('<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>' + attr(title) + '</title><style>html,body{height:100%;margin:0}body{display:grid;place-items:center;background:#f8f8f6;color:rgba(0,0,0,.55);font:clamp(14px,1.1vw,17px)/1.6 system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;padding:0 16px;text-align:center}a{color:inherit}</style></head><body><p>' + attr(text) + '</p></body></html>', { status, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+}
+/* the published snapshot into templates.html: the title, description, icon and link preview are set here, and the page script reads window.SITE_VIEW */
+export function siteShell(html, name, snap) {
+  const s = snap.s || {}, url = "https://" + name + ".kor.gallery/", title = String(s.title || "").trim() || name, desc = String(s.desc || "").trim();
+  const sv = JSON.stringify({ name, n: snap.n, site: snap.site || "", s, media: snap.media || {} }).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
+  let h = html.replace(/<title>[\s\S]*?<\/title>/, "<title>" + attr(title) + "</title>")
+    .replace(/<meta name="description"[^>]*>/, desc ? '<meta name="description" content="' + attr(desc) + '">' : "");
+  if (typeof s.fav === "string" && /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(s.fav)) h = h.replace(/<link rel="icon"[^>]*>/, '<link rel="icon" href="' + attr(s.fav) + '">');
+  const head = '<link rel="canonical" href="' + url + '"><meta property="og:type" content="website"><meta property="og:url" content="' + url + '"><meta property="og:title" content="' + attr(title) + '">' +
+    (desc ? '<meta property="og:description" content="' + attr(desc) + '">' : "") + "<script>window.SITE_VIEW=" + sv + "</script>";
+  return h.replace("</head>", head + "</head>");
+}
+async function serveSite(req, env, url) {
+  const m = /^([a-z0-9-]+)\.kor\.gallery$/.exec(url.hostname.toLowerCase()), name = m ? m[1] : "", p = url.pathname;
+  if (!m || name === "www") return Response.redirect(env.SITE_ORIGIN || "https://1440.kor.gallery", 301);
+  if (req.method !== "GET" && req.method !== "HEAD") return page(405, "1440", "읽기만 할 수 있어요.");
+  if (p.startsWith("/m/")) {
+    const key = p.slice(3); if (!/^[a-f0-9]{64}\.(jpg|png|webp|gif|glb)$/.test(key) || !env.MEDIA) return new Response("", { status: 404 });
+    const o = await env.MEDIA.get("m/" + key); if (!o) return new Response("", { status: 404 });
+    const h = new Headers(); o.writeHttpMetadata(h); h.set("etag", o.httpEtag); h.set("cache-control", "public, max-age=31536000, immutable");
+    return new Response(o.body, { headers: h });
+  }
+  if (p.startsWith("/assets/")) return env.STATIC.fetch(new Request((env.SITE_ORIGIN || "https://1440.kor.gallery") + p + url.search, { headers: req.headers }));
+  if (p.startsWith("/api/")) return fail("not found", 404);
+  if (p === "/robots.txt") return new Response("User-agent: *\nAllow: /\n", { headers: { "content-type": "text/plain" } });
+  const row = await env.DB.prepare("SELECT * FROM sites WHERE name = ?").bind(name).first();
+  if (!row || !row.data || !(await siteUp(env, row.user_id))) return page(404, name + ".kor.gallery", "이 주소에는 아직 사이트가 없어요.");
+  let snap; try { snap = JSON.parse(row.data); } catch (e) { return page(500, name, "사이트를 그리지 못했어요."); }
+  const shell = await env.STATIC.fetch(new Request((env.SITE_ORIGIN || "https://1440.kor.gallery") + "/templates", { headers: { accept: "text/html" } }));
+  if (!shell.ok) return page(502, name, "잠시 문제가 생겼어요.");
+  return new Response(siteShell(await shell.text(), name, snap), { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-cache" } });
+}
+
+
 const routes = {
   "GET /api/health": async () => json({ ok: true }),
 
@@ -453,19 +593,24 @@ const routes = {
     const until = days > 0 ? Math.max(t.trial_until || 0, Date.now()) + days * DAY : null;
     await env.DB.prepare("UPDATE users SET trial_until = ? WHERE id = ?").bind(until, String(d.userId)).run();
     return json({ ok: true, trialUntil: until || 0 });
-  }
+  },
+  ...siteRoutes
 };
 
 export default {
   /* the daily renewal (api/wrangler.jsonc → triggers) */
-  async scheduled(event, env, ctx) { ctx.waitUntil(renewSubs(env)); },
+  async scheduled(event, env, ctx) { ctx.waitUntil(renewSubs(env).then(() => sweepSites(env))); },
   async fetch(req, env) {
     const url = new URL(req.url), key = req.method + " " + url.pathname.replace(/\/+$/, ""), fn = routes[key];
+    /* 이름.kor.gallery is a published site; 1440.kor.gallery itself is the static site (only /api/* is ours) */
+    if (url.hostname !== new URL(env.SITE_ORIGIN || "https://1440.kor.gallery").hostname) return serveSite(req, env, url);
+    if (!url.pathname.startsWith("/api/") && env.STATIC) return env.STATIC.fetch(req);
     if (!fn) return fail("not found", 404);
     if (req.method !== "GET" && key !== "POST /api/pay/return" && key !== "POST /api/pay/hook") { /* NICEPAY's posts come from its own servers */
       const origin = req.headers.get("origin");
       if (origin && origin !== url.origin && origin !== env.SITE_ORIGIN) return fail("forbidden", 403);
-      if (!/application\/json/.test(req.headers.get("content-type") || "")) return fail("json only", 415);
+      if (key === "PUT /api/media") { if (!origin) return fail("forbidden", 403); } /* a file, not JSON: it must say it comes from this site */
+      else if (!/application\/json/.test(req.headers.get("content-type") || "")) return fail("json only", 415);
     }
     try { return await fn(env, req, await userOf(env, req)); }
     catch (e) { return fail("잠시 문제가 생겼어요.", 500); }

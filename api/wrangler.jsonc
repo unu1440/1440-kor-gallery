@@ -12,7 +12,16 @@
   "account_id": "8f5d3c3d30c383c3a9ca84eac2a9e325",
   "compatibility_date": "2025-09-01",
   "workers_dev": false,
-  "routes": [{ "pattern": "1440.kor.gallery/api/*", "zone_name": "kor.gallery" }],
+  /* /api/* on the site, and every 이름.kor.gallery (published sites). 1440.kor.gallery itself is the Worker kor-gallery
+     (custom domain); a more specific route or record (1440joljeon, img…) still wins over the * */
+  "routes": [
+    { "pattern": "1440.kor.gallery/api/*", "zone_name": "kor.gallery" },
+    { "pattern": "*.kor.gallery/*", "zone_name": "kor.gallery" }
+  ],
+  /* the static site (templates.html, assets/), which draws the published sites too */
+  "services": [{ "binding": "STATIC", "service": "kor-gallery" }],
+  /* the pictures people put up for their sites: m/<sha-256>.<ext> */
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "kor-gallery-media" }],
   // the monthly subscription is renewed once a day (00:15 UTC = 09:15 KST): see renewSubs in worker.js
   "triggers": { "crons": ["15 0 * * *"] },
   "vars": {

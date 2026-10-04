@@ -490,3 +490,8 @@ body.editing, .ed { background: #f8f8f6; }
 @media (prefers-reduced-motion: reduce) { .ed-dlg-box[data-step] > * { animation: none; } }
 .ed-dlg .ed-fld input:focus-visible { outline: none; }
 .ed-dlg .ed-ck input:focus-visible { outline: 1px solid rgba(0, 0, 0, .5); outline-offset: 2px; }
+
+/* ---- a published site (이름.kor.gallery): the page alone, nothing of the editor ---- */
+.ed.ed-site { --top: 0px; --files: 0px; --bar: 0px; }
+.ed-site .ed-top, .ed-site .ed-rail, .ed-site .ed-files, .ed-site .ed-rs, .ed-site .ed-save, .ed-site .ed-pop, .ed-site .ed-tip, .ed-site .ed-dlg, .ed-site .ed-flag, .ed-site .ed-meas, .ed-site .ed-3d { display: none !important; }
+.ed-site .ed-canvas { inset: 0; }

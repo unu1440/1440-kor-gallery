@@ -246,5 +246,63 @@ const sig = async (tid, amount, ediDate) => hex(tid + amount + ediDate + env.NIC
   r = await post({ authResultCode: "9999", authResultMsg: "취소", orderId: o2.orderId, mallReserved: "https://evil.com" });
   t("failed: never to another site", r.to.indexOf("/?pay=fail") === 0, r);
 }
+// sites: 이름.kor.gallery — the address, pictures (R2, by content), publishing, the page, and taking it down after the pass + 7 days
+{ const W4 = await import(pathToFileURL(copy).href);
+  const R2 = new Map(); env.MEDIA = { async head(k) { return R2.has(k) ? {} : null; }, async put(k, v, o) { R2.set(k, { v: new Uint8Array(v), type: o.httpMetadata.contentType }); }, async get(k) { const x = R2.get(k); return x ? { body: x.v, httpEtag: '"e"', writeHttpMetadata(h) { h.set("content-type", x.type); } } : null; }, async delete(k) { R2.delete(k); } };
+  const SHELL = '<!doctype html><html><head><title>1440: 템플릿</title><meta name="description" content="x"><link rel="icon" href="data:old"></head><body></body></html>';
+  env.STATIC = { async fetch(rq) { const u = new URL(rq.url); return u.pathname === "/templates" ? new Response(SHELL, { headers: { "content-type": "text/html" } }) : new Response("asset " + u.pathname); } };
+  const site = (host, path = "/", method = "GET") => W.fetch(new Request("https://" + host + path, { method }), env);
+  t("names: rules", W4.siteNameError("a") && W4.siteNameError("Ab") && W4.siteNameError("-ab") && W4.siteNameError("a--b") && W4.siteNameError("www") && W4.siteNameError("1440") && !W4.siteNameError("my-site2"));
+  const s1 = jar(), s2 = jar(); await join(s1, { email: "site1@mail.com", password: "12345678" }); await join(s2, { email: "site2@mail.com", password: "12345678" });
+  t("site: none yet", (await s1("GET", "/api/site")).body.site === null);
+  r = await s1("POST", "/api/site/name", { name: "haneul" }); t("site: name taken", r.status === 200 && r.body.site.name === "haneul" && r.body.site.url === "https://haneul.kor.gallery", r);
+  t("site: the same name for another account", (await s2("POST", "/api/site/name", { name: "haneul" })).status === 409);
+  t("site: reserved name", (await s2("POST", "/api/site/name", { name: "admin" })).status === 400);
+  r = await s1("POST", "/api/site/name", { name: "haneul-studio" }); t("site: one per account, renamed", r.body.site.name === "haneul-studio" && db.prepare("SELECT COUNT(*) AS n FROM sites WHERE user_id = (SELECT id FROM users WHERE email = 'site1@mail.com')").get().n === 1, r);
+  t("site: old name free again", (await s2("POST", "/api/site/name", { name: "haneul" })).status === 200);
+  // pictures
+  const put = (j, bytes, type, extra = {}) => W.fetch(new Request(O + "/api/media", { method: "PUT", headers: { origin: O, "content-type": type, ...extra }, body: bytes }), env);
+  // the jar keeps its cookie inside; a raw PUT needs it, so log in again through a fresh request that returns it
+  const lr = await W.fetch(new Request(O + "/api/login", { method: "POST", headers: { origin: O, "content-type": "application/json" }, body: JSON.stringify({ email: "site1@mail.com", password: "12345678" }) }), env);
+  const ck = lr.headers.get("set-cookie").split(";")[0];
+  const img = new Uint8Array([255, 216, 255, 1, 2, 3]);
+  r = await put(null, img, "image/jpeg", { cookie: ck }); let mu = (await r.json()).url;
+  t("media: put by content", r.status === 200 && /^\/m\/[a-f0-9]{64}\.jpg$/.test(mu) && R2.has("m/" + mu.slice(3)), mu);
+  t("media: same file, same name", (await (await put(null, img, "image/jpeg", { cookie: ck })).json()).url === mu && db.prepare("SELECT COUNT(*) AS n FROM media").get().n === 1);
+  t("media: not a picture", (await put(null, img, "text/html", { cookie: ck })).status === 415);
+  t("media: needs log-in", (await put(null, img, "image/jpeg")).status === 401);
+  t("media: needs this site", (await W.fetch(new Request(O + "/api/media", { method: "PUT", headers: { "content-type": "image/jpeg", cookie: ck }, body: img }), env)).status === 403);
+  t("media: too big", (await put(null, new Uint8Array(10 * 1048576 + 1), "image/png", { cookie: ck })).status === 413);
+  // publishing needs a pass
+  const snap = { n: 161, site: "haneul", s: { texts: { Work: "Works" }, photos: { "x-1": "u-1" }, title: "Haneul <studio>", desc: "Paintings", fav: "data:image/png;base64,AAAA" }, media: { "u-1": mu } };
+  t("publish: needs a pass", (await s1("POST", "/api/site/publish", snap)).status === 402);
+  db.prepare("UPDATE users SET paid_until = ? WHERE email = 'site1@mail.com'").run(Date.now() + 30 * 86400000);
+  t("publish: someone else's picture", (await s1("POST", "/api/site/publish", { ...snap, media: { "u-1": "/m/" + "a".repeat(64) + ".jpg" } })).status === 400);
+  t("publish: not our address", (await s1("POST", "/api/site/publish", { ...snap, media: { "u-1": "https://evil.com/x.jpg" } })).status === 400);
+  r = await s1("POST", "/api/site/publish", snap); t("publish", r.status === 200 && r.body.site.published > 0 && r.body.site.n === 161, r);
+  t("publish: no address yet", (await (async () => { const j = jar(); await join(j, { email: "site3@mail.com", password: "12345678" }); db.prepare("UPDATE users SET paid_until = ? WHERE email = 'site3@mail.com'").run(Date.now() + 86400000); return j("POST", "/api/site/publish", snap); })()).status === 409);
+  // the page
+  let res = await site("haneul-studio.kor.gallery"), html = await res.text();
+  t("page: drawn", res.status === 200 && html.indexOf("window.SITE_VIEW=") > 0 && html.indexOf('"n":161') > 0, html.slice(0, 300));
+  t("page: title, description, icon, preview", html.indexOf("<title>Haneul &lt;studio&gt;</title>") > 0 && html.indexOf('<meta name="description" content="Paintings">') > 0 && html.indexOf('<link rel="icon" href="data:image/png;base64,AAAA">') > 0 && html.indexOf('og:url" content="https://haneul-studio.kor.gallery/"') > 0, html);
+  t("page: no raw < inside the data", html.slice(html.indexOf("window.SITE_VIEW=")).indexOf("<studio") < 0);
+  res = await site("haneul-studio.kor.gallery", mu); t("page: picture from R2", res.status === 200 && res.headers.get("content-type") === "image/jpeg" && /immutable/.test(res.headers.get("cache-control")));
+  t("page: assets from the static site", (await (await site("haneul-studio.kor.gallery", "/assets/templates.js")).text()) === "asset /assets/templates.js");
+  t("page: unknown name", (await site("nobody.kor.gallery")).status === 404);
+  t("page: claimed but not published", (await site("haneul.kor.gallery")).status === 404);
+  t("page: www goes home", (await site("www.kor.gallery")).status === 301);
+  t("page: read only", (await site("haneul-studio.kor.gallery", "/", "POST")).status === 405);
+  // the pass ends: up for 7 more days, then gone with its pictures
+  db.prepare("UPDATE users SET paid_until = ? WHERE email = 'site1@mail.com'").run(Date.now() - 3 * 86400000);
+  t("grace: still up 3 days after", (await site("haneul-studio.kor.gallery")).status === 200);
+  t("grace: no new publishing", (await s1("POST", "/api/site/publish", snap)).status === 402);
+  r = await W4.sweepSites(env); t("sweep: kept within 7 days (an address held without a pass is freed)", R2.size === 1 && !!db.prepare("SELECT 1 FROM sites WHERE name = 'haneul-studio'").get() && !db.prepare("SELECT 1 FROM sites WHERE name = 'haneul'").get(), r);
+  db.prepare("UPDATE users SET paid_until = ? WHERE email = 'site1@mail.com'").run(Date.now() - 8 * 86400000);
+  t("grace over: down", (await site("haneul-studio.kor.gallery")).status === 404);
+  r = await W4.sweepSites(env); t("sweep: site and pictures deleted", r.gone >= 1 && R2.size === 0 && !db.prepare("SELECT 1 FROM sites WHERE name = 'haneul-studio'").get() && !db.prepare("SELECT 1 FROM media WHERE key = ?").get(mu.slice(3)), r);
+  // 1440.kor.gallery itself is still the static site
+  t("1440 stays static", (await (await W.fetch(new Request(O + "/assets/site.css"), env)).text()) === "asset /assets/site.css");
+  delete env.MEDIA; delete env.STATIC;
+}
 console.log(ok + " passed, " + bad + " failed");
 if (bad) process.exit(1);

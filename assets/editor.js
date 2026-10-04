@@ -10,9 +10,12 @@
    A phone is for content (words, pictures, checking, publishing); structure and design are for a computer. */
 (function () {
   "use strict";
-  var T = window.T1440, qs = new URLSearchParams(location.search), N = +qs.get("edit"), C = (qs.get("c") || "").replace(/[^a-z0-9]/gi, "").slice(0, 12);
+  /* SV: a published site (이름.kor.gallery). The server puts the snapshot in window.SITE_VIEW; the page is drawn as in
+     preview, with nothing of the editor around it */
+  var SV = window.SITE_VIEW && +window.SITE_VIEW.n ? window.SITE_VIEW : null;
+  var T = window.T1440, qs = new URLSearchParams(location.search), N = SV ? +SV.n : +qs.get("edit"), C = SV ? "" : (qs.get("c") || "").replace(/[^a-z0-9]/gi, "").slice(0, 12);
   if (!T || !N || !T.find(N)) return;
-  var CHECK = /[?&]check=editor/.test(location.search); /* development check: see the end of this file */
+  var CHECK = !SV && /[?&]check=editor/.test(location.search); /* development check: see the end of this file */
   var b, gen, GEN = T.GEN, NL = String.fromCharCode(10);
   var $ = function (s, r) { return (r || document).querySelector(s); }, $$ = function (s, r) { return [].slice.call((r || document).querySelectorAll(s)); };
   var esc = T.esc;
@@ -98,7 +101,8 @@
     N = n; b = T.find(n); gen = b.gen; KEY = "1440-edit-" + n + "-" + (T.site || T.defName) + (n === N && C ? "~" + C : "");
     orig = { feats: gen ? gen.feats.slice() : null, more: gen && gen.more ? gen.more.slice() : null, bg: b.bg, ink: b.ink, font: b.font, stretch: b.stretch, extra: (T.handExtra(n) || []).slice(), face: gen ? gen.face : null };
     S = fresh();
-    if (!CHECK) try { var saved = JSON.parse(localStorage.getItem(KEY) || "null"); if (saved) for (var k0 in S) if (saved[k0] !== undefined) S[k0] = saved[k0]; } catch (e) {}
+    if (SV) { var pubd = SV.s || {}; for (var k1 in S) if (pubd[k1] !== undefined) S[k1] = pubd[k1]; }
+    else if (!CHECK) try { var saved = JSON.parse(localStorage.getItem(KEY) || "null"); if (saved) for (var k0 in S) if (saved[k0] !== undefined) S[k0] = saved[k0]; } catch (e) {}
   }
   use(N);
 
@@ -154,9 +158,9 @@
     '<aside class="ed-pop" id="edPop" hidden></aside><aside class="ed-tip" id="edTip" hidden></aside>' +
     '<div class="ed-dlg" id="edDlg" hidden role="dialog" aria-modal="true" aria-labelledby="edDlgT"><div class="ed-dlg-box"></div></div>';
   document.body.appendChild(root);
-  document.title = "편집 · " + T.tag(N);
+  if (!SV) document.title = "편집 · " + T.tag(N); /* a site keeps the title the server gave it */
   var canvas = $("#edCanvas"), state = $("#edSave"), pop = $("#edPop"), tip = $("#edTip");
-  var mode = "edit", dev = phone.matches ? "mob" : "desk", panel = null, sel = null, bypass = false, bgTip = false, bgPt = { x: 0, y: 0 };
+  var mode = SV ? "try" : "edit", dev = phone.matches ? "mob" : "desk", panel = null, sel = null, bypass = false, bgTip = false, bgPt = { x: 0, y: 0 };
 
   /* ---------- keeping and undoing ---------- */
   var hist = [JSON.stringify(S)], hp = 0, saveT = 0;
@@ -223,7 +227,7 @@
     }).observe(tpEl, { childList: true });
     if (scroll) view.scrollTop = scroll * (parseFloat(view.firstElementChild.style.zoom) || 1);
     if (mode === "edit") $$("form", view).forEach(function (f) { f.addEventListener("submit", function (e) { e.preventDefault(); }); });
-    if (mode === "try") canvas.insertAdjacentHTML("beforeend", '<div class="ed-flag">미리보기 중 · 눌러서 써 보세요 (' + CMD + '\\ 로 돌아가기)</div>');
+    if (mode === "try" && !SV) canvas.insertAdjacentHTML("beforeend", '<div class="ed-flag">미리보기 중 · 눌러서 써 보세요 (' + CMD + '\\ 로 돌아가기)</div>');
     refreshPanel(); if (sel || bgTip) select(null);
     if (hidL[0] || hidL[1] || hidL[2]) applyLayerVis();
     drawFiles();
@@ -1450,7 +1454,7 @@
   })();
   window.addEventListener("storage", function (e) { if (e.key === "1440-stars" || e.key === CLIPK || e.key === "1440-guest") drawFiles(); });
   /* the account: the top of the tree is the person, and the form being edited becomes the one My hub opens */
-  if (window.ACCOUNT && !CHECK) { ACCOUNT.on(function () { drawFiles(); }); ACCOUNT.ready.then(function () { ACCOUNT.touch(N, T.site || "", C); drawFiles(); }); }
+  if (window.ACCOUNT && !CHECK && !SV) { ACCOUNT.on(function () { drawFiles(); }); ACCOUNT.ready.then(function () { ACCOUNT.touch(N, T.site || "", C); drawFiles(); }); }
   var touchedAt = Date.now();
   window.addEventListener("focus", function () { if (!renaming) drawFiles(); });
 
@@ -1494,11 +1498,55 @@
   function closeDlg() { dlg.hidden = true; }
   /* 공개하기 in steps, in the one quiet window: ① the address → ② an account (only without one: sign up with the
      mail code, or log in) → ③ a pass (only without one: the monthly subscription, 30 days, a year; NICEPAY's window
-     comes back here) → ④ done. Real publishing to 이름.kor.gallery is not there yet, so ④ says so. */
+     comes back here) → ④ the site goes up at 이름.kor.gallery (goLive). */
   var PUB = { email: "" };
   function acct() { return window.ACCOUNT || null; }
   function hasPass(u) { var now = Date.now(); return !!u && (u.paidUntil > now || u.trialUntil > now || !!(u.sub && u.sub.status === "active")); }
   function pubNext() { var A = acct(), u = A && A.user; pubStep(!u ? "join" : !hasPass(u) ? "plan" : "done"); }
+  /* ④ for real: the address is taken, the person's pictures go up (each once), and what the editor shows becomes 이름.kor.gallery */
+  var UP = {}; /* pictures already put up in this visit: id → /m/… */
+  function picsInUse() {
+    var ids = {}, add = function (id) { if (id && id !== "-" && DATA[id]) ids[id] = 1; };
+    Object.keys(S.photos || {}).forEach(function (pk) { var v = S.photos[pk]; add(v === 1 ? pk : v); });
+    Object.keys(S.models || {}).forEach(function (k) { add(S.models[k]); });
+    Object.keys(S.rooms || {}).forEach(function (k) { (S.rooms[k] || []).forEach(add); });
+    add(S.bgImg);
+    return Object.keys(ids);
+  }
+  function toBlob(id, url) {
+    return fetch(url).then(function (r) { return r.blob(); }).then(function (bl) {
+      var type = /^m-/.test(id) ? "model/gltf-binary" : bl.type; /* a .glb read from a file has no picture type */
+      return bl.type === type ? bl : new Blob([bl], { type: type });
+    });
+  }
+  function goLive(host, say) {
+    var A = acct(), addr = $("#edPubAddr");
+    if (!A || A.mode !== "server") { say("공개는 1440.kor.gallery에서 할 수 있어요.", true); return; }
+    if (!host) { pubStep("addr", { msg: "주소를 정해 주세요.", bad: true }); return; }
+    var ids = picsInUse(), media = {}, done = 0, stage = "addr";
+    say("공개하는 중…");
+    A.claimSite(host).then(function () {
+      stage = "pics";
+      return ids.reduce(function (p, id) {
+        return p.then(function () {
+          var u = DATA[id];
+          if (/^\/m\//.test(u)) { media[id] = u; return; }
+          if (UP[id]) { media[id] = UP[id]; return; }
+          say("사진 올리는 중 " + (++done) + "/" + ids.length);
+          return toBlob(id, u).then(A.upload).then(function (url) { UP[id] = media[id] = url; });
+        });
+      }, Promise.resolve());
+    }).then(function () {
+      say("공개하는 중…");
+      return A.publishSite({ n: N, site: T.site || "", s: S, media: media });
+    }).then(function (site) {
+      if (addr) addr.innerHTML = '<a href="' + esc(site.url) + '" target="_blank" rel="noopener">' + esc(site.name + ".kor.gallery") + ' ↗</a>';
+      say("공개했어요. 고친 뒤 다시 공개하면 바뀌어요.");
+    }, function (e) {
+      if (stage === "addr" && e.status && e.status < 500) { pubStep("addr", { msg: e.userMessage, bad: true }); return; } /* the address is taken or not allowed */
+      say(e.userMessage || "공개하지 못했어요. 다시 해 주세요.", true);
+    });
+  }
   function publish(step, note) { dlg.hidden = false; pubStep(typeof step === "string" ? step : "addr", note); }
   function won(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "₩"; }
   function fld(name, label, attrs) { return '<label class="ed-fld"><span>' + label + '</span><input name="' + name + '" ' + (attrs || "") + '></label>'; }
@@ -1521,11 +1569,12 @@
     if (step === "card") h += fld("cardNo", "카드 번호", 'inputmode="numeric" autocomplete="cc-number" maxlength="19"') + fld("exp", "유효기간 <em>MM/YY</em>", 'inputmode="numeric" autocomplete="cc-exp" maxlength="5" placeholder="MM/YY"') +
       fld("idNo", "생년월일 <em>6자리 · 법인은 사업자번호</em>", 'inputmode="numeric" maxlength="10" autocomplete="off"') + fld("cardPw", "비밀번호 <em>앞 2자리</em>", 'type="password" inputmode="numeric" maxlength="2" autocomplete="off"') +
       '<label class="ed-ck"><input type="checkbox" name="agree"><span>매월 4,900₩ 자동 결제에 동의합니다 <em>이용권이 끝나는 날 결제 · 언제든 해지</em></span></label>';
-    if (step === "done") h += '<p class="ed-done">' + esc((host || "이름") + ".kor.gallery") + '</p><p class="ed-p2">' + (hasPass(u) ? "이용권까지 준비됐어요. 공개는 곧 열려요." : "주소를 저장했어요. 공개는 곧 열려요.") + '</p>';
+    if (step === "done") h += '<p class="ed-done" id="edPubAddr">' + esc((host || "이름") + ".kor.gallery") + '</p>';
     h += '<p class="ed-p2 ed-pmsg" role="status"></p><div class="ed-dlg-b">';
     if (step === "join") h += '<button type="button" class="ed-txt" data-go="login">로그인</button>';
     if (step === "login") h += '<button type="button" class="ed-txt" data-go="join">가입하기</button>';
     if (step === "code") h += '<button type="button" class="ed-txt" data-go="resend">코드 다시 받기</button>';
+    if (step === "done") h += '<button type="button" class="ed-txt" data-go="addr">주소 바꾸기</button>';
     if (step === "card") h += '<button type="button" class="ed-txt" data-go="plan">뒤로</button>';
     h += '<button type="button" class="ed-txt" id="edDlgX">' + (step === "done" ? "닫기" : "나중에") + '</button>';
     var ok = { addr: "다음 →", join: "코드 받기 →", code: "가입 마치기 →", login: "로그인 →", card: "구독 시작 →" }[step];
@@ -1579,6 +1628,7 @@
     }); });
     if (!dlg._out) { dlg._out = 1; dlg.addEventListener("click", function (e) { if (e.target === dlg) closeDlg(); }); }
     var first = box.querySelector("input:not([type=checkbox])"); if (first) setTimeout(function () { try { first.focus(); } catch (e) {} }, 0);
+    if (step === "done") goLive(host, say);
   }
   /* back from NICEPAY's window: the publish window opens again where it was */
   (function () {
@@ -1591,6 +1641,7 @@
 
   /* ---------- keys, as in the tools people already know ---------- */
   document.addEventListener("keydown", function (e) {
+    if (SV) return; /* a published site has no editor keys */
     var meta = e.metaKey || e.ctrlKey, key = (e.key || "").toLowerCase(), typing = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target.tagName || ""));
     if (e.key === "Escape") { if (d3on) close3d(); else if (!dlg.hidden) closeDlg(); else if (sel || bgTip) select(null); else if (panel) closePanel(); return; }
     if (!meta) return;
@@ -1600,6 +1651,7 @@
     else if (key === "p") { e.preventDefault(); publish(); }
   });
   phone.addEventListener && phone.addEventListener("change", function () {
+    if (SV) { dev = phone.matches ? "mob" : "desk"; render(); return; } /* a published site follows the screen */
     if (phone.matches) { close3d(); closePanel(); setFiles(false); } else setFiles(true);
     if (phone.matches && dev !== "mob") setDev("mob"); else { render(); }
   });
@@ -1776,6 +1828,8 @@
     return;
   }
 
+  /* a published site: its pictures are on the server (/m/…), the page is drawn once, and that is all */
+  if (SV) { root.classList.add("ed-site"); var md = SV.media || {}; for (var mk in md) if (/^\/m\/[a-f0-9]{64}\.(jpg|png|webp|gif|glb)$/.test(md[mk])) DATA[mk] = md[mk]; render(); return; }
   /* start: the pictures the person added before, then the page */
   undoState();
   var wasOpen = true; try { wasOpen = localStorage.getItem(FILES_KEY) !== "0"; } catch (e) {}
