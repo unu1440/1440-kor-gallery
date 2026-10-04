@@ -33,7 +33,10 @@
     //   live "https://api.nicepay.co.kr", sandbox "https://sandbox-api.nicepay.co.kr".
     // The matching secret key is put in by hand:  npx wrangler secret put NICEPAY_SECRET_KEY -c api/wrangler.jsonc
     "NICEPAY_CLIENT_KEY": "R2_8f565a56d9bf446db59299d008df6afd",
-    "NICEPAY_API": "https://api.nicepay.co.kr"
+    "NICEPAY_API": "https://api.nicepay.co.kr",
+    /* for the admin's usage page (GraphQL Analytics; the token is the secret CF_API_TOKEN) */
+    "CF_ACCOUNT_ID": "8f5d3c3d30c383c3a9ca84eac2a9e325",
+    "D1_ID": "80a56aed-83ec-4cf5-b9ff-44084b5e0df7"
   },
   "d1_databases": [
     { "binding": "DB", "database_name": "kor-gallery-accounts", "database_id": "80a56aed-83ec-4cf5-b9ff-44084b5e0df7" }

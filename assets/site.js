@@ -264,4 +264,7 @@
 
   fit();
   runIntro();
+  /* a link like /#terms (from the editor's sign-up and payment steps) opens that page of Information */
+  var want = location.hash.slice(1);
+  if (/^(about|price|terms|privacy|copyright)$/.test(want)) { finishIntro(); window.SITE_INFO.open(want); }
 })();

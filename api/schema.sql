@@ -86,3 +86,18 @@ CREATE TABLE IF NOT EXISTS media (      -- pictures and 3D files put up for a si
   created INTEGER NOT NULL,
   PRIMARY KEY (key, user_id)
 );
+CREATE TABLE IF NOT EXISTS uni_used (   -- school addresses that gave their free month, after the account is deleted: sha-256 only, kept a year
+  hash TEXT PRIMARY KEY,
+  at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS notices (    -- mails about a pass ending, sent once per end date
+  user_id TEXT NOT NULL,
+  kind TEXT NOT NULL,                    -- 'soon' (3 days before) | 'ended'
+  until INTEGER NOT NULL,
+  sent INTEGER NOT NULL,
+  PRIMARY KEY (user_id, kind, until)
+);
+CREATE TABLE IF NOT EXISTS mail_log (   -- when each mail was sent (no address, no content): the admin's usage page counts them
+  at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS mail_log_at ON mail_log (at);

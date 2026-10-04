@@ -1558,14 +1558,14 @@
     if (step === "addr") h += '<div class="ed-addr" title="영문 소문자 · 숫자 · -"><label class="ed-sr" for="edAddrIn">주소</label><input id="edAddrIn" type="text" maxlength="30" value="' + esc(host) + '" placeholder="이름" autocapitalize="off" autocomplete="off" spellcheck="false"><span>.kor.gallery</span></div>';
     if (step === "join") h += fld("email", "이메일", 'type="email" autocomplete="email"') + fld("password", "비밀번호 <em>8자 이상</em>", 'type="password" autocomplete="new-password"') +
       '<label class="ed-ck"><input type="checkbox" name="student"><span>대학생입니다 <em>학교 메일이면 첫 한 달 무료</em></span></label>' +
-      '<label class="ed-ck"><input type="checkbox" name="agree"><span><a href="./#terms" target="_blank" rel="noopener">서비스 약관</a>과 <a href="./#privacy" target="_blank" rel="noopener">개인정보 보호정책</a>에 동의합니다</span></label>';
+      '<label class="ed-ck"><input type="checkbox" name="agree"><span>만 14세 이상이며, <a href="./#terms" target="_blank" rel="noopener">서비스 약관</a>과 <a href="./#privacy" target="_blank" rel="noopener">개인정보 처리방침</a>에 동의합니다</span></label>';
     if (step === "code") h += '<p class="ed-p2">' + esc(note && note.code ? "미리보기라 메일 대신 여기에 보여요: " + note.code : PUB.email + " 로 코드를 보냈어요. 10분 안에 넣어 주세요.") + '</p>' + fld("code", "코드 <em>6자리</em>", 'inputmode="numeric" autocomplete="one-time-code" maxlength="6"');
     if (step === "login") h += fld("email", "이메일", 'type="email" autocomplete="email"') + fld("password", "비밀번호", 'type="password" autocomplete="current-password"');
     if (step === "plan") h += '<div class="ed-plans">' +
       '<button type="button" class="ed-plan" data-plan="sub"><span>매월 구독</span><span>' + won(4900) + '</span></button>' +
       '<button type="button" class="ed-plan" data-plan="month"><span>30일</span><span>' + won(4900) + '</span></button>' +
       '<button type="button" class="ed-plan" data-plan="year"><span>1년</span><span>' + won(46000) + '</span></button></div>' +
-      '<p class="ed-p2">대학생은 학교 메일로 가입하면 첫 한 달이 무료예요.</p>';
+      '<p class="ed-p2">대학생은 학교 메일로 가입하면 첫 한 달이 무료예요. 결제 전에 <a href="./#terms" target="_blank" rel="noopener">요금·환불 조건</a>을 확인해 주세요.</p>';
     if (step === "card") h += fld("cardNo", "카드 번호", 'inputmode="numeric" autocomplete="cc-number" maxlength="19"') + fld("exp", "유효기간 <em>MM/YY</em>", 'inputmode="numeric" autocomplete="cc-exp" maxlength="5" placeholder="MM/YY"') +
       fld("idNo", "생년월일 <em>6자리 · 법인은 사업자번호</em>", 'inputmode="numeric" maxlength="10" autocomplete="off"') + fld("cardPw", "비밀번호 <em>앞 2자리</em>", 'type="password" inputmode="numeric" maxlength="2" autocomplete="off"') +
       '<label class="ed-ck"><input type="checkbox" name="agree"><span>매월 4,900₩ 자동 결제에 동의합니다 <em>이용권이 끝나는 날 결제 · 언제든 해지</em></span></label>';
@@ -1600,7 +1600,7 @@
       join: function () {
         var em = f("email").value.trim(), stu = f("student").checked;
         if (stu && !A.isUni(em)) { say("대학생은 학교 메일(.ac.kr, .edu 등)로만 가입할 수 있어요.", true); return; }
-        if (!f("agree").checked) { say("약관과 개인정보 보호정책에 동의해 주세요.", true); return; }
+        if (!f("agree").checked) { say("약관과 개인정보 처리방침에 동의해 주세요.", true); return; }
         busy(A.signup({ email: em, password: f("password").value, student: stu }), function (r) { PUB.email = r.email; pubStep("code", { code: r.devCode }); });
       },
       code: function () { busy(A.verifySignup(PUB.email, f("code").value.replace(/\D/g, "")), function () { pubNext(); }); },

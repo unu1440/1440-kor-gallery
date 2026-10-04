@@ -434,3 +434,27 @@ html.intro .minute { animation: none; }
 .acct-ov .pay .ck .v { text-align: right; }
 .acct-ov .pay button[disabled] { opacity: .35; cursor: default; }
 .info-page .rule { border-top: 1px solid var(--ink-4); padding-top: 1.2em; margin-top: 0.4em; }
+
+/* the admin's usage page: meters against the free limits, and small 14-day bar charts */
+.us { display: grid; gap: 1.6em; }
+.us-g { display: grid; gap: 0.9em; border-top: 1px solid var(--ink-4); padding-top: 1em; }
+.us-g h2 em, .us-h em, .us-c figcaption em { font-style: normal; color: var(--ink-3); font-weight: 400; }
+.us-m { display: grid; gap: 0.35em; }
+.us-h { display: flex; justify-content: space-between; gap: 1em; flex-wrap: wrap; }
+.us-h .v { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.us-h b { font-weight: 600; color: #b42318; margin-left: 0.3em; }
+.us-bar { height: 0.42em; border-radius: 99px; background: var(--ink-4); overflow: hidden; }
+.us-bar i { display: block; height: 100%; border-radius: 99px; background: #0a5cff; }
+.us-m.warn .us-bar i { background: #b42318; }
+.us-m.off { color: var(--ink-3); }
+.us-c { margin: 0; display: grid; gap: 0.4em; }
+.us-c figcaption { display: flex; justify-content: space-between; gap: 1em; flex-wrap: wrap; }
+.us-c svg { width: 100%; height: 4.2em; display: block; overflow: visible; }
+.us-c line { stroke: var(--ink-4); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.us-c path { fill: #0a5cff; }
+.us-b:hover path { fill: #003db8; }
+.us-x { display: flex; justify-content: space-between; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.us-note, .us-err { margin: 0; padding: 0.8em 1em; border: 1px solid var(--ink-4); color: var(--ink-2); line-height: 1.6; }
+.us-note code { font-family: "Geist Mono", ui-monospace, monospace; font-size: 0.9em; word-break: break-all; }
+.us-err { color: #b42318; }
+.us-l .v { text-align: right; }

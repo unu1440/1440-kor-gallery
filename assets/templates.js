@@ -1511,6 +1511,8 @@
     tp.addEventListener("submit", function (e) {
       var f = e.target.closest("form[data-form]"); if (!f) return;
       e.preventDefault();
+      /* a published site has nothing behind its forms yet: it says so plainly instead of pretending an order or a message went through */
+      if (SV) { toast(tp, st.ko ? "이 사이트는 아직 온라인으로 주문·신청·문의를 받지 않아요. 사이트 주인에게 직접 연락해 주세요." : "This site doesn't take orders, sign-ups or messages online yet. Please contact the owner directly."); return; }
       if (f.dataset.form === "order") { st.cart = []; updateCart(tp); closeAll(tp); toast(tp, st.ko ? "주문을 받았습니다 — 미리보기라 실제 주문은 되지 않습니다" : "Order placed — nothing is charged in the preview"); return; }
       toast(tp, f.dataset.form === "news" ? (st.ko ? "구독 신청을 받았습니다 (미리보기)" : "Subscribed (preview only)") : (st.ko ? "보냈습니다 — 미리보기에서는 실제로 보내지 않습니다" : "Sent — nothing is sent from the preview"));
       f.reset();

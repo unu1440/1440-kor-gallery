@@ -126,6 +126,10 @@
       return hash(String(d.password || ""), u.salt).then(function (h) { if (h !== u.pass) throw err("이메일이나 비밀번호가 맞지 않아요."); put(SKEY, u.id); return { user: pub(u) }; });
     },
     logout: function () { try { localStorage.removeItem(SKEY); } catch (e) {} return Promise.resolve({}); },
+    leave: function (pass) {
+      need(); var db = ldb(), u = db.users[me.id];
+      return hash(String(pass || ""), u.salt).then(function (h) { if (h !== u.pass) throw err("비밀번호가 맞지 않아요."); delete db.users[u.id]; put(LKEY, db); try { localStorage.removeItem(SKEY); } catch (e) {} return {}; });
+    },
     send: function (uni) {
       need(); var db = ldb(), u = db.users[me.id]; uni = String(uni || "").trim().toLowerCase();
       if (u.student === "verified") return Promise.reject(err("이미 확인했어요."));
@@ -185,6 +189,8 @@
     verifySignup: function (email, code) { return (mode === "server" ? api("POST", "/api/signup/verify", { email: email, code: code }) : L.verifySignup(email, code)).then(adopt); },
     login: function (d) { return (mode === "server" ? api("POST", "/api/login", d) : L.login(d)).then(adopt); },
     logout: function () { return (mode === "server" ? api("POST", "/api/logout", {}) : L.logout()).then(function () { me = null; emit(); }); },
+    /* 탈퇴: the site, its pictures and the account are deleted (payment records stay, as the law asks) */
+    leave: function (pass) { return (mode === "server" ? api("POST", "/api/me/delete", { password: pass }) : L.leave(pass)).then(function () { me = null; emit(); }); },
     refresh: function () { return (mode === "server" ? api("GET", "/api/me") : Promise.resolve({ user: lme() })).then(function (r) { me = r.user || null; emit(); return me; }); },
     sendCode: function (uni) { return mode === "server" ? api("POST", "/api/student/send", { uniEmail: uni }) : L.send(uni); },
     verifyCode: function (code) { return (mode === "server" ? api("POST", "/api/student/verify", { code: code }) : L.verify(code)).then(function (r) { return A.refresh().then(function () { return r; }); }); },
@@ -192,7 +198,8 @@
     admin: {
       list: function () { return adminOnly() || (mode === "server" ? api("GET", "/api/admin/students") : L.list()); },
       decide: function (id, ok) { return adminOnly() || (mode === "server" ? api("POST", "/api/admin/decide", { id: id, approve: ok }) : L.decide(id, ok)); },
-      grant: function (userId, days) { return adminOnly() || (mode === "server" ? api("POST", "/api/admin/grant", { userId: userId, days: days }) : L.grant(userId, days)); }
+      grant: function (userId, days) { return adminOnly() || (mode === "server" ? api("POST", "/api/admin/grant", { userId: userId, days: days }) : L.grant(userId, days)); },
+      usage: function () { return adminOnly() || (mode === "server" ? api("GET", "/api/admin/usage") : Promise.reject(err("사용량은 1440.kor.gallery에서 볼 수 있어요."))); }
     },
     state: stateNow, saveState: saveState, touch: touch, hubUrl: hubUrl, formUrl: formUrl, sameForm: sameForm,
     /* paying (only with the server): the server makes the order, NICEPAY's window takes the card, the server approves */

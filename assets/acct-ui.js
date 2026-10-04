@@ -24,13 +24,14 @@
   }
   function show(id) {
     var me = A.user;
-    if (!me && /^(account|student|admin|refund)$/.test(id)) id = "login";
+    if (!me && /^(account|student|admin|usage|refund|leave)$/.test(id)) id = "login";
     if (me && /^(login|signup)$/.test(id)) id = "account";
-    if (id === "admin" && !(me && me.admin)) id = "account";
+    if ((id === "admin" || id === "usage") && !(me && me.admin)) id = "account";
     pages.forEach(function (p) { p.classList.toggle("on", p.id === "a-" + id); });
     side.forEach(function (a) { a.classList.toggle("on", a.dataset.to === id); });
     if (id === "account" || id === "student") fill();
     if (id === "admin") admin();
+    if (id === "usage") usagePage();
     if (id === "refund") refundBox();
     var f = $("#a-" + id + " input:not([type=checkbox])"); if (f && isOpen() && matchMedia("(hover: hover)").matches) setTimeout(function () { try { f.focus({ preventScroll: true }); } catch (e) {} }, 350);
   }
@@ -91,7 +92,7 @@
     signup: function (f) {
       var stu = f.student.checked, email = f.email.value.trim();
       if (stu && !A.isUni(email)) { msg(f, "대학생은 학교 메일(.ac.kr, .edu 등)로만 가입할 수 있어요.", true); f.email.focus(); return; }
-      if (!f.agree.checked) { msg(f, "약관과 개인정보 보호정책에 동의해 주세요.", true); return; }
+      if (!f.agree.checked) { msg(f, "약관과 개인정보 처리방침에 동의해 주세요.", true); return; }
       run(f, A.signup({ email: email, password: f.password.value, student: stu }), function (r) {
         f.reset(); studentMode(f);
         codeStep(r.email, r.devCode ? "미리보기라 메일 대신 여기에 보여요: " + r.devCode : r.email + " 로 코드를 보냈어요. 10분 안에 넣어 주세요.");
@@ -119,7 +120,12 @@
         f.reset(); f.hidden = true; fill(); var m = $('[data-v="subMsg"]'); m.textContent = "구독을 시작했어요. 첫 달을 결제했어요."; m.classList.remove("err");
       });
     },
-    request: function (f) { run(f, A.request({ school: f.school.value, uniEmail: f.uni.value }), function () { f.reset(); fill(); }); }
+    request: function (f) { run(f, A.request({ school: f.school.value, uniEmail: f.uni.value }), function () { f.reset(); fill(); }); },
+    /* leaving: the password once more, then everything goes */
+    leave: function (f) {
+      if (!f.password.value) { msg(f, "비밀번호를 적어 주세요.", true); f.password.focus(); return; }
+      run(f, A.leave(f.password.value), function () { f.reset(); show("login"); msg(ov.querySelector('[data-f="login"]'), "탈퇴했어요. 그동안 고마웠어요."); });
+    }
   };
   /* the code step of signing up: the form for the address is put away and the code form takes its place */
   function codeStep(email, text) {
@@ -156,16 +162,16 @@
       box.hidden = !q && !said; $('[data-v="rfText"]').hidden = !q; $('[data-refund]').hidden = !q; if (!q) return;
       var d = new Date(q.paidAt), when = (d.getMonth() + 1) + "." + String(d.getDate()).padStart(2, "0");
       var head = "최근 결제 · " + PLAN[q.plan] + " " + won(q.amount) + " · " + when + " — ";
-      $('[data-v="rfText"]').textContent = head + (q.rule === "today" ? "결제한 날이라 전액 돌려 드려요." : q.rule === "sub" ? "구독은 돈을 돌려 드리지 않고 멈춰요. 이미 낸 기간은 그대로 쓸 수 있어요." : "쓰지 않은 " + q.daysBack + "일만큼 돌려 드려요.");
-      var b = $('[data-refund]'); b.textContent = q.rule === "sub" ? "구독 멈추기" : won(q.refund) + " 환불"; b.hidden = q.rule !== "sub" && q.refund <= 0;
+      $('[data-v="rfText"]').textContent = head + (q.rule === "today" ? "결제한 날이라 전액 돌려 드려요." : "쓰지 않은 " + q.daysBack + "일만큼 돌려 드려요.") + (q.plan === "sub" ? " 구독도 함께 멈춰요." : "");
+      var b = $('[data-refund]'); b.textContent = won(q.refund) + " 환불"; b.hidden = q.refund <= 0;
     }, function () { box.hidden = true; });
   }
   ov.addEventListener("click", function (e) {
     var b = e.target.closest("[data-refund]"); if (!b || !RF) return; e.preventDefault();
     var m = $('[data-v="rfMsg"]'); m.textContent = ""; m.classList.remove("err");
-    if (!confirm(RF.rule === "sub" ? "구독을 멈출까요? 이미 낸 기간은 그대로 쓸 수 있어요." : won(RF.refund) + "을 환불할까요? 이용권에서 " + RF.daysBack + "일이 빠져요.")) return;
+    if (!confirm(won(RF.refund) + "을 환불할까요? 이용권에서 " + RF.daysBack + "일이 빠져요." + (RF.plan === "sub" ? " 구독도 멈춰요." : ""))) return;
     b.disabled = true;
-    A.refund(RF.orderId).then(function (r) { b.disabled = false; m.textContent = r.refunded > 0 ? won(r.refunded) + "을 환불했어요. 카드사에 따라 며칠 걸릴 수 있어요." : "구독을 멈췄어요."; fill(); }, function (er) { b.disabled = false; m.textContent = er.userMessage || "환불하지 못했어요."; m.classList.add("err"); });
+    A.refund(RF.orderId).then(function (r) { b.disabled = false; m.textContent = won(r.refunded) + "을 환불했어요. 카드사에 따라 며칠 걸릴 수 있어요." + (RF && RF.plan === "sub" ? " 구독도 멈췄어요." : ""); fill(); }, function (er) { b.disabled = false; m.textContent = er.userMessage || "환불하지 못했어요."; m.classList.add("err"); });
   });
 
   /* the subscription: the price opens the card form; 해지 stops it (the days already paid stay) */
@@ -201,6 +207,57 @@
       else { m.textContent = (q.get("m") || "결제하지 못했어요.") + " 다시 해 주세요."; m.classList.add("err"); }
     });
   })();
+
+  /* the admin's usage page: every free limit as a meter (past 80% it also says 주의, so it is not colour alone), and the
+     last 14 days as bars for what is counted by the day. Cloudflare's own numbers need the CF_API_TOKEN secret. */
+  function fmt(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+  function bytes(n) { return n >= 1073741824 ? (n / 1073741824).toFixed(2) + " GB" : n >= 1048576 ? (n / 1048576).toFixed(1) + " MB" : n >= 1024 ? Math.round(n / 1024) + " KB" : n + " B"; }
+  function meter(name, used, limit, when, isBytes, missing) {
+    if (missing) return '<div class="us-m off"><div class="us-h"><span>' + name + ' <em>' + when + '</em></span><span class="v">연결 필요</span></div><div class="us-bar"></div></div>';
+    var p = limit ? used / limit * 100 : 0, w = p >= 100 ? "초과" : p >= 80 ? "주의" : "";
+    return '<div class="us-m' + (w ? " warn" : "") + '"><div class="us-h"><span>' + name + ' <em>' + when + '</em></span><span class="v">' + (isBytes ? bytes(used) + " / " + bytes(limit) : fmt(used) + " / " + fmt(limit)) + ' <em>' + (p < 0.1 && used > 0 ? "0.1% 미만" : p.toFixed(1) + "%") + '</em>' + (w ? ' <b>' + w + '</b>' : "") + '</span></div>' +
+      '<div class="us-bar" role="img" aria-label="' + name + ' ' + p.toFixed(1) + '%"><i style="width:' + Math.min(100, Math.max(used > 0 ? 0.6 : 0, p)).toFixed(2) + '%"></i></div></div>';
+  }
+  function bars(title, s, limit) {
+    if (!s) return "";
+    var max = Math.max.apply(null, s.map(function (x) { return x.v; })) || 1, W = 280, H = 64, bw = W / s.length, h = "";
+    s.forEach(function (x, i) {
+      var bh = x.v ? Math.max(2, x.v / max * (H - 4)) : 0, X = i * bw + 1, w = bw - 2, Y = H - bh, r = Math.min(4, w / 2, bh);
+      h += '<g class="us-b"><rect x="' + (i * bw) + '" y="0" width="' + bw + '" height="' + H + '" fill="transparent"></rect>' +
+        (bh ? '<path d="M' + X + ' ' + H + 'V' + (Y + r) + 'Q' + X + ' ' + Y + ' ' + (X + r) + ' ' + Y + 'H' + (X + w - r) + 'Q' + (X + w) + ' ' + Y + ' ' + (X + w) + ' ' + (Y + r) + 'V' + H + 'Z"></path>' : "") +
+        '<title>' + x.d.slice(5).replace("-", ".") + ' · ' + fmt(x.v) + '</title></g>';
+    });
+    var last = s[s.length - 1];
+    return '<figure class="us-c"><figcaption><span>' + title + '</span><em>14일 · 하루 최대 ' + fmt(max === 1 && !s.some(function (x) { return x.v; }) ? 0 : max) + ' · 한도 ' + fmt(limit) + '/일</em></figcaption>' +
+      '<svg viewBox="0 0 ' + W + ' ' + (H + 1) + '" preserveAspectRatio="none" aria-hidden="true"><line x1="0" x2="' + W + '" y1="' + (H + 0.5) + '" y2="' + (H + 0.5) + '"></line>' + h + '</svg>' +
+      '<div class="us-x"><span>' + s[0].d.slice(5).replace("-", ".") + '</span><span>오늘 ' + fmt(last.v) + '</span></div></figure>';
+  }
+  function usagePage() {
+    var box = $('[data-v="usage"]'), at = $('[data-v="usAt"]');
+    box.innerHTML = '<p class="dim">불러오는 중…</p>'; at.textContent = "";
+    A.admin.usage().then(function (u) {
+      var n = u.now, f = u.free, e = u.errors || {}, s = u.series, cf = !u.token;
+      var d = new Date(u.at);
+      at.textContent = "무료 요금제 기준 · " + (d.getMonth() + 1) + "." + d.getDate() + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") + " 현재 · 하루 한도는 한국 시간 오전 9시(UTC 0시)에 다시 시작";
+      var h = "";
+      if (cf) h += '<p class="us-note">Cloudflare 사용량을 보려면 "Account Analytics: Read" 권한의 API 토큰을 만들어 터미널에서 넣어 주세요.<br><code>npx wrangler@4.142.0 secret put CF_API_TOKEN -c api/wrangler.jsonc</code></p>';
+      var err = function (k) { return e[k] && e[k] !== "token" ? '<p class="us-err">불러오지 못했어요: ' + esc(e[k]) + '</p>' : ""; };
+      h += '<section class="us-g"><h2>Cloudflare Workers <em>사이트 페이지 · 계정 서버</em></h2>' + meter("요청", n.workers || 0, f.workers, "오늘", false, n.workers == null) + err("workers") + bars("하루 요청", s.workers, f.workers) + '</section>';
+      h += '<section class="us-g"><h2>D1 데이터베이스 <em>계정 · 사이트 · 결제</em></h2>' + meter("읽은 행", n.d1Read || 0, f.d1Read, "오늘", false, n.d1Read == null) + meter("쓴 행", n.d1Write || 0, f.d1Write, "오늘", false, n.d1Write == null) + meter("저장 용량", n.d1Size || 0, f.d1Size, "전체", true, !n.d1Size) + err("d1") + bars("하루 읽은 행", s.d1Read, f.d1Read) + bars("하루 쓴 행", s.d1Write, f.d1Write) + '</section>';
+      h += '<section class="us-g"><h2>R2 저장소 <em>공개 사이트의 사진·3D 파일</em></h2>' + meter("저장 용량", n.r2Size != null ? n.r2Size : n.mediaBytes, f.r2Size, n.r2Size != null ? "전체" : "전체 · 1440 기록 기준", true, false) + meter("Class A 작업 (올리기)", n.r2A || 0, f.r2A, "이번 달", false, n.r2A == null) + meter("Class B 작업 (읽기)", n.r2B || 0, f.r2B, "이번 달", false, n.r2B == null) + err("r2ops") + err("r2size") + '</section>';
+      h += '<section class="us-g"><h2>Resend 메일 <em>가입·학교 확인 코드, 결제·만료 안내</em></h2>' + meter("보낸 메일", n.mailDay, f.mailDay, "오늘", false, false) + meter("보낸 메일", n.mailMonth, f.mailMonth, "이번 달", false, false) + bars("하루 보낸 메일", s.mail, f.mailDay) + '</section>';
+      h += '<section class="us-g"><h2>한도가 없거나 따로 확인하는 것</h2><ul class="ck us-l">' +
+        '<li><span class="b"></span><span class="t">정적 파일</span><span class="v">요청 무제한 · 버전당 파일 20,000개</span></li>' +
+        '<li><span class="b"></span><span class="t">Cron (매일 정리·결제)</span><span class="v">5개 중 1개</span></li>' +
+        '<li><span class="b"></span><span class="t">GitHub Actions (배포)</span><span class="v"><a class="u" href="https://github.com/settings/billing" target="_blank" rel="noopener">월 2,000분 · 확인 ↗</a></span></li>' +
+        '<li><span class="b"></span><span class="t">나이스페이 (결제)</span><span class="v">무료 한도 없음 · 건마다 수수료</span></li></ul></section>';
+      h += '<section class="us-g"><h2>지금 1440</h2><ul class="ck us-l">' +
+        '<li><span class="b"></span><span class="t">계정</span><span class="v">' + fmt(n.users) + '</span></li>' +
+        '<li><span class="b"></span><span class="t">사이트</span><span class="v">' + fmt(n.sites) + ' (공개 ' + fmt(n.published) + ')</span></li>' +
+        '<li><span class="b"></span><span class="t">올린 파일</span><span class="v">' + fmt(n.mediaFiles) + ' · ' + bytes(n.mediaBytes) + '</span></li></ul></section>';
+      box.innerHTML = h;
+    }, function (er) { box.innerHTML = '<p class="dim">' + esc(er.userMessage || "불러오지 못했어요.") + '</p>'; });
+  }
 
   /* the admin: requests first, then every account */
   var LIST = null;

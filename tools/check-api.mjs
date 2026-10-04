@@ -221,12 +221,13 @@ const sig = async (tid, amount, ediDate) => hex(tid + amount + ediDate + env.NIC
   r = await g("POST", "/api/pay/refund", { orderId: q.orderId }); t("year prorate refund", r.status === 200 && cancels[cancels.length - 1].body.cancelAmt === Math.floor(46000 * 264 / 365) && r.body.user.paidUntil > Date.now() && r.body.user.paidUntil < Date.now() + 86400000, r);
   t("prorated payment marked partial", db.prepare("SELECT status FROM payments WHERE tid = 'RA2'").get().status === "partial");
   t("stale refund refused", (await g("POST", "/api/pay/refund", { orderId: q.orderId })).status === 409);
-  // 3. the subscription after its first day: no money, it stops, the days stay
+  // 3. the subscription after its first day: like a pass, the unused days back, and it stops
   await g("POST", "/api/sub/start", card);
   db.prepare("UPDATE payments SET paid_at = ? WHERE plan = 'sub' AND user_id = ?").run(Date.now() - 5 * 86400000, uid);
-  const before = (await g("GET", "/api/me")).body.user.paidUntil, nC = cancels.length;
-  q = (await g("GET", "/api/pay/refund")).body.quote; t("sub quote", q.rule === "sub" && q.refund === 0, q);
-  r = await g("POST", "/api/pay/refund", { orderId: q.orderId }); t("sub refund stops, days stay", r.status === 200 && r.body.refunded === 0 && r.body.user.sub.status === "canceled" && r.body.user.paidUntil === before && cancels.length === nC, r);
+  db.prepare("UPDATE users SET paid_until = ? WHERE id = ?").run(Date.now() + 25 * 86400000 + 3600000, uid);
+  const nC = cancels.length;
+  q = (await g("GET", "/api/pay/refund")).body.quote; t("sub quote: unused days", q.rule === "prorate" && q.daysBack === 25 && q.refund === Math.floor(4900 * 25 / 30), q);
+  r = await g("POST", "/api/pay/refund", { orderId: q.orderId }); t("sub refund: unused days back, stopped", r.status === 200 && r.body.refunded === Math.floor(4900 * 25 / 30) && r.body.user.sub.status === "canceled" && r.body.user.paidUntil < Date.now() + 86400000 && cancels.length === nC + 1 && cancels[cancels.length - 1].body.cancelAmt === Math.floor(4900 * 25 / 30), r);
   t("nothing more after", (await g("GET", "/api/pay/refund")).body.quote === null);
   // 1 again, for the subscription: the same day gives all of it back
   r = await g("POST", "/api/sub/start", card); q = (await g("GET", "/api/pay/refund")).body.quote;
@@ -300,9 +301,45 @@ const sig = async (tid, amount, ediDate) => hex(tid + amount + ediDate + env.NIC
   db.prepare("UPDATE users SET paid_until = ? WHERE email = 'site1@mail.com'").run(Date.now() - 8 * 86400000);
   t("grace over: down", (await site("haneul-studio.kor.gallery")).status === 404);
   r = await W4.sweepSites(env); t("sweep: site and pictures deleted", r.gone >= 1 && R2.size === 0 && !db.prepare("SELECT 1 FROM sites WHERE name = 'haneul-studio'").get() && !db.prepare("SELECT 1 FROM media WHERE key = ?").get(mu.slice(3)), r);
+  // old records the privacy policy promises to drop: failed log-ins after 30 days, unfinished sign-ups after a day
+  db.prepare("INSERT INTO attempts (key, at) VALUES ('old', ?), ('new', ?)").run(Date.now() - 31 * 86400000, Date.now());
+  db.prepare("INSERT OR REPLACE INTO signups (email, pass, code, expires, sent) VALUES ('gone@mail.com', 'x', 'x', 0, ?)").run(Date.now() - 2 * 86400000);
+  await W4.sweepSites(env);
+  t("cleanup: old records gone, new kept", !db.prepare("SELECT 1 FROM attempts WHERE key = 'old'").get() && !!db.prepare("SELECT 1 FROM attempts WHERE key = 'new'").get() && !db.prepare("SELECT 1 FROM signups WHERE email = 'gone@mail.com'").get());
+  // a pass ending: one mail 3 days before, one on the day it ends; a subscription gets none
+  { const nj = jar(); await join(nj, { email: "note@mail.com", password: "12345678" });
+    const nid = db.prepare("SELECT id FROM users WHERE email = 'note@mail.com'").get().id;
+    db.prepare("INSERT INTO sites (name, user_id, n, data, published, created) VALUES ('noted', ?, 5, '{}', ?, ?)").run(nid, Date.now(), Date.now());
+    const sent = () => mails.filter((m) => m.to[0] === "note@mail.com" && /이용권/.test(m.subject)).length;
+    db.prepare("UPDATE users SET paid_until = ? WHERE id = ?").run(Date.now() + 10 * 86400000, nid); await W4.sweepSites(env);
+    t("notice: none 10 days before", sent() === 0);
+    db.prepare("UPDATE users SET paid_until = ? WHERE id = ?").run(Date.now() + 2 * 86400000, nid); await W4.sweepSites(env); await W4.sweepSites(env);
+    t("notice: once, 3 days before", sent() === 1 && /곧 끝나요/.test(mails.filter((m) => m.to[0] === "note@mail.com" && /이용권/.test(m.subject))[0].subject));
+    db.prepare("UPDATE users SET paid_until = ? WHERE id = ?").run(Date.now() - 3600000, nid); await W4.sweepSites(env); await W4.sweepSites(env);
+    const last = mails.filter((m) => m.to[0] === "note@mail.com").pop();
+    t("notice: once, when it ends (with the delete date)", sent() === 2 && /끝났어요/.test(last.subject) && /noted\.kor\.gallery/.test(last.text), last);
+    db.prepare("DELETE FROM sites WHERE user_id = ?").run(nid); }
+  // leaving (탈퇴): password; site, pictures, account gone; payments stay; the school month is not given twice
+  { const lv = jar(); await join(lv, { email: "leave@korea.ac.kr", password: "12345678", student: true });
+    const lid = db.prepare("SELECT id FROM users WHERE email = 'leave@korea.ac.kr'").get().id;
+    db.prepare("INSERT INTO payments (order_id, user_id, plan, amount, status, created) VALUES ('keep-me', ?, 'month', 4900, 'paid', ?)").run(lid, Date.now());
+    await lv("POST", "/api/site/name", { name: "leaving" });
+    const lck = (await W.fetch(new Request(O + "/api/login", { method: "POST", headers: { origin: O, "content-type": "application/json" }, body: JSON.stringify({ email: "leave@korea.ac.kr", password: "12345678" }) }), env)).headers.get("set-cookie").split(";")[0];
+    const lu = await (await W.fetch(new Request(O + "/api/media", { method: "PUT", headers: { origin: O, "content-type": "image/png", cookie: lck }, body: new Uint8Array([137, 80, 78, 71, 9]) }), env)).json();
+    t("leave: wrong password", (await lv("POST", "/api/me/delete", { password: "nope" })).status === 403);
+    r = await lv("POST", "/api/me/delete", { password: "12345678" });
+    t("leave: done", r.status === 200 && !db.prepare("SELECT 1 FROM users WHERE id = ?").get(lid) && !db.prepare("SELECT 1 FROM sites WHERE user_id = ?").get(lid) && !db.prepare("SELECT 1 FROM media WHERE user_id = ?").get(lid) && !R2.has("m/" + lu.url.slice(3)), r);
+    t("leave: logged out", (await lv("GET", "/api/me")).body.user === null);
+    t("leave: payment record kept", !!db.prepare("SELECT 1 FROM payments WHERE order_id = 'keep-me'").get());
+    const again = jar(); await join(again, { email: "leave@korea.ac.kr", password: "12345678", student: true });
+    t("leave: same school address, no second free month", (await again("GET", "/api/me")).body.user.trialUntil === 0); }
   // 1440.kor.gallery itself is still the static site
   t("1440 stays static", (await (await W.fetch(new Request(O + "/assets/site.css"), env)).text()) === "asset /assets/site.css");
   delete env.MEDIA; delete env.STATIC;
 }
+// the admin's usage page: our own counts always; Cloudflare's numbers only with a token (here none)
+r = await boss("GET", "/api/admin/usage");
+t("usage: admin sees counts", r.status === 200 && r.body.now.mailDay > 0 && r.body.series.mail.length === 14 && r.body.now.users > 0 && r.body.free.workers === 100000 && r.body.errors.workers === "token", r.body);
+t("usage: admin only", (await a("GET", "/api/admin/usage")).status === 403);
 console.log(ok + " passed, " + bad + " failed");
 if (bad) process.exit(1);

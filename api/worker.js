@@ -69,6 +69,7 @@ async function sendMail(env, to, subject, text) {
     body: JSON.stringify({ from: env.MAIL_FROM || "1440 <no-reply@kor.gallery>", to: [to], subject, text })
   });
   if (!r.ok) { const why = (await r.text().catch(() => "")).slice(0, 300); console.log("resend " + r.status + " " + why); throw new Error("mail " + r.status); } /* seen with: npx wrangler tail -c api/wrangler.jsonc */
+  try { await env.DB.prepare("INSERT INTO mail_log (at) VALUES (?)").bind(Date.now()).run(); } catch (e) {} /* counted for the admin's usage page (Resend: 100 a day, 3,000 a month) */
 }
 
 /* ---------- NICEPAY ---------- */
@@ -123,7 +124,7 @@ async function undoPayment(env, o, cancelled) {
 /* ---------- refunds the person asks for (the rules of 1440):
    1. on the day of buying (KST): the whole amount back, and the days it bought go
    2. a 30-day or 1-year pass after that day: the unused days back (a day already begun counts as used)
-   3. the subscription after that day: no money back; it stops, and the days already paid stay
+   3. the subscription after that day: like a pass, the unused days back, and the subscription stops
    Only the latest payment can be taken back: its days are the last part of the pass. ---------- */
 function kstDay(ms) { return new Date(ms + 9 * 3600000).toISOString().slice(0, 10); }
 async function refundQuote(env, u, now = Date.now()) {
@@ -133,7 +134,6 @@ async function refundQuote(env, u, now = Date.now()) {
   const left = Math.max(0, Math.floor((((me && me.paid_until) || 0) - now) / DAY)); /* whole unused days on the pass */
   const q = { orderId: o.order_id, plan: o.plan, amount: o.amount, paidAt: o.paid_at, days };
   if (kstDay(o.paid_at) === kstDay(now)) return { ...q, rule: "today", refund: o.amount, daysBack: days };
-  if (o.plan === "sub") return (await env.DB.prepare("SELECT 1 FROM subs WHERE user_id = ? AND status = 'active'").bind(u.id).first()) ? { ...q, rule: "sub", refund: 0, daysBack: 0 } : null;
   const unused = Math.min(days, left);
   return { ...q, rule: "prorate", refund: Math.floor(o.amount * unused / days), daysBack: unused };
 }
@@ -184,6 +184,79 @@ async function sendSignupCode(env, email, p, ip) {
 /* a page of this site to come back to after paying: the first page or the editor, nothing else (no other host) */
 export function safeBack(b) { b = String(b || ""); return /^\/(templates\.html)?(\?[A-Za-z0-9=&%._~-]*)?$/.test(b) ? b : "/"; }
 
+/* a university address gives its free month once: also after the account that used it is deleted (kept as a hash for a year) */
+async function uniTaken(env, uni, exceptId = "") {
+  if (await env.DB.prepare("SELECT 1 FROM users WHERE uni_email = ? AND id != ?").bind(uni, exceptId).first()) return true;
+  return !!(await env.DB.prepare("SELECT 1 FROM uni_used WHERE hash = ? AND at > ?").bind(await sha("uni:" + uni), Date.now() - 365 * DAY).first());
+}
+
+/* ---------- the admin's usage page: every free limit 1440 lives under, with how much is used ----------
+   Our own counts (mail sent, pictures kept, database size, accounts) are always there. The Cloudflare numbers
+   (Workers requests, D1 rows, R2 operations and storage) come from the GraphQL Analytics API and need a token with
+   "Account Analytics: Read", put in by the owner:  npx wrangler secret put CF_API_TOKEN -c api/wrangler.jsonc */
+const FREE = {
+  workers: 100000,          /* requests a day, the whole account (static files are free and not counted) */
+  d1Read: 5000000,          /* rows read a day */
+  d1Write: 100000,          /* rows written a day */
+  d1Size: 5 * 1073741824,   /* bytes */
+  r2Size: 10 * 1073741824,  /* bytes */
+  r2A: 1000000,             /* class A operations a month */
+  r2B: 10000000,            /* class B operations a month */
+  mailDay: 100, mailMonth: 3000 /* Resend free plan */
+};
+const R2_B = new Set(["HeadBucket", "HeadObject", "GetObject", "UsageSummary", "GetBucketEncryption", "GetBucketLocation", "GetBucketCors", "GetBucketLifecycleConfiguration"]);
+const R2_FREE = new Set(["DeleteObject", "DeleteBucket", "AbortMultipartUpload"]);
+function utcDay(ms) { return new Date(ms).toISOString().slice(0, 10); }
+async function cfq(env, query, vars) {
+  if (!env.CF_API_TOKEN) return { error: "token" };
+  try {
+    const r = await fetch("https://api.cloudflare.com/client/v4/graphql", { method: "POST", headers: { authorization: "Bearer " + env.CF_API_TOKEN, "content-type": "application/json" }, body: JSON.stringify({ query, variables: { acc: env.CF_ACCOUNT_ID, ...vars } }) });
+    const j = await r.json().catch(() => ({}));
+    if (j.errors && j.errors.length) return { error: String(j.errors[0].message || "error").slice(0, 160) };
+    const a = j.data && j.data.viewer && j.data.viewer.accounts && j.data.viewer.accounts[0];
+    return a ? { data: a } : { error: "no data (" + r.status + ")" };
+  } catch (e) { return { error: "network" }; }
+}
+export async function usage(env, now = Date.now()) {
+  const days = []; for (let i = 13; i >= 0; i--) days.push(utcDay(now - i * DAY));
+  const today = days[13], from = days[0], month0 = today.slice(0, 8) + "01";
+  const series = (rows, pick) => { const m = {}; (rows || []).forEach((g) => { const d = g.dimensions.date; m[d] = (m[d] || 0) + pick(g); }); return days.map((d) => ({ d, v: m[d] || 0 })); };
+  const out = { at: now, token: !!env.CF_API_TOKEN, free: FREE, series: {}, now: {}, errors: {} };
+
+  /* ours: mail, pictures, the database, accounts */
+  const mails = await env.DB.prepare("SELECT at FROM mail_log WHERE at >= ?").bind(Date.parse(from + "T00:00:00Z")).all();
+  const mm = {}; (mails.results || []).forEach((r) => { const d = utcDay(r.at); mm[d] = (mm[d] || 0) + 1; });
+  out.series.mail = days.map((d) => ({ d, v: mm[d] || 0 }));
+  out.now.mailDay = mm[today] || 0;
+  const mon = await env.DB.prepare("SELECT COUNT(*) AS n FROM mail_log WHERE at >= ?").bind(Date.parse(month0 + "T00:00:00Z")).first();
+  out.now.mailMonth = (mon && mon.n) || 0;
+  const media = await env.DB.prepare("SELECT COUNT(*) AS n, COALESCE(SUM(size), 0) AS b FROM (SELECT key, MAX(size) AS size FROM media GROUP BY key)").first();
+  out.now.mediaFiles = (media && media.n) || 0; out.now.mediaBytes = (media && media.b) || 0;
+  const sizeQ = await env.DB.prepare("SELECT COUNT(*) AS n FROM users").all();
+  out.now.users = (sizeQ.results && sizeQ.results[0] && sizeQ.results[0].n) || 0;
+  out.now.d1Size = (sizeQ.meta && (sizeQ.meta.size_after || sizeQ.meta.sizeAfter)) || 0;
+  const st = await env.DB.prepare("SELECT COUNT(*) AS n, SUM(published IS NOT NULL) AS p FROM sites").first();
+  out.now.sites = (st && st.n) || 0; out.now.published = (st && st.p) || 0;
+
+  /* Cloudflare: Workers requests and D1 rows by day, R2 operations this month and storage */
+  const w = await cfq(env, "query($acc:string!,$from:Date,$to:Date){viewer{accounts(filter:{accountTag:$acc}){workersInvocationsAdaptive(limit:2000,filter:{date_geq:$from,date_leq:$to}){sum{requests}dimensions{date}}}}}", { from, to: today });
+  if (w.data) { out.series.workers = series(w.data.workersInvocationsAdaptive, (g) => g.sum.requests); out.now.workers = out.series.workers[13].v; } else out.errors.workers = w.error;
+  const d = await cfq(env, "query($acc:string!,$from:Date,$to:Date,$db:string){viewer{accounts(filter:{accountTag:$acc}){d1AnalyticsAdaptiveGroups(limit:2000,filter:{date_geq:$from,date_leq:$to,databaseId:$db}){sum{rowsRead rowsWritten}dimensions{date}}}}}", { from, to: today, db: env.D1_ID });
+  if (d.data) {
+    out.series.d1Read = series(d.data.d1AnalyticsAdaptiveGroups, (g) => g.sum.rowsRead); out.series.d1Write = series(d.data.d1AnalyticsAdaptiveGroups, (g) => g.sum.rowsWritten);
+    out.now.d1Read = out.series.d1Read[13].v; out.now.d1Write = out.series.d1Write[13].v;
+  } else out.errors.d1 = d.error;
+  const ro = await cfq(env, "query($acc:string!,$from:Time,$to:Time){viewer{accounts(filter:{accountTag:$acc}){r2OperationsAdaptiveGroups(limit:2000,filter:{datetime_geq:$from,datetime_leq:$to}){sum{requests}dimensions{actionType}}}}}", { from: month0 + "T00:00:00Z", to: new Date(now).toISOString() });
+  if (ro.data) {
+    let a = 0, b = 0; (ro.data.r2OperationsAdaptiveGroups || []).forEach((g) => { const t = g.dimensions.actionType, n = g.sum.requests; if (R2_FREE.has(t)) return; if (R2_B.has(t)) b += n; else a += n; });
+    out.now.r2A = a; out.now.r2B = b;
+  } else out.errors.r2ops = ro.error;
+  const rs = await cfq(env, "query($acc:string!,$from:Time,$to:Time){viewer{accounts(filter:{accountTag:$acc}){r2StorageAdaptiveGroups(limit:200,filter:{datetime_geq:$from,datetime_leq:$to}){max{payloadSize metadataSize objectCount}dimensions{bucketName}}}}}", { from: new Date(now - 2 * DAY).toISOString(), to: new Date(now).toISOString() });
+  if (rs.data) { let s = 0, n = 0; (rs.data.r2StorageAdaptiveGroups || []).forEach((g) => { s += (g.max.payloadSize || 0) + (g.max.metadataSize || 0); n += g.max.objectCount || 0; }); out.now.r2Size = s; out.now.r2Objects = n; }
+  else out.errors.r2size = rs.error;
+  return out;
+}
+
 async function body(req) { try { return await req.json(); } catch (e) { return {}; } }
 
 /* ---------- sites: 이름.kor.gallery ----------
@@ -216,20 +289,43 @@ function siteOf(row) { return row ? { name: row.name, n: row.n || 0, published: 
 
 /* the daily cron: a site whose pass ended more than GRACE ago is taken down, with its pictures */
 export async function sweepSites(env, now = Date.now()) {
-  const rows = await env.DB.prepare("SELECT name, user_id FROM sites").all();
-  let gone = 0;
+  /* records the privacy policy keeps only for a while: failed log-ins and code requests 30 days, unfinished sign-ups 1 day, old sessions and codes */
+  await env.DB.prepare("DELETE FROM attempts WHERE at < ?").bind(now - 30 * DAY).run();
+  await env.DB.prepare("DELETE FROM signups WHERE sent < ?").bind(now - DAY).run();
+  await env.DB.prepare("DELETE FROM sessions WHERE expires < ?").bind(now).run();
+  await env.DB.prepare("DELETE FROM codes WHERE expires < ?").bind(now - DAY).run();
+  await env.DB.prepare("DELETE FROM uni_used WHERE at < ?").bind(now - 365 * DAY).run();
+  await env.DB.prepare("DELETE FROM mail_log WHERE at < ?").bind(now - 62 * DAY).run();
+  const rows = await env.DB.prepare("SELECT s.name, s.user_id, s.data, u.email FROM sites s JOIN users u ON u.id = s.user_id").all();
+  let gone = 0, warned = 0;
   for (const r of rows.results || []) {
-    if (await siteUp(env, r.user_id, now)) continue;
-    const ms = await env.DB.prepare("SELECT key FROM media WHERE user_id = ?").bind(r.user_id).all();
-    for (const m of ms.results || []) {
-      const other = await env.DB.prepare("SELECT 1 FROM media WHERE key = ? AND user_id != ?").bind(m.key, r.user_id).first();
-      if (!other && env.MEDIA) { try { await env.MEDIA.delete("m/" + m.key); } catch (e) {} }
-    }
-    await env.DB.prepare("DELETE FROM media WHERE user_id = ?").bind(r.user_id).run();
-    await env.DB.prepare("DELETE FROM sites WHERE user_id = ?").bind(r.user_id).run();
-    gone++;
+    if (!(await siteUp(env, r.user_id, now))) { await removeSite(env, r.user_id); gone++; continue; }
+    if (r.data && await warnPass(env, r, now)) warned++;
   }
-  return { gone };
+  return { gone, warned };
+}
+/* a published site whose pass is ending: a mail 3 days before, and one on the day it ends (the site goes 7 days later).
+   Each is sent once for that end date (table notices). A subscription renews itself, so it gets none. */
+async function warnPass(env, r, now) {
+  const p = await passNow(env, r.user_id, now); if (p.sub || !p.until) return false;
+  const kind = p.until > now ? (p.until - now <= 3 * DAY ? "soon" : "") : "ended"; if (!kind) return false;
+  if (await env.DB.prepare("SELECT 1 FROM notices WHERE user_id = ? AND kind = ? AND until = ?").bind(r.user_id, kind, p.until).first()) return false;
+  await env.DB.prepare("INSERT INTO notices (user_id, kind, until, sent) VALUES (?, ?, ?, ?)").bind(r.user_id, kind, p.until, now).run();
+  const site = r.name + ".kor.gallery", del = ymd(p.until + GRACE);
+  const text = kind === "soon"
+    ? "1440 이용권이 " + ymd(p.until) + "에 끝나요.\n\n이용권이 끝나도 " + site + "는 7일 동안 그대로 보이고, " + del + "에 사이트와 올린 사진이 지워져요.\n이어서 쓰려면 1440.kor.gallery → 계정에서 이용권을 결제해 주세요.\n\n1440.kor.gallery"
+    : "1440 이용권이 끝났어요.\n\n" + site + "는 " + del + "까지 보이고, 그 뒤 사이트와 올린 사진이 지워지며 되살릴 수 없어요.\n그 전에 1440.kor.gallery → 계정에서 이용권을 결제하면 그대로 이어져요.\n\n1440.kor.gallery";
+  try { await sendMail(env, r.email, kind === "soon" ? "1440 이용권이 곧 끝나요" : "1440 이용권이 끝났어요 · " + del + " 사이트 삭제", text); } catch (e) {}
+  return true;
+}
+async function removeSite(env, userId) {
+  const ms = await env.DB.prepare("SELECT key FROM media WHERE user_id = ?").bind(userId).all();
+  for (const m of ms.results || []) {
+    const other = await env.DB.prepare("SELECT 1 FROM media WHERE key = ? AND user_id != ?").bind(m.key, userId).first();
+    if (!other && env.MEDIA) { try { await env.MEDIA.delete("m/" + m.key); } catch (e) {} }
+  }
+  await env.DB.prepare("DELETE FROM media WHERE user_id = ?").bind(userId).run();
+  await env.DB.prepare("DELETE FROM sites WHERE user_id = ?").bind(userId).run();
 }
 
 const siteRoutes = {
@@ -492,7 +588,7 @@ const routes = {
     const id = b64(rand(12));
     await env.DB.prepare("INSERT INTO users (id, email, nick, pass, state, created) VALUES (?, ?, ?, ?, ?, ?)").bind(id, email, nick, p.pass, p.state || "{}", Date.now()).run();
     /* the code went to this address, so a university address is a checked one: the student month */
-    if (p.student && uniDomain(email) && !(await env.DB.prepare("SELECT 1 FROM users WHERE uni_email = ?").bind(email).first()))
+    if (p.student && uniDomain(email) && !(await uniTaken(env, email)))
       await env.DB.prepare("UPDATE users SET uni_email = ?, student = 'verified', trial_until = ? WHERE id = ?").bind(email, Date.now() + MONTH, id).run();
     await env.DB.prepare("DELETE FROM signups WHERE email = ?").bind(email).run();
     const u = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(id).first();
@@ -513,6 +609,24 @@ const routes = {
     return json({ ok: true }, 200, { "set-cookie": cookie("sid", "", 0) });
   },
 
+  /* leaving 1440 (탈퇴): asked with the password. The subscription stops, the site and its pictures and the account are
+     deleted at once. Payment records stay for the years the law asks (they keep no e-mail); a school address that gave
+     a free month is kept only as a hash for a year, so the month is not given twice. */
+  "POST /api/me/delete": async (env, req, u) => {
+    if (!u) return fail("로그인해 주세요.", 401);
+    if (await tooMany(env, "del:" + u.id, 8, 15 * 60000)) return fail("잠시 뒤에 다시 해 주세요.", 429);
+    const d = await body(req);
+    if (!(await checkPass(String(d.password || ""), u.pass))) { await note(env, "del:" + u.id); return fail("비밀번호가 맞지 않아요.", 403); }
+    const s = await env.DB.prepare("SELECT * FROM subs WHERE user_id = ?").bind(u.id).first();
+    if (s && s.status === "active" && s.bid) await expireBid(env, s.bid);
+    await removeSite(env, u.id);
+    if (u.uni_email) await env.DB.prepare("INSERT OR REPLACE INTO uni_used (hash, at) VALUES (?, ?)").bind(await sha("uni:" + u.uni_email), Date.now()).run();
+    for (const t of ["sessions", "codes", "requests", "subs"]) await env.DB.prepare("DELETE FROM " + t + " WHERE user_id = ?").bind(u.id).run();
+    await env.DB.prepare("DELETE FROM attempts WHERE key IN (?, ?, ?)").bind("login:" + u.email, "signup:" + u.email, "del:" + u.id).run();
+    await env.DB.prepare("DELETE FROM users WHERE id = ?").bind(u.id).run();
+    return json({ ok: true }, 200, { "set-cookie": cookie("sid", "", 0) });
+  },
+
   /* the hub: which form was edited last and the forms kept in 홈 */
   "PUT /api/me/state": async (env, req, u) => {
     if (!u) return fail("로그인해 주세요.", 401);
@@ -529,7 +643,7 @@ const routes = {
     const d = await body(req), uni = String(d.uniEmail || "").trim().toLowerCase();
     if (!EMAIL.test(uni)) return fail("학교 메일 주소를 확인해 주세요.");
     if (!uniDomain(uni)) return fail("대학 메일(.ac.kr, .edu 등)이 아니에요. 아래 '관리자 확인 요청'을 써 주세요.", 422);
-    if (await env.DB.prepare("SELECT 1 FROM users WHERE uni_email = ? AND id != ?").bind(uni, u.id).first()) return fail("이 학교 메일은 이미 다른 계정이 썼어요.", 409);
+    if (await uniTaken(env, uni, u.id)) return fail("이 학교 메일은 이미 다른 계정이 썼어요.", 409);
     const old = await env.DB.prepare("SELECT sent FROM codes WHERE user_id = ?").bind(u.id).first();
     if (old && Date.now() - old.sent < 60000) return fail("1분 뒤에 다시 보낼 수 있어요.", 429);
     if (await tooMany(env, "code:" + u.id, 6, DAY)) return fail("오늘은 더 보낼 수 없어요.", 429);
@@ -547,7 +661,7 @@ const routes = {
     if (!c || c.expires < Date.now()) return fail("코드가 없거나 시간이 지났어요. 다시 보내 주세요.");
     if (c.tries >= 5) return fail("여러 번 틀렸어요. 코드를 다시 보내 주세요.", 429);
     if ((await sha(String(d.code || "").trim())) !== c.code) { await env.DB.prepare("UPDATE codes SET tries = tries + 1 WHERE user_id = ?").bind(u.id).run(); return fail("코드가 맞지 않아요."); }
-    if (await env.DB.prepare("SELECT 1 FROM users WHERE uni_email = ? AND id != ?").bind(c.uni_email, u.id).first()) return fail("이 학교 메일은 이미 다른 계정이 썼어요.", 409);
+    if (await uniTaken(env, c.uni_email, u.id)) return fail("이 학교 메일은 이미 다른 계정이 썼어요.", 409);
     const until = Math.max(u.trial_until || 0, Date.now()) + MONTH;
     await env.DB.prepare("UPDATE users SET uni_email = ?, student = 'verified', trial_until = ? WHERE id = ?").bind(c.uni_email, until, u.id).run();
     await env.DB.prepare("DELETE FROM codes WHERE user_id = ?").bind(u.id).run();
@@ -578,13 +692,17 @@ const routes = {
     const d = await body(req), r = await env.DB.prepare("SELECT * FROM requests WHERE id = ?").bind(String(d.id || "")).first();
     if (!r || r.status !== "pending") return fail("없거나 이미 처리한 요청이에요.", 404);
     const ok = !!d.approve;
-    if (ok && await env.DB.prepare("SELECT 1 FROM users WHERE uni_email = ? AND id != ?").bind(r.uni_email, r.user_id).first()) return fail("이 학교 메일은 이미 다른 계정이 썼어요.", 409);
+    if (ok && await uniTaken(env, r.uni_email, r.user_id)) return fail("이 학교 메일은 이미 다른 계정이 썼어요.", 409);
     await env.DB.prepare("UPDATE requests SET status = ? WHERE id = ?").bind(ok ? "approved" : "denied", r.id).run();
     if (ok) {
       const t = await env.DB.prepare("SELECT trial_until FROM users WHERE id = ?").bind(r.user_id).first();
       await env.DB.prepare("UPDATE users SET uni_email = ?, student = 'verified', trial_until = ? WHERE id = ?").bind(r.uni_email, Math.max((t && t.trial_until) || 0, Date.now()) + MONTH, r.user_id).run();
     } else await env.DB.prepare("UPDATE users SET student = 'none' WHERE id = ?").bind(r.user_id).run();
     return json({ ok: true });
+  },
+  "GET /api/admin/usage": async (env, req, u) => {
+    if (!isAdmin(env, u)) return fail("관리자만 볼 수 있어요.", 403);
+    return json(await usage(env));
   },
   "POST /api/admin/grant": async (env, req, u) => {
     if (!isAdmin(env, u)) return fail("관리자만 할 수 있어요.", 403);
