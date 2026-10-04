@@ -28,6 +28,7 @@
     if (me && /^(login|signup)$/.test(id)) id = "account";
     if ((id === "admin" || id === "usage") && !(me && me.admin)) id = "account";
     pages.forEach(function (p) { p.classList.toggle("on", p.id === "a-" + id); });
+    ov.classList.toggle("wide", id === "usage"); /* the usage page takes the whole width, on paper */
     side.forEach(function (a) { a.classList.toggle("on", a.dataset.to === id); });
     if (id === "account" || id === "student") fill();
     if (id === "admin") admin();
@@ -208,56 +209,79 @@
     });
   })();
 
-  /* the admin's usage page: every free limit as a meter (past 80% it also says 주의, so it is not colour alone), and the
-     last 14 days as bars for what is counted by the day. Cloudflare's own numbers need the CF_API_TOKEN secret. */
+  /* the admin's usage page: on its own wide, solid page. First a card for every free limit (the share used in big
+     figures and a word: 여유 / 주의 / 초과 — not colour alone), then for what is counted by the day, the last 14 days
+     as bars with a scale. Cloudflare's own numbers need the CF_API_TOKEN secret. */
   function fmt(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
   function bytes(n) { return n >= 1073741824 ? (n / 1073741824).toFixed(2) + " GB" : n >= 1048576 ? (n / 1048576).toFixed(1) + " MB" : n >= 1024 ? Math.round(n / 1024) + " KB" : n + " B"; }
-  function meter(name, used, limit, when, isBytes, missing) {
-    if (missing) return '<div class="us-m off"><div class="us-h"><span>' + name + ' <em>' + when + '</em></span><span class="v">연결 필요</span></div><div class="us-bar"></div></div>';
-    var p = limit ? used / limit * 100 : 0, w = p >= 100 ? "초과" : p >= 80 ? "주의" : "";
-    return '<div class="us-m' + (w ? " warn" : "") + '"><div class="us-h"><span>' + name + ' <em>' + when + '</em></span><span class="v">' + (isBytes ? bytes(used) + " / " + bytes(limit) : fmt(used) + " / " + fmt(limit)) + ' <em>' + (p < 0.1 && used > 0 ? "0.1% 미만" : p.toFixed(1) + "%") + '</em>' + (w ? ' <b>' + w + '</b>' : "") + '</span></div>' +
-      '<div class="us-bar" role="img" aria-label="' + name + ' ' + p.toFixed(1) + '%"><i style="width:' + Math.min(100, Math.max(used > 0 ? 0.6 : 0, p)).toFixed(2) + '%"></i></div></div>';
+  function pct(used, limit) { var p = limit ? used / limit * 100 : 0; return p === 0 ? "0%" : p < 0.1 ? "<0.1%" : p < 10 ? p.toFixed(1) + "%" : Math.round(p) + "%"; }
+  function card(name, when, used, limit, isBytes, missing) {
+    if (missing) return '<div class="us-k off"><p class="us-kn">' + name + '<em>' + when + '</em></p><p class="us-kp">—</p><p class="us-kv">연결 필요</p><div class="us-bar"></div></div>';
+    var p = limit ? used / limit * 100 : 0, w = p >= 100 ? "초과" : p >= 80 ? "주의" : "여유";
+    return '<div class="us-k' + (p >= 80 ? " warn" : "") + '"><p class="us-kn">' + name + '<em>' + when + '</em></p><p class="us-kp">' + pct(used, limit) + '<b>' + w + '</b></p>' +
+      '<p class="us-kv">' + (isBytes ? bytes(used) + " / " + bytes(limit) : fmt(used) + " / " + fmt(limit)) + '</p>' +
+      '<div class="us-bar" role="img" aria-label="' + name + ' ' + pct(used, limit) + '"><i style="width:' + Math.min(100, Math.max(used > 0 ? 1 : 0, p)).toFixed(2) + '%"></i><s style="left:80%"></s></div></div>';
   }
-  function bars(title, s, limit) {
+  function chart(title, s, limit) {
     if (!s) return "";
-    var max = Math.max.apply(null, s.map(function (x) { return x.v; })) || 1, W = 280, H = 64, bw = W / s.length, h = "";
+    var max = Math.max.apply(null, s.map(function (x) { return x.v; })), top = max > 0 ? niceTop(max) : 1, W = 560, H = 150, n = s.length, gap = 4, bw = (W - gap * (n - 1)) / n, h = "";
+    [0, 0.5, 1].forEach(function (k) { var y = H - k * H; h += '<line class="g" x1="0" x2="' + W + '" y1="' + y + '" y2="' + y + '"></line>'; });
     s.forEach(function (x, i) {
-      var bh = x.v ? Math.max(2, x.v / max * (H - 4)) : 0, X = i * bw + 1, w = bw - 2, Y = H - bh, r = Math.min(4, w / 2, bh);
-      h += '<g class="us-b"><rect x="' + (i * bw) + '" y="0" width="' + bw + '" height="' + H + '" fill="transparent"></rect>' +
-        (bh ? '<path d="M' + X + ' ' + H + 'V' + (Y + r) + 'Q' + X + ' ' + Y + ' ' + (X + r) + ' ' + Y + 'H' + (X + w - r) + 'Q' + (X + w) + ' ' + Y + ' ' + (X + w) + ' ' + (Y + r) + 'V' + H + 'Z"></path>' : "") +
-        '<title>' + x.d.slice(5).replace("-", ".") + ' · ' + fmt(x.v) + '</title></g>';
+      var bh = x.v ? Math.max(3, x.v / top * H) : 0, X = i * (bw + gap), Y = H - bh, r = Math.min(4, bw / 2, bh);
+      h += '<g class="us-b' + (i === n - 1 ? " now" : "") + '" data-tip="' + x.d.slice(5).replace("-", ".") + " · " + fmt(x.v) + '"><rect x="' + X + '" y="0" width="' + bw + '" height="' + H + '" fill="transparent"></rect>' +
+        (bh ? '<path d="M' + X + ' ' + H + 'V' + (Y + r) + 'Q' + X + ' ' + Y + ' ' + (X + r) + ' ' + Y + 'H' + (X + bw - r) + 'Q' + (X + bw) + ' ' + Y + ' ' + (X + bw) + ' ' + (Y + r) + 'V' + H + 'Z"></path>' : "") + '</g>';
     });
-    var last = s[s.length - 1];
-    return '<figure class="us-c"><figcaption><span>' + title + '</span><em>14일 · 하루 최대 ' + fmt(max === 1 && !s.some(function (x) { return x.v; }) ? 0 : max) + ' · 한도 ' + fmt(limit) + '/일</em></figcaption>' +
-      '<svg viewBox="0 0 ' + W + ' ' + (H + 1) + '" preserveAspectRatio="none" aria-hidden="true"><line x1="0" x2="' + W + '" y1="' + (H + 0.5) + '" y2="' + (H + 0.5) + '"></line>' + h + '</svg>' +
-      '<div class="us-x"><span>' + s[0].d.slice(5).replace("-", ".") + '</span><span>오늘 ' + fmt(last.v) + '</span></div></figure>';
+    var dates = s.map(function (x, i) { return '<span>' + (i % 2 === (n - 1) % 2 ? (+x.d.slice(5, 7)) + "." + (+x.d.slice(8)) : "") + '</span>'; }).join("");
+    var last = s[n - 1];
+    return '<figure class="us-c"><figcaption><b>' + title + '</b><span>오늘 <strong>' + fmt(last.v) + '</strong> · 한도 ' + fmt(limit) + '/일 (' + pct(last.v, limit) + ')</span></figcaption>' +
+      '<div class="us-plot"><div class="us-y"><span>' + fmt(top) + '</span><span>' + fmt(top / 2) + '</span><span>0</span></div>' +
+      '<div class="us-area"><svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' + h + '</svg><div class="us-tip" hidden></div><div class="us-d">' + dates + '</div></div></div>' +
+      '<details class="us-t"><summary>표로 보기</summary><table><tr><th>날짜</th><th>값</th></tr>' + s.map(function (x) { return '<tr><td>' + x.d + '</td><td>' + fmt(x.v) + '</td></tr>'; }).join("") + '</table></details></figure>';
   }
+  function niceTop(v) { var e = Math.pow(10, Math.floor(Math.log10(v))), m = v / e; return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * e; }
   function usagePage() {
     var box = $('[data-v="usage"]'), at = $('[data-v="usAt"]');
     box.innerHTML = '<p class="dim">불러오는 중…</p>'; at.textContent = "";
     A.admin.usage().then(function (u) {
-      var n = u.now, f = u.free, e = u.errors || {}, s = u.series, cf = !u.token;
-      var d = new Date(u.at);
-      at.textContent = "무료 요금제 기준 · " + (d.getMonth() + 1) + "." + d.getDate() + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") + " 현재 · 하루 한도는 한국 시간 오전 9시(UTC 0시)에 다시 시작";
+      var n = u.now, f = u.free, e = u.errors || {}, s = u.series, d = new Date(u.at);
+      at.textContent = "무료 요금제 기준 · " + (d.getMonth() + 1) + "." + d.getDate() + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") + " 현재 · 하루 한도는 매일 오전 9시(한국 시간)에 0부터 다시 셉니다";
+      var bad = Object.keys(e).filter(function (k) { return e[k] && e[k] !== "token"; }).map(function (k) { return esc(e[k]); });
       var h = "";
-      if (cf) h += '<p class="us-note">Cloudflare 사용량을 보려면 "Account Analytics: Read" 권한의 API 토큰을 만들어 터미널에서 넣어 주세요.<br><code>npx wrangler@4.142.0 secret put CF_API_TOKEN -c api/wrangler.jsonc</code></p>';
-      var err = function (k) { return e[k] && e[k] !== "token" ? '<p class="us-err">불러오지 못했어요: ' + esc(e[k]) + '</p>' : ""; };
-      h += '<section class="us-g"><h2>Cloudflare Workers <em>사이트 페이지 · 계정 서버</em></h2>' + meter("요청", n.workers || 0, f.workers, "오늘", false, n.workers == null) + err("workers") + bars("하루 요청", s.workers, f.workers) + '</section>';
-      h += '<section class="us-g"><h2>D1 데이터베이스 <em>계정 · 사이트 · 결제</em></h2>' + meter("읽은 행", n.d1Read || 0, f.d1Read, "오늘", false, n.d1Read == null) + meter("쓴 행", n.d1Write || 0, f.d1Write, "오늘", false, n.d1Write == null) + meter("저장 용량", n.d1Size || 0, f.d1Size, "전체", true, !n.d1Size) + err("d1") + bars("하루 읽은 행", s.d1Read, f.d1Read) + bars("하루 쓴 행", s.d1Write, f.d1Write) + '</section>';
-      h += '<section class="us-g"><h2>R2 저장소 <em>공개 사이트의 사진·3D 파일</em></h2>' + meter("저장 용량", n.r2Size != null ? n.r2Size : n.mediaBytes, f.r2Size, n.r2Size != null ? "전체" : "전체 · 1440 기록 기준", true, false) + meter("Class A 작업 (올리기)", n.r2A || 0, f.r2A, "이번 달", false, n.r2A == null) + meter("Class B 작업 (읽기)", n.r2B || 0, f.r2B, "이번 달", false, n.r2B == null) + err("r2ops") + err("r2size") + '</section>';
-      h += '<section class="us-g"><h2>Resend 메일 <em>가입·학교 확인 코드, 결제·만료 안내</em></h2>' + meter("보낸 메일", n.mailDay, f.mailDay, "오늘", false, false) + meter("보낸 메일", n.mailMonth, f.mailMonth, "이번 달", false, false) + bars("하루 보낸 메일", s.mail, f.mailDay) + '</section>';
-      h += '<section class="us-g"><h2>한도가 없거나 따로 확인하는 것</h2><ul class="ck us-l">' +
+      if (!u.token) h += '<p class="us-note">Cloudflare 숫자를 보려면 "Account Analytics: Read" 권한의 API 토큰을 터미널에서 넣어 주세요.<br><code>npx wrangler@4.142.0 secret put CF_API_TOKEN -c api/wrangler.jsonc</code></p>';
+      if (bad.length) h += '<p class="us-err">일부 숫자를 불러오지 못했어요: ' + bad.join(" / ") + '</p>';
+      var r2 = n.r2Size != null ? n.r2Size : n.mediaBytes;
+      h += '<section class="us-g"><h2>Cloudflare</h2><div class="us-ks">' +
+        card("Workers 요청", "오늘", n.workers || 0, f.workers, false, n.workers == null) +
+        card("D1 읽은 행", "오늘", n.d1Read || 0, f.d1Read, false, n.d1Read == null) +
+        card("D1 쓴 행", "오늘", n.d1Write || 0, f.d1Write, false, n.d1Write == null) +
+        card("D1 용량", "전체", n.d1Size || 0, f.d1Size, true, !n.d1Size) +
+        card("R2 용량", "전체", r2 || 0, f.r2Size, true, false) +
+        card("R2 올리기 (Class A)", "이번 달", n.r2A || 0, f.r2A, false, n.r2A == null) +
+        card("R2 읽기 (Class B)", "이번 달", n.r2B || 0, f.r2B, false, n.r2B == null) + '</div></section>';
+      h += '<section class="us-g"><h2>Resend 메일</h2><div class="us-ks">' + card("보낸 메일", "오늘", n.mailDay, f.mailDay) + card("보낸 메일", "이번 달", n.mailMonth, f.mailMonth) + '</div></section>';
+      h += '<section class="us-g"><h2>최근 14일</h2><div class="us-cs">' + chart("Workers 요청", s.workers, f.workers) + chart("D1 읽은 행", s.d1Read, f.d1Read) + chart("D1 쓴 행", s.d1Write, f.d1Write) + chart("보낸 메일", s.mail, f.mailDay) + '</div></section>';
+      h += '<section class="us-g us-two"><div><h2>한도가 없거나 따로 보는 것</h2><ul class="ck us-l">' +
         '<li><span class="b"></span><span class="t">정적 파일</span><span class="v">요청 무제한 · 버전당 파일 20,000개</span></li>' +
-        '<li><span class="b"></span><span class="t">Cron (매일 정리·결제)</span><span class="v">5개 중 1개</span></li>' +
-        '<li><span class="b"></span><span class="t">GitHub Actions (배포)</span><span class="v"><a class="u" href="https://github.com/settings/billing" target="_blank" rel="noopener">월 2,000분 · 확인 ↗</a></span></li>' +
-        '<li><span class="b"></span><span class="t">나이스페이 (결제)</span><span class="v">무료 한도 없음 · 건마다 수수료</span></li></ul></section>';
-      h += '<section class="us-g"><h2>지금 1440</h2><ul class="ck us-l">' +
+        '<li><span class="b"></span><span class="t">Cron</span><span class="v">5개 중 1개</span></li>' +
+        '<li><span class="b"></span><span class="t">GitHub Actions</span><span class="v"><a class="u" href="https://github.com/settings/billing" target="_blank" rel="noopener">월 2,000분 · 확인 ↗</a></span></li>' +
+        '<li><span class="b"></span><span class="t">나이스페이</span><span class="v">무료 한도 없음 · 건마다 수수료</span></li></ul></div>' +
+        '<div><h2>지금 1440</h2><ul class="ck us-l">' +
         '<li><span class="b"></span><span class="t">계정</span><span class="v">' + fmt(n.users) + '</span></li>' +
         '<li><span class="b"></span><span class="t">사이트</span><span class="v">' + fmt(n.sites) + ' (공개 ' + fmt(n.published) + ')</span></li>' +
-        '<li><span class="b"></span><span class="t">올린 파일</span><span class="v">' + fmt(n.mediaFiles) + ' · ' + bytes(n.mediaBytes) + '</span></li></ul></section>';
+        '<li><span class="b"></span><span class="t">올린 파일</span><span class="v">' + fmt(n.mediaFiles) + ' · ' + bytes(n.mediaBytes) + '</span></li></ul></div></section>';
       box.innerHTML = h;
     }, function (er) { box.innerHTML = '<p class="dim">' + esc(er.userMessage || "불러오지 못했어요.") + '</p>'; });
   }
+  /* a bar of a chart shows its day and value while pointed at */
+  ov.addEventListener("pointerover", function (e) {
+    var g = e.target.closest && e.target.closest(".us-b"); if (!g) return;
+    var area = g.closest(".us-area"), tip = area.querySelector(".us-tip"), r = g.getBoundingClientRect(), ar = area.getBoundingClientRect();
+    tip.textContent = g.dataset.tip; tip.hidden = false;
+    var bar = g.querySelector("path"), bt = bar ? bar.getBoundingClientRect().top : r.bottom;
+    tip.style.left = Math.max(0, Math.min(ar.width - tip.offsetWidth, r.left - ar.left + r.width / 2 - tip.offsetWidth / 2)) + "px";
+    tip.style.top = Math.max(0, bt - ar.top - tip.offsetHeight - 6) + "px"; /* just above the bar */
+  });
+  ov.addEventListener("pointerout", function (e) { var g = e.target.closest && e.target.closest(".us-b"); if (g && !g.contains(e.relatedTarget)) { var t = g.closest(".us-area").querySelector(".us-tip"); t.hidden = true; } });
 
   /* the admin: requests first, then every account */
   var LIST = null;

@@ -62,11 +62,35 @@ async function tooMany(env, key, max, win) {
 }
 async function note(env, key) { await env.DB.prepare("INSERT INTO attempts (key, at) VALUES (?, ?)").bind(key, Date.now()).run(); }
 
-async function sendMail(env, to, subject, text) {
+/* every mail 1440 sends is one quiet page like the site: the 14|40 mark, a short title, one large line between thin
+   rules (a code, an amount, a date), a few lines of what to know, an optional "→" link, and the small print. Tables
+   and inline styles, so every mail program draws it; the plain text goes along for the ones that do not show HTML. */
+function escH(v) { return String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+export function mailPage(o) {
+  const site = "https://1440.kor.gallery", ink = "#111111", dim = "#8a8a86", line = "#e4e4e0", font = "-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic','Pretendard',Helvetica,Arial,sans-serif";
+  const lines = o.lines || [];
+  const text = "1440 " + o.title + (o.big ? "\n\n" + o.big : "") + "\n\n" + lines.join("\n") + (o.link ? "\n\n" + o.link.label + ": " + o.link.href : "") + "\n\n1440.kor.gallery";
+  const big = o.big ? '<tr><td style="border-top:1px solid ' + line + ';border-bottom:1px solid ' + line + ';padding:26px 0;' + (o.mono ? "font-family:'SF Mono',Menlo,Consolas,'Courier New',monospace;font-size:38px;letter-spacing:12px;font-weight:500;" : "font-size:30px;letter-spacing:-0.01em;font-weight:500;") + 'line-height:1;">' + escH(o.big) + '</td></tr>' : '<tr><td style="border-top:1px solid ' + line + ';font-size:0;line-height:0;">&nbsp;</td></tr>';
+  const html = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>1440 ' + escH(o.title) + '</title></head>' +
+    '<body style="margin:0;padding:0;background:#f8f8f6;">' +
+    '<div style="display:none;max-height:0;overflow:hidden;opacity:0;">' + escH(o.pre || lines[0] || o.title) + '</div>' +
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8f8f6;"><tr><td align="center" style="padding:48px 16px;">' +
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:440px;font-family:' + font + ';color:' + ink + ';">' +
+    '<tr><td style="padding:0 0 40px;"><a href="' + site + '" style="text-decoration:none;color:' + ink + ';"><img src="' + site + '/assets/logo-pay.png" width="28" height="28" alt="1440" style="display:inline-block;vertical-align:middle;border:0;"><span style="display:inline-block;vertical-align:middle;margin-left:10px;font-size:15px;font-weight:600;letter-spacing:-0.01em;">1440</span></a></td></tr>' +
+    '<tr><td style="font-size:15px;line-height:1.5;padding:0 0 18px;">' + escH(o.title) + '</td></tr>' + big +
+    '<tr><td style="font-size:14px;line-height:1.7;color:' + dim + ';padding:18px 0 0;">' + lines.map(escH).join("<br>") + '</td></tr>' +
+    (o.link ? '<tr><td style="font-size:14px;line-height:1.5;padding:22px 0 0;"><a href="' + escH(o.link.href) + '" style="color:' + ink + ';text-decoration:underline;text-underline-offset:3px;">' + escH(o.link.label) + ' →</a></td></tr>' : "") +
+    '<tr><td style="font-size:12px;line-height:1.7;color:' + dim + ';padding:56px 0 0;">1440컴퍼니 · <a href="' + site + '" style="color:' + dim + ';text-decoration:underline;">1440.kor.gallery</a><br>이 메일은 보내기 전용입니다. 문의 1440unu@kor.gallery</td></tr>' +
+    '</table></td></tr></table></body></html>';
+  return { text, html };
+}
+export function codeMail(code, title, why) { return mailPage({ title, big: code, mono: true, lines: ["10분 안에 입력해 주세요.", why], pre: code + " · 10분 안에 입력해 주세요" }); }
+
+async function sendMail(env, to, subject, text, html) {
   if (!env.RESEND_API_KEY) { console.log("resend: no RESEND_API_KEY"); throw new Error("no mail key"); }
   const r = await fetch("https://api.resend.com/emails", {
     method: "POST", headers: { authorization: "Bearer " + env.RESEND_API_KEY, "content-type": "application/json" },
-    body: JSON.stringify({ from: env.MAIL_FROM || "1440 <no-reply@kor.gallery>", to: [to], subject, text })
+    body: JSON.stringify({ from: env.MAIL_FROM || "1440 <no-reply@kor.gallery>", to: [to], subject, text, ...(html ? { html } : {}) })
   });
   if (!r.ok) { const why = (await r.text().catch(() => "")).slice(0, 300); console.log("resend " + r.status + " " + why); throw new Error("mail " + r.status); } /* seen with: npx wrangler tail -c api/wrangler.jsonc */
   try { await env.DB.prepare("INSERT INTO mail_log (at) VALUES (?)").bind(Date.now()).run(); } catch (e) {} /* counted for the admin's usage page (Resend: 100 a day, 3,000 a month) */
@@ -155,12 +179,14 @@ export async function renewSubs(env, now = Date.now()) {
     const r = await chargeSub(env, { id: s.user_id, email: s.email }, s.bid);
     if (r.ok) {
       paid++; await env.DB.prepare("UPDATE subs SET next = ?, tries = 0 WHERE user_id = ?").bind(r.until, s.user_id).run();
-      try { await sendMail(env, s.email, "1440 구독 결제 4,900₩", "1440 월 구독이 결제되었습니다.\n\n금액 4,900₩ · " + (s.card || "카드") + "\n이용 기간 ~" + ymd(r.until) + "\n\n해지는 1440.kor.gallery → 계정 → 구독에서 할 수 있습니다."); } catch (e) {}
+      const m = mailPage({ title: "월 구독이 결제됐어요", big: "4,900₩", lines: [(s.card || "카드") + " · 이용 기간 ~" + ymd(r.until), "해지는 계정 → 구독에서 언제든 할 수 있어요."], link: { href: "https://1440.kor.gallery/", label: "1440 열기" } });
+      try { await sendMail(env, s.email, "1440 구독 결제 4,900₩", m.text, m.html); } catch (e) {}
     } else {
       failed++; const tries = (s.tries || 0) + 1;
       if (tries >= SUB.tries) {
         await env.DB.prepare("UPDATE subs SET status = 'failed', bid = '', tries = ? WHERE user_id = ?").bind(tries, s.user_id).run(); await expireBid(env, s.bid);
-        try { await sendMail(env, s.email, "1440 구독이 멈췄어요", "등록한 카드로 결제가 되지 않아 1440 월 구독을 멈췄습니다 (" + r.msg + ").\n\n1440.kor.gallery → 계정 → 구독에서 카드를 다시 등록하면 이어서 쓸 수 있습니다."); } catch (e) {}
+        const m = mailPage({ title: "구독이 멈췄어요", lines: ["등록한 카드로 결제가 되지 않아 월 구독을 멈췄어요.", "사유: " + r.msg, "계정 → 구독에서 카드를 다시 등록하면 이어서 쓸 수 있어요."], link: { href: "https://1440.kor.gallery/", label: "카드 다시 등록하기" } });
+        try { await sendMail(env, s.email, "1440 구독이 멈췄어요", m.text, m.html); } catch (e) {}
       } else await env.DB.prepare("UPDATE subs SET tries = ?, next = ? WHERE user_id = ?").bind(tries, now + DAY / 2, s.user_id).run();
     }
   }
@@ -176,7 +202,8 @@ async function sendSignupCode(env, email, p, ip) {
   await env.DB.prepare("INSERT OR REPLACE INTO signups (email, pass, student, state, code, expires, tries, sent) VALUES (?, ?, ?, ?, ?, ?, 0, ?)")
     .bind(email, p.pass, p.student ? 1 : 0, p.state || "{}", await sha(code), Date.now() + CODE_LIFE, Date.now()).run();
   await note(env, "signup:" + email); if (ip) await note(env, "sip:" + ip);
-  try { await sendMail(env, email, "1440 가입 확인 코드 " + code, "1440 가입 확인 코드: " + code + "\n\n10분 안에 입력해 주세요. 가입하지 않았다면 이 메일은 지워도 됩니다.\n\n1440.kor.gallery"); }
+  const cm = codeMail(code, "가입 확인 코드", "가입하지 않았다면 이 메일은 지워도 됩니다.");
+  try { await sendMail(env, email, "1440 가입 확인 코드 " + code, cm.text, cm.html); }
   catch (e) { return fail("메일을 보내지 못했어요. 잠시 후 다시 해 주세요.", 502); }
   return json({ pending: true, email });
 }
@@ -312,10 +339,10 @@ async function warnPass(env, r, now) {
   if (await env.DB.prepare("SELECT 1 FROM notices WHERE user_id = ? AND kind = ? AND until = ?").bind(r.user_id, kind, p.until).first()) return false;
   await env.DB.prepare("INSERT INTO notices (user_id, kind, until, sent) VALUES (?, ?, ?, ?)").bind(r.user_id, kind, p.until, now).run();
   const site = r.name + ".kor.gallery", del = ymd(p.until + GRACE);
-  const text = kind === "soon"
-    ? "1440 이용권이 " + ymd(p.until) + "에 끝나요.\n\n이용권이 끝나도 " + site + "는 7일 동안 그대로 보이고, " + del + "에 사이트와 올린 사진이 지워져요.\n이어서 쓰려면 1440.kor.gallery → 계정에서 이용권을 결제해 주세요.\n\n1440.kor.gallery"
-    : "1440 이용권이 끝났어요.\n\n" + site + "는 " + del + "까지 보이고, 그 뒤 사이트와 올린 사진이 지워지며 되살릴 수 없어요.\n그 전에 1440.kor.gallery → 계정에서 이용권을 결제하면 그대로 이어져요.\n\n1440.kor.gallery";
-  try { await sendMail(env, r.email, kind === "soon" ? "1440 이용권이 곧 끝나요" : "1440 이용권이 끝났어요 · " + del + " 사이트 삭제", text); } catch (e) {}
+  const m = kind === "soon"
+    ? mailPage({ title: "이용권이 곧 끝나요", big: ymd(p.until) + " 끝", lines: ["이용권이 끝나도 " + site + "는 7일 동안 그대로 보이고,", del + "에 사이트와 올린 사진이 지워져요.", "이어서 쓰려면 계정에서 이용권을 결제해 주세요."], link: { href: "https://1440.kor.gallery/", label: "이용권 결제하기" } })
+    : mailPage({ title: "이용권이 끝났어요", big: del + " 삭제", lines: [site + "는 " + del + "까지 보이고, 그 뒤 사이트와 올린 사진이 지워지며 되살릴 수 없어요.", "그 전에 계정에서 이용권을 결제하면 그대로 이어져요."], link: { href: "https://1440.kor.gallery/", label: "이용권 결제하기" } });
+  try { await sendMail(env, r.email, kind === "soon" ? "1440 이용권이 곧 끝나요" : "1440 이용권이 끝났어요 · " + del + " 사이트 삭제", m.text, m.html); } catch (e) {}
   return true;
 }
 async function removeSite(env, userId) {
@@ -650,7 +677,8 @@ const routes = {
     const code = String(100000 + (crypto.getRandomValues(new Uint32Array(1))[0] % 900000));
     await env.DB.prepare("INSERT OR REPLACE INTO codes (user_id, uni_email, code, expires, tries, sent) VALUES (?, ?, ?, ?, 0, ?)").bind(u.id, uni, await sha(code), Date.now() + CODE_LIFE, Date.now()).run();
     await note(env, "code:" + u.id);
-    try { await sendMail(env, uni, "1440 학교 메일 확인 코드 " + code, "1440 학교 메일 확인 코드: " + code + "\n\n10분 안에 입력해 주세요. 요청하지 않았다면 이 메일은 지워도 됩니다.\n\n1440.kor.gallery"); }
+    const cm = codeMail(code, "학교 메일 확인 코드", "요청하지 않았다면 이 메일은 지워도 됩니다.");
+    try { await sendMail(env, uni, "1440 학교 메일 확인 코드 " + code, cm.text, cm.html); }
     catch (e) { return fail("메일을 보내지 못했어요. 잠시 후 다시 해 주세요.", 502); }
     return json({ ok: true });
   },
