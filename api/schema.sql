@@ -101,3 +101,11 @@ CREATE TABLE IF NOT EXISTS mail_log (   -- when each mail was sent (no address, 
   at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS mail_log_at ON mail_log (at);
+CREATE TABLE IF NOT EXISTS admin_log (  -- what the admin looked at or changed, kept two years (개인정보의 안전성 확보조치 기준 제8조)
+  at INTEGER NOT NULL,
+  admin TEXT NOT NULL,                   -- the admin's e-mail
+  action TEXT NOT NULL,                  -- e.g. "POST /api/admin/grant"
+  target TEXT,                           -- the account or request it was about
+  ip TEXT
+);
+CREATE INDEX IF NOT EXISTS admin_log_at ON admin_log (at);

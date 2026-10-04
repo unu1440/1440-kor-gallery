@@ -302,6 +302,11 @@
       return '<div class="adm-r"><span><b>' + esc(x.email) + '</b><br>' + (x.student === "verified" ? "대학생 · " + esc(x.uni_email) : x.student === "pending" ? "확인 요청 중" : "일반") + ' · 무료 ' + (on ? day(x.trial_until) + "까지" : "없음") + '</span>' +
         '<span class="adm-b"><button type="button" class="u" data-grant="' + esc(x.id) + '">+30일</button>' + (on ? '<button type="button" class="u" data-revoke="' + esc(x.id) + '">거두기</button>' : "") + '</span></div>';
     }).join("") : '<p class="dim">없어요.</p>';
+    var NAMES = { "GET /api/admin/students": "목록 보기", "POST /api/admin/decide": "요청 결정", "POST /api/admin/grant": "무료 기간", "GET /api/admin/usage": "사용량 보기" };
+    $('[data-v="alog"]').innerHTML = (LIST.log || []).length ? LIST.log.map(function (x) {
+      var d = new Date(x.at), t = day(x.at) + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+      return '<div class="adm-r dim"><span>' + esc(NAMES[x.action] || x.action) + (x.target ? " · " + esc(x.target) : "") + '</span><span>' + t + '</span></div>';
+    }).join("") : '<p class="dim">없어요.</p>';
   }
   ov.addEventListener("input", function (e) { if (e.target.matches('[data-v="q"]')) drawAdmin(); });
   ov.addEventListener("click", function (e) {

@@ -103,6 +103,11 @@ t("kim verified", (await c("GET", "/api/me")).body.user.student === "verified");
 const kimId = (await c("GET", "/api/me")).body.user.id;
 r = await boss("POST", "/api/admin/grant", { userId: kimId, days: 0 }); t("revoke", r.status === 200 && r.body.trialUntil === 0, r);
 r = await boss("POST", "/api/admin/grant", { userId: kimId, days: 30 }); t("grant", r.body.trialUntil > Date.now(), r);
+// the admin's access record: every look and change, with whom it was about
+{ const lg = db.prepare("SELECT action, target, admin FROM admin_log ORDER BY at").all();
+  t("admin log: looks and changes written", lg.length === 4 && lg[0].action === "GET /api/admin/students" && lg[3].action === "POST /api/admin/grant" && lg[3].target === kimId + " 30일" && lg[1].target.endsWith(" 받기") && lg.every((x) => x.admin === "boss@kor.gallery"), lg);
+  t("admin log: not for others", (await c("GET", "/api/admin/students")).status === 403 && db.prepare("SELECT COUNT(*) AS n FROM admin_log").get().n === 4);
+  r = await boss("GET", "/api/admin/students"); t("admin log: shown to the admin", Array.isArray(r.body.log) && r.body.log.length === 5 && r.body.log[0].action === "GET /api/admin/students", r.body.log); }
 // login
 const d = jar();
 t("wrong pass", (await d("POST", "/api/login", { email: "lee@mail.com", password: "nope" })).status === 401);
@@ -292,6 +297,7 @@ const sig = async (tid, amount, ediDate) => hex(tid + amount + ediDate + env.NIC
   t("page: unknown name", (await site("nobody.kor.gallery")).status === 404);
   t("page: claimed but not published", (await site("haneul.kor.gallery")).status === 404);
   t("page: www goes home", (await site("www.kor.gallery")).status === 301);
+  { const bare = await site("kor.gallery", "/about"); t("page: the bare kor.gallery goes home", bare.status === 301 && bare.headers.get("location") === "https://1440.kor.gallery/"); }
   t("page: read only", (await site("haneul-studio.kor.gallery", "/", "POST")).status === 405);
   // the pass ends: up for 7 more days, then gone with its pictures
   db.prepare("UPDATE users SET paid_until = ? WHERE email = 'site1@mail.com'").run(Date.now() - 3 * 86400000);
@@ -303,9 +309,11 @@ const sig = async (tid, amount, ediDate) => hex(tid + amount + ediDate + env.NIC
   r = await W4.sweepSites(env); t("sweep: site and pictures deleted", r.gone >= 1 && R2.size === 0 && !db.prepare("SELECT 1 FROM sites WHERE name = 'haneul-studio'").get() && !db.prepare("SELECT 1 FROM media WHERE key = ?").get(mu.slice(3)), r);
   // old records the privacy policy promises to drop: failed log-ins after 30 days, unfinished sign-ups after a day
   db.prepare("INSERT INTO attempts (key, at) VALUES ('old', ?), ('new', ?)").run(Date.now() - 31 * 86400000, Date.now());
+  db.prepare("INSERT INTO admin_log (at, admin, action) VALUES (?, 'old@x', 'GET /x'), (?, 'new@x', 'GET /x')").run(Date.now() - 731 * 86400000, Date.now() - 700 * 86400000);
   db.prepare("INSERT OR REPLACE INTO signups (email, pass, code, expires, sent) VALUES ('gone@mail.com', 'x', 'x', 0, ?)").run(Date.now() - 2 * 86400000);
   await W4.sweepSites(env);
   t("cleanup: old records gone, new kept", !db.prepare("SELECT 1 FROM attempts WHERE key = 'old'").get() && !!db.prepare("SELECT 1 FROM attempts WHERE key = 'new'").get() && !db.prepare("SELECT 1 FROM signups WHERE email = 'gone@mail.com'").get());
+  t("cleanup: admin log kept two years", !db.prepare("SELECT 1 FROM admin_log WHERE admin = 'old@x'").get() && !!db.prepare("SELECT 1 FROM admin_log WHERE admin = 'new@x'").get());
   // a pass ending: one mail 3 days before, one on the day it ends; a subscription gets none
   { const nj = jar(); await join(nj, { email: "note@mail.com", password: "12345678" });
     const nid = db.prepare("SELECT id FROM users WHERE email = 'note@mail.com'").get().id;

@@ -261,10 +261,19 @@
   function bizH() { if (!biz) return; var t = biz.getBoundingClientRect().top; document.documentElement.style.setProperty("--biz-h", Math.max(0, Math.round(window.innerHeight - t)) + "px"); }
   bizH(); window.addEventListener("resize", bizH); window.addEventListener("load", bizH);
   if (window.ResizeObserver && biz) new ResizeObserver(bizH).observe(biz);
+  /* the footer's terms and privacy policy open that page of Information right here */
+  if (biz) biz.addEventListener("click", function (e) {
+    var a = e.target.closest("[data-info]"); if (!a) return;
+    e.preventDefault(); e.stopPropagation(); finishIntro(); window.SITE_INFO.open(a.dataset.info);
+  });
 
   fit();
   runIntro();
   /* a link like /#terms (from the editor's sign-up and payment steps) opens that page of Information */
-  var want = location.hash.slice(1);
-  if (/^(about|price|terms|privacy|copyright)$/.test(want)) { finishIntro(); window.SITE_INFO.open(want); }
+  function openFromHash() {
+    var want = location.hash.slice(1);
+    if (/^(about|price|terms|privacy|copyright)$/.test(want)) { finishIntro(); window.SITE_INFO.open(want); }
+  }
+  openFromHash();
+  window.addEventListener("hashchange", openFromHash); /* the same page with #terms typed or linked again */
 })();

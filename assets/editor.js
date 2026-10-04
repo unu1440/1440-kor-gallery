@@ -132,7 +132,7 @@
   root.className = "ed";
   root.innerHTML =
     '<header class="ed-top">' +
-      '<div class="ed-l"><button type="button" class="ed-home" id="edBack" aria-label="템플릿 다시 고르기" title="템플릿 다시 고르기"><span class="bk" aria-hidden="true">←</span><svg class="ed-logo" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15.25" fill="#fff" stroke="#111" stroke-width="1.5"/><path d="M16 .75a15.25 15.25 0 0 0 0 30.5z" fill="#111"/><text x="9.4" y="19.6" font-family="Arial,Helvetica,sans-serif" font-size="9.6" font-weight="700" fill="#fff" text-anchor="middle">14</text><text x="22.6" y="19.6" font-family="Arial,Helvetica,sans-serif" font-size="9.6" font-weight="700" fill="#111" text-anchor="middle">40</text></svg></button><span class="ed-no">' + T.tag(N) + '</span>' +
+      '<div class="ed-l"><button type="button" class="ed-home" id="edBack" aria-label="폼 다시 고르기" title="폼 다시 고르기"><span class="bk" aria-hidden="true">←</span><svg class="ed-logo" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15.25" fill="#fff" stroke="#111" stroke-width="1.5"/><path d="M16 .75a15.25 15.25 0 0 0 0 30.5z" fill="#111"/><text x="9.4" y="19.6" font-family="Arial,Helvetica,sans-serif" font-size="9.6" font-weight="700" fill="#fff" text-anchor="middle">14</text><text x="22.6" y="19.6" font-family="Arial,Helvetica,sans-serif" font-size="9.6" font-weight="700" fill="#111" text-anchor="middle">40</text></svg></button><span class="ed-no">' + T.tag(N) + '</span>' +
       '<img class="ed-fav" id="edFav" alt="" hidden></div>' +
     '<nav class="ed-rail" id="edRail" aria-label="편집 도구">' +
       '<button type="button" id="edFilesBtn" data-tip="패널" aria-label="탐색기·도구·레이어" aria-pressed="false">탐색기 · 도구 · 레이어</button>' +
@@ -246,6 +246,8 @@
     if (el.querySelector("[data-clock], [data-hours], [data-until], button, a, input, img, select, textarea, canvas, svg")) return false;
     if (!el.children.length) return true;
     if (!ownText(el)) return false;
+    /* pieces set side by side in a row (a caption's number, title and year): each is its own text, not one run "01Black Jug2026" */
+    if (/flex|grid/.test(getComputedStyle(el).display)) return false;
     return [].every.call(el.querySelectorAll("*"), function (c) { return INLINE[c.tagName]; });
   }
   /* `start` is the whole page, or a window that was just opened over it (menu, info, project page…) */
@@ -267,12 +269,18 @@
       if (el.classList.contains("wf")) { el.dataset.pk = "w" + (wi++); el.classList.add("ed-p"); return; }
       if (el.tagName === "IMG") { var f = (el.getAttribute("src") || "").replace(/^.*\//, "").replace(/\.jpg$/, ""), box = el.closest(".ph") || el; box.dataset.pk = f; box.classList.add("ed-p"); return; }
       if (el.classList.contains("wl") || bars(el)) { slot(el); return; } /* a wireframe's grey bars: a place where words can go */
-      if (textBlock(el)) { if (el.dataset.orig === undefined) { el.dataset.orig = el.textContent; el.dataset.fs = parseFloat(getComputedStyle(el).fontSize) || 16; } el.classList.add("ed-t"); return; }
+      if (textBlock(el)) { if (el.dataset.orig === undefined) { el.dataset.orig = el.dataset.row || el.textContent; el.dataset.ot = el.textContent; el.dataset.fs = parseFloat(getComputedStyle(el).fontSize) || 16; } el.classList.add("ed-t"); return; }
       /* loose words next to something the page fills in itself ("Free admission" beside "Opens in 3 days"): each run of words becomes its own piece */
       if (el.children.length && ownText(el) && !el.closest(SELF)) [].slice.call(el.childNodes).forEach(function (n) {
         if (n.nodeType !== 3 || !n.textContent.trim() || SKIP_TXT.test(n.textContent.trim())) return;
         var sp = document.createElement("span"); sp.textContent = n.textContent; el.replaceChild(sp, n);
       });
+      /* the pieces of a row (a caption's number, title and year) are named after their row, so changing one card's year
+         changes that card only, not every "2026" on the page; the site's own name keeps its name (설정 changes it everywhere) */
+      if (el.children.length > 1 && /flex|grid/.test(getComputedStyle(el).display) && [].every.call(el.children, function (c) { return INLINE[c.tagName] && !c.children.length; })) {
+        var row = el.textContent, nm0 = T.site || T.defName;
+        [].forEach.call(el.children, function (c, i) { if (c.dataset.row === undefined && c.textContent.trim() !== nm0) c.dataset.row = row + "§" + i; });
+      }
       [].slice.call(el.children).forEach(walk);
     })(top);
   }
@@ -392,7 +400,7 @@
     $("[data-ti]", tip).addEventListener("click", function () { setStyle(function (s) { s.i = s.i ? 0 : 1; }); });
     $$("[data-ta]", tip).forEach(function (x) { x.addEventListener("click", function () { setStyle(function (s) { s.a = s.a === x.dataset.ta ? "" : x.dataset.ta; }); }); });
     $("#edTc").addEventListener("change", function () { var v = this.value; setStyle(function (s) { s.c = v; }); });
-    var r = $("#edTxtReset"); if (r) r.addEventListener("click", function () { delete S.texts[o]; delete S.tstyle[o]; $$(".ed-t:not(.ed-slot)", canvas).forEach(function (el) { if (el.dataset.orig === o) { el.textContent = o; styleText(el); } }); commit(true); tipText(); });
+    var r = $("#edTxtReset"); if (r) r.addEventListener("click", function () { delete S.texts[o]; delete S.tstyle[o]; $$(".ed-t:not(.ed-slot)", canvas).forEach(function (el) { if (el.dataset.orig === o) { el.textContent = el.dataset.ot !== undefined ? el.dataset.ot : o; styleText(el); } }); commit(true); tipText(); });
     if (!phone.matches) setTimeout(function () { ta.focus(); ta.select(); }, 0);
   }
   function tipSlot() {
@@ -575,7 +583,7 @@
     commit(true); var v = viewOf(), st = v ? v.scrollTop : 0; render(); var v2 = viewOf(); if (v2) v2.scrollTop = st;
   }
   function panelBlocks(pb) {
-    if (!gen) { pb.innerHTML = '<div class="ed-box"><p class="ed-p2">구성이 정해진 템플릿이에요.</p></div>'; return; }
+    if (!gen) { pb.innerHTML = '<div class="ed-box"><p class="ed-p2">구성이 정해진 폼이에요.</p></div>'; return; }
     var mp = moreParts(), left = GEN.MORE.blocks.filter(function (k) { return mp.blocks.indexOf(k) < 0; });
     pb.innerHTML = '<div class="ed-box"></div>' +
       '<div class="ed-box"><div class="ed-blk lock"><span class="ed-grip" aria-hidden="true">•</span><span class="n">첫 화면<small>' + esc(GEN.layouts[gen.layout].ko) + '</small></span><span></span></div>' +
@@ -721,7 +729,7 @@
     tt.addEventListener("input", function () { S.title = tt.value; commit(); });
     ds.addEventListener("input", function () { S.desc = ds.value; commit(); });
     $("#edAddr", pb).addEventListener("click", function () { publish(); });
-    $("#edReset", pb).addEventListener("click", function () { if (!confirm("지금까지 고친 내용을 모두 지우고 처음 템플릿으로 되돌릴까요?")) return; Object.keys(DATA).forEach(function (k) { dbPut(k, null); delete DATA[k]; }); S = fresh(); commit(true); select(null); render(); });
+    $("#edReset", pb).addEventListener("click", function () { if (!confirm("지금까지 고친 내용을 모두 지우고 처음 폼으로 되돌릴까요?")) return; Object.keys(DATA).forEach(function (k) { dbPut(k, null); delete DATA[k]; }); S = fresh(); commit(true); select(null); render(); });
   }
 
   /* -- the page's background: a colour and/or a picture (opened from the dock, or by pressing an empty place on the page) -- */
@@ -1189,7 +1197,7 @@
       if (openF.fav !== false) h += fav.length ? fav.map(function (n) {
         var b0 = T.find(n) || {}, k = "v:" + n;
         return row({ k: k, d: 2, ic: XI.tpl, name: T.tag(n), em: b0.label || "", cls: "fvrow" + (n === N ? " on" : ""), drag: true, dots: true, title: "두 번 눌러 열기", extra: n === N ? "" : '<button type="button" class="dots go" data-gok="' + k + '" tabindex="-1" aria-label="열기" title="열기">' + XI.out + '</button>' });
-      }).join("") : '<p class="ed-fe" style="--d:2">☆를 누른 템플릿이 여기에 모여요</p>';
+      }).join("") : '<p class="ed-fe" style="--d:2">☆를 누른 폼이 여기에 모여요</p>';
     }
     return h + '</div>';
   }
@@ -1369,9 +1377,26 @@
     var view = viewOf(), tp = view && $(".tp", view), ov = $("#ed3d"); if (!tp || !ov) return;
     LYS = layersNow(); if (!LYS.length) return;
     var pw = tp.offsetWidth, ph = tp.offsetHeight, pbg = LYS[0].bg || "#fff";
+    ov.hidden = false; /* measured before drawing: the thickness is kept about the same on the screen whatever the page's size */
+    var fit = Math.min(ov.clientWidth / pw, (ov.clientHeight - 150) / ph) * 0.8 || 0.2;
+    var T = Math.round(Math.max(10, Math.min(60, 7 / fit))), RAD = Math.min(30, pw / 5, ph / 5), SEG = 6;
+    /* the thickness of a sheet is a solid edge, not frames one behind the other (those showed as steps when turned):
+       the four sides and the rounded corners (six narrow faces each) stand back from the sheet, and a back closes it.
+       Each face is shaded by the way it looks (light from the upper left), so the sheet reads as a slab. */
+    function rim(k) {
+      var h = "", d = Math.PI / 2 / SEG, rr = RAD * Math.cos(d / 2), c = 2 * RAD * Math.sin(d / 2) + 1, z = "calc(" + (k - 1) + " * var(--gap, 240px))";
+      function face(x, y, a, len) {
+        var lit = 0.5 + 0.5 * Math.cos(a - Math.PI / 2 - 4.1); /* 1 = facing the light, 0 = away from it */
+        h += '<div class="d3-f k' + k + '" style="width:' + len.toFixed(2) + 'px;height:' + T + 'px;--s:' + lit.toFixed(3) + ';transform:translate3d(' + x.toFixed(2) + 'px,' + y.toFixed(2) + 'px,' + z + ') rotate(' + a.toFixed(4) + 'rad) rotateX(-90deg) translateX(-50%)"></div>';
+      }
+      face(pw / 2, 0, 0, pw - 2 * RAD); face(pw, ph / 2, Math.PI / 2, ph - 2 * RAD); face(pw / 2, ph, Math.PI, pw - 2 * RAD); face(0, ph / 2, -Math.PI / 2, ph - 2 * RAD);
+      [[pw - RAD, RAD, -Math.PI / 2], [pw - RAD, ph - RAD, 0], [RAD, ph - RAD, Math.PI / 2], [RAD, RAD, Math.PI]].forEach(function (q) {
+        for (var i = 0; i < SEG; i++) { var t = q[2] + (i + 0.5) * d; face(q[0] + rr * Math.cos(t), q[1] + rr * Math.sin(t), t + Math.PI / 2, c); }
+      });
+      return h + '<div class="d3-f d3-b k' + k + '" style="width:' + pw + 'px;height:' + ph + 'px;border-radius:' + RAD + 'px;transform:translateZ(calc(' + z + ' - ' + T + 'px))"></div>';
+    }
     var planes = [0, 1, 2].map(function (k) {
-      var walls = ""; for (var w = 1; w <= 14; w++) walls += '<div class="d3-f k' + k + '" style="width:' + pw + 'px;height:' + ph + 'px;--z:' + (k - 1) + ';--t:' + (w * 2) + '"></div>'; /* the thickness of the sheet: frames one behind the other */
-      return '<div class="d3-p k' + k + '" style="width:' + pw + 'px;height:' + ph + 'px;--z:' + (k - 1) + (k === 0 ? ";background:" + pbg : "") + '" data-k="' + k + '"><span class="d3-l">' + LNAME[k][0] + '<small>' + LNAME[k][1] + '</small></span></div>' + walls;
+      return rim(k) + '<div class="d3-p k' + k + '" style="width:' + pw + 'px;height:' + ph + 'px;border-radius:' + RAD + 'px;--z:' + (k - 1) + (k === 0 ? ";background:" + pbg : "") + '" data-k="' + k + '"><span class="d3-l" style="left:' + k * 34 + '%;font-size:' + Math.round(13 / fit) + 'px">' + LNAME[k][0] + '<small>' + LNAME[k][1] + '</small></span></div>';
     }).join("");
     var cards = LYS.map(function (l, i) {
       if (l.page) return "";
@@ -1386,12 +1411,12 @@
     }).join("");
     ov.innerHTML = '<div class="d3-bar"><b>3D 레이어</b><label class="d3-r"><span>간격</span><input type="range" class="d3-gap" min="0" max="520" value="' + d3s.gap + '"></label><button type="button" class="d3-reset">처음 각도</button><button type="button" class="d3-close" aria-label="닫기">' + IC.x + '</button></div>' +
       '<div class="d3-hint">위 · 중간 · 아래 세 층 — 끌어서 돌리고, 휠로 확대해요</div><div class="d3-scene"><div class="d3-stage" style="width:' + pw + 'px;height:' + ph + 'px">' + planes + cards + '</div></div><div class="d3-tag" hidden></div>';
-    ov.hidden = false; d3on = true;
+    d3on = true;
     LYS.forEach(function (l, i) { /* a 3D object shows its own picture */
       if (!l.mv || !l.mv.toDataURL) return;
       try { Promise.resolve(l.mv.toDataURL()).then(function (u) { var c = $('.d3-c[data-i="' + i + '"]', ov); if (c && u) { c.style.background = "transparent"; c.innerHTML = '<img src="' + u + '" alt="" style="object-fit:contain">'; } }, function () {}); } catch (e) {}
     });
-    var scene = $(".d3-scene", ov), stage = $(".d3-stage", ov), tag = $(".d3-tag", ov), fit = Math.min(ov.clientWidth / pw, (ov.clientHeight - 150) / ph) * 0.8 || 0.2, drag = null;
+    var scene = $(".d3-scene", ov), stage = $(".d3-stage", ov), tag = $(".d3-tag", ov), drag = null;
     function apply() { stage.style.setProperty("--gap", d3s.gap + "px"); stage.style.transform = "translate(-50%,-46%) scale(" + fit * d3s.zm + ") rotateX(" + d3s.rx + "deg) rotateY(" + d3s.ry + "deg)"; }
     apply();
     scene.addEventListener("pointerdown", function (e) { drag = { x: e.clientX, y: e.clientY, rx: d3s.rx, ry: d3s.ry }; try { scene.setPointerCapture(e.pointerId); } catch (z) {} });

@@ -16,7 +16,9 @@
      (custom domain); a more specific route or record (1440joljeon, img…) still wins over the * */
   "routes": [
     { "pattern": "1440.kor.gallery/api/*", "zone_name": "kor.gallery" },
-    { "pattern": "*.kor.gallery/*", "zone_name": "kor.gallery" }
+    { "pattern": "*.kor.gallery/*", "zone_name": "kor.gallery" },
+    /* the bare kor.gallery goes to 1440.kor.gallery (serveSite's 301), instead of the error page of a missing origin */
+    { "pattern": "kor.gallery/*", "zone_name": "kor.gallery" }
   ],
   /* the static site (templates.html, assets/), which draws the published sites too */
   "services": [{ "binding": "STATIC", "service": "kor-gallery" }],

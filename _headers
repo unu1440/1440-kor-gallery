@@ -1,0 +1,16 @@
+# Cache rules for the static site (Cloudflare Workers static assets; copied into dist/ by the deploy workflows).
+# Scripts and styles are always linked with ?v=<number>, so a new version is a new address: they can be kept for a year.
+# Pictures, 3D models and fonts keep their names; a month is long enough to be quick and short enough to change one.
+# HTML is left to the default (checked every time), so a deploy shows at once.
+/assets/*.js
+  Cache-Control: public, max-age=31536000, immutable
+/assets/*.css
+  Cache-Control: public, max-age=31536000, immutable
+/assets/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+/assets/img/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/assets/3d/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=604800
+/assets/logo-pay.png
+  Cache-Control: public, max-age=86400

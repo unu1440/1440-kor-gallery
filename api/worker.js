@@ -323,6 +323,7 @@ export async function sweepSites(env, now = Date.now()) {
   await env.DB.prepare("DELETE FROM codes WHERE expires < ?").bind(now - DAY).run();
   await env.DB.prepare("DELETE FROM uni_used WHERE at < ?").bind(now - 365 * DAY).run();
   await env.DB.prepare("DELETE FROM mail_log WHERE at < ?").bind(now - 62 * DAY).run();
+  await env.DB.prepare("DELETE FROM admin_log WHERE at < ?").bind(now - 730 * DAY).run();
   const rows = await env.DB.prepare("SELECT s.name, s.user_id, s.data, u.email FROM sites s JOIN users u ON u.id = s.user_id").all();
   let gone = 0, warned = 0;
   for (const r of rows.results || []) {
@@ -395,7 +396,7 @@ const siteRoutes = {
     if (!site) return fail("먼저 주소를 정해 주세요.", 409);
     if (!(await canPublish(env, u.id))) return fail("이용권이 있어야 공개할 수 있어요.", 402);
     const d = await body(req), n = Math.round(+d.n || 0);
-    if (!(n >= 1 && n <= 1440)) return fail("템플릿 번호가 맞지 않아요.");
+    if (!(n >= 1 && n <= 1440)) return fail("폼 번호가 맞지 않아요.");
     if (!d.s || typeof d.s !== "object" || Array.isArray(d.s)) return fail("공개할 내용이 없어요.");
     const media = d.media && typeof d.media === "object" ? d.media : {}, keys = [];
     for (const k of Object.keys(media)) {
@@ -437,7 +438,13 @@ async function serveSite(req, env, url) {
     const h = new Headers(); o.writeHttpMetadata(h); h.set("etag", o.httpEtag); h.set("cache-control", "public, max-age=31536000, immutable");
     return new Response(o.body, { headers: h });
   }
-  if (p.startsWith("/assets/")) return env.STATIC.fetch(new Request((env.SITE_ORIGIN || "https://1440.kor.gallery") + p + url.search, { headers: req.headers }));
+  if (p.startsWith("/assets/")) { /* the same cache rules as 1440.kor.gallery's own _headers: versioned scripts a year, pictures a month */
+    const r = await env.STATIC.fetch(new Request((env.SITE_ORIGIN || "https://1440.kor.gallery") + p + url.search, { headers: req.headers }));
+    if (r.status !== 200) return r;
+    const h = new Headers(r.headers);
+    h.set("cache-control", (/\.(js|css)$/.test(p) && url.searchParams.has("v")) || p.startsWith("/assets/fonts/") ? "public, max-age=31536000, immutable" : /^\/assets\/(img|3d)\//.test(p) ? "public, max-age=2592000, stale-while-revalidate=604800" : "public, max-age=86400");
+    return new Response(r.body, { status: 200, headers: h });
+  }
   if (p.startsWith("/api/")) return fail("not found", 404);
   if (p === "/robots.txt") return new Response("User-agent: *\nAllow: /\n", { headers: { "content-type": "text/plain" } });
   const row = await env.DB.prepare("SELECT * FROM sites WHERE name = ?").bind(name).first();
@@ -713,7 +720,8 @@ const routes = {
     if (!isAdmin(env, u)) return fail("관리자만 볼 수 있어요.", 403);
     const reqs = await env.DB.prepare("SELECT r.id, r.uni_email, r.school, r.status, r.created, u.id AS user_id, u.nick, u.email FROM requests r JOIN users u ON u.id = r.user_id ORDER BY r.status = 'pending' DESC, r.created DESC LIMIT 200").all();
     const users = await env.DB.prepare("SELECT id, nick, email, uni_email, student, trial_until, created FROM users ORDER BY created DESC LIMIT 300").all();
-    return json({ requests: reqs.results || [], users: users.results || [] });
+    const log = await env.DB.prepare("SELECT at, admin, action, target, ip FROM admin_log ORDER BY at DESC LIMIT 40").all();
+    return json({ requests: reqs.results || [], users: users.results || [], log: log.results || [] });
   },
   "POST /api/admin/decide": async (env, req, u) => {
     if (!isAdmin(env, u)) return fail("관리자만 할 수 있어요.", 403);
@@ -743,6 +751,15 @@ const routes = {
   ...siteRoutes
 };
 
+/* every look and change the admin makes at people's records is written down (who, when, what, on whom, from where) and
+   kept two years: the access record the personal-information safety rules ask for (개인정보의 안전성 확보조치 기준 제8조).
+   The admin's page shows the latest ones for the monthly check. */
+async function adminLog(env, req, u, key) {
+  let target = "";
+  if (req.method === "POST") { try { const d = await req.clone().json(); target = String(d.userId || d.id || "").slice(0, 40) + (d.days != null ? " " + (+d.days) + "일" : d.approve != null ? (d.approve ? " 받기" : " 거절") : ""); } catch (e) {} }
+  try { await env.DB.prepare("INSERT INTO admin_log (at, admin, action, target, ip) VALUES (?, ?, ?, ?, ?)").bind(Date.now(), u.email, key, target, req.headers.get("cf-connecting-ip") || "").run(); } catch (e) {}
+}
+
 export default {
   /* the daily renewal (api/wrangler.jsonc → triggers) */
   async scheduled(event, env, ctx) { ctx.waitUntil(renewSubs(env).then(() => sweepSites(env))); },
@@ -758,7 +775,11 @@ export default {
       if (key === "PUT /api/media") { if (!origin) return fail("forbidden", 403); } /* a file, not JSON: it must say it comes from this site */
       else if (!/application\/json/.test(req.headers.get("content-type") || "")) return fail("json only", 415);
     }
-    try { return await fn(env, req, await userOf(env, req)); }
+    try {
+      const u = await userOf(env, req);
+      if (url.pathname.startsWith("/api/admin/") && isAdmin(env, u)) await adminLog(env, req, u, key);
+      return await fn(env, req, u);
+    }
     catch (e) { return fail("잠시 문제가 생겼어요.", 500); }
   }
 };

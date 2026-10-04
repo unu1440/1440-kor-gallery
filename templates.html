@@ -3,23 +3,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>1440: 템플릿</title>
-  <meta name="description" content="이름.kor.gallery에 쓸 템플릿을 고르세요.">
+  <title>1440: 폼</title>
+  <meta name="description" content="이름.kor.gallery에 쓸 폼을 고르세요.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15.25' fill='%23fff' stroke='%23111' stroke-width='1.5'/%3E%3Cpath d='M16 .75a15.25 15.25 0 0 0 0 30.5z' fill='%23111'/%3E%3Ctext x='9.4' y='19.6' font-family='Arial,Helvetica,sans-serif' font-size='9.6' font-weight='700' fill='%23fff' text-anchor='middle'%3E14%3C/text%3E%3Ctext x='22.6' y='19.6' font-family='Arial,Helvetica,sans-serif' font-size='9.6' font-weight='700' fill='%23111' text-anchor='middle'%3E40%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&family=Archivo:wdth,wght@62..125,300..900&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,400&family=Nanum+Myeongjo:wght@400;700&family=UnifrakturMaguntia&family=Instrument+Serif:ital@0;1&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Big+Shoulders+Display:wght@500..900&family=Fraunces:opsz,wght@9..144,400..800&family=Unbounded:wght@400..800&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="assets/site.css?v=53">
-  <link rel="stylesheet" href="assets/templates.css?v=54">
-  <link rel="stylesheet" href="assets/editor.css?v=52">
+  <link rel="stylesheet" href="assets/site.css?v=54">
+  <link rel="stylesheet" href="assets/templates.css?v=55">
+  <link rel="stylesheet" href="assets/editor.css?v=53">
 </head>
 <body class="page-templates">
 
 <!-- on the template picker the header carries the categories and the chosen address -->
 <header class="bar bar-pick">
   <a class="home" href="./" aria-label="1440"><span class="t">1440</span><span class="mid"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15.25" fill="#fff" stroke="#111" stroke-width="1.5"/><path d="M16 .75a15.25 15.25 0 0 0 0 30.5z" fill="#111"/><text x="9.4" y="19.6" font-family="Arial,Helvetica,sans-serif" font-size="9.6" font-weight="700" fill="#fff" text-anchor="middle">14</text><text x="22.6" y="19.6" font-family="Arial,Helvetica,sans-serif" font-size="9.6" font-weight="700" fill="#111" text-anchor="middle">40</text></svg></span></a>
-  <nav class="cats-links" aria-label="템플릿 분류">
+  <nav class="cats-links" aria-label="폼 분류">
     <a href="#basic">빠른 설정</a>
     <a href="#grad">졸업전시</a>
     <a href="#graphic">포스터</a>
@@ -95,23 +96,27 @@
 <div class="minute" title="하루 1,440분 중 지금"><span id="minute">0.0</span>/1440</div>
 
 <footer class="biz">
+  <nav class="biz-l" aria-label="약관">
+    <a href="./#terms" data-info="terms">서비스 약관</a>
+    <a href="./#privacy" data-info="privacy"><b>개인정보 처리방침</b></a>
+  </nav>
   <dl>
-    <div><dt>상호</dt><dd>1440컴퍼니 · 1440company</dd></div>
+    <div class="q"><dt>상호</dt><dd>1440컴퍼니<span class="en"> · 1440company</span></dd></div>
     <div><dt>대표</dt><dd>이현호</dd></div>
-    <div><dt>사업자등록번호</dt><dd>165-10-03434</dd></div>
-    <div><dt>통신판매업 신고번호</dt><dd>제2026-용인수지-3281호</dd></div>
-    <div><dt>주소</dt><dd>경기도 용인시 수지구 용구대로2790번길 7, 302-가12호(죽전동)</dd></div>
-    <div><dt>연락처</dt><dd><a href="tel:010-7907-1740">010-7907-1740</a></dd></div>
-    <div><dt>이메일</dt><dd><a href="mailto:1440unu@kor.gallery">1440unu@kor.gallery</a></dd></div>
+    <div><dt>사업자등록번호</dt><dd>165-10-03434 <a class="ftc" href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=1651003434" target="_blank" rel="noopener">사업자정보 확인</a></dd></div>
+    <div><dt>통신판매업<span class="lg"> 신고번호</span></dt><dd>제2026-용인수지-3281호</dd></div>
+    <div class="q addr"><dt>주소</dt><dd>경기도 용인시 수지구 용구대로2790번길 7, 302-가12호(죽전동)</dd></div>
+    <div class="q"><dt>연락처</dt><dd><a href="tel:010-7907-1740">010-7907-1740</a></dd></div>
+    <div class="q"><dt>이메일</dt><dd><a href="mailto:1440unu@kor.gallery">1440unu@kor.gallery</a></dd></div>
+    <div><dt>호스팅</dt><dd>Cloudflare, Inc.</dd></div>
   </dl>
 </footer>
 
 <script src="assets/common.js?v=5"></script>
-<script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.3.1/dist/model-viewer.min.js"></script>
 <script src="assets/photos.js?v=5"></script>
-<script src="assets/tpl-gen.js?v=33"></script>
-<script src="assets/templates.js?v=106"></script>
+<script src="assets/tpl-gen.js?v=34"></script>
+<script src="assets/templates.js?v=107"></script>
 <script src="assets/account.js?v=15"></script>
-<script src="assets/editor.js?v=76" defer></script>
+<script src="assets/editor.js?v=77" defer></script>
 </body>
 </html>

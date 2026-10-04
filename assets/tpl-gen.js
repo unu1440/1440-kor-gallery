@@ -563,7 +563,7 @@
   L["slide-frame"] = { fam: "slide", ko: "액자형 슬라이드쇼", slide: true, modes: ["click", "arrows", "auto", "dots"], need: function () { return 8; }, render: function (c, B) {
     var w = B.w * [.56, .44, .72, .5][c.v], h = B.h - 90, x = [B.x + (B.w - w) / 2, B.x, B.x + (B.w - w) / 2, B.x + B.w - w][c.v];
     return slideMain(c, 0, px(x, B.y, w, h), 8) + c.one(0, 8, "left:" + (c.v % 2 ? x : B.x) + "px;" + (c.v % 2 ? "width:" + w + "px" : "right:" + (1440 - B.x - B.w) + "px") + ";top:" + (B.y + h + 22) + "px;text-align:" + (c.v === 1 ? "left" : c.v === 3 ? "right" : "center")) +
-      (c.f["slides-arrows"] ? '<button type="button" class="lv-btn" data-sg="-1" style="position:absolute;left:' + (B.x + 30) + 'px;top:' + (B.y + h / 2 - 20) + 'px;font-size:34px;opacity:.5">←</button><button type="button" class="lv-btn" data-sg="1" style="position:absolute;left:' + (B.x + B.w - 60) + 'px;top:' + (B.y + h / 2 - 20) + 'px;font-size:34px;opacity:.5">→</button>' : slideCtl(c, 8, "left:" + (B.x + B.w - 240) + "px;top:" + (B.y + h + 22) + "px"));
+      (c.f["slides-arrows"] ? '<button type="button" class="lv-btn" data-sg="-1" style="position:absolute;left:' + (B.x + 30) + 'px;top:' + (B.y + h / 2 - 20) + 'px;font-size:34px;opacity:.5">←</button><button type="button" class="lv-btn" data-sg="1" style="position:absolute;left:' + (B.x + B.w - 60) + 'px;top:' + (B.y + h / 2 - 20) + 'px;font-size:34px;opacity:.5">→</button>' : slideCtl(c, 8, "left:" + (c.v === 3 ? x : B.x + B.w - 240) + "px;top:" + (B.y + h + 22) + "px")); /* under a caption set to the right, the controls go to the left */
   } };
   L["slide-bleed"] = { fam: "slide", ko: "화면 가득 슬라이드쇼", slide: true, bleed: true, modes: ["click", "auto", "dots", "arrows"], need: function () { return 8; }, render: function (c) {
     var low = c.s.nav === "bottom" || c.s.nav === "corners" ? 70 : 28;
@@ -863,8 +863,9 @@
   GR["catalog"] = { ko: "작품 목록 표", need: function () { return 0; }, render: function (c, B) {
     var rows = "";
     for (var k = 0; k < 10; k++) { var w = WORKS[(k + c.s.seed) % WORKS.length], r = ROLES[(k * 3 + c.s.seed) % ROLES.length]; rows += '<tr><td class="m">' + pad2(k + 1) + '</td><td>' + w[0] + '</td><td>' + PEOPLE[(k * 5 + c.s.seed) % PEOPLE.length] + '</td><td>' + r[0] + '</td><td class="m y">' + ["A", "B", "C", "D", "E"][k % 5] + '</td></tr>'; }
-    return '<div style="position:absolute;left:' + B.x + 'px;top:' + B.y + 'px;font-size:' + Math.round(44 * Math.min(c.sc, 1.7)) + 'px;font-weight:700;letter-spacing:-.04em">Works <span class="ko" style="font-size:18px;font-weight:500;letter-spacing:0">출품작 목록</span></div>' +
-      '<table class="tbl" data-sorttable style="left:' + B.x + 'px;right:' + (1440 - B.x - B.w) + 'px;top:' + (B.y + 80) + 'px"><thead><tr><th data-sort="0">No.</th><th data-sort="1">Title</th><th data-sort="2">Artist</th><th data-sort="3">Major</th><th data-sort="4" class="y">Room</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    var hs = Math.round(44 * Math.min(c.sc, 1.7)); /* the table starts below the title, however large the title is */
+    return '<div style="position:absolute;left:' + B.x + 'px;top:' + B.y + 'px;font-size:' + hs + 'px;line-height:1.15;font-weight:700;letter-spacing:-.04em">Works <span class="ko" style="font-size:18px;font-weight:500;letter-spacing:0">출품작 목록</span></div>' +
+      '<table class="tbl" data-sorttable style="left:' + B.x + 'px;right:' + (1440 - B.x - B.w) + 'px;top:' + (B.y + Math.max(80, Math.round(hs * 1.15) + 24)) + 'px"><thead><tr><th data-sort="0">No.</th><th data-sort="1">Title</th><th data-sort="2">Artist</th><th data-sort="3">Major</th><th data-sort="4" class="y">Room</th></tr></thead><tbody>' + rows + '</tbody></table>';
   } };
   GR["trio"] = { ko: "작품 세 점 나란히", need: function () { return 3; }, render: function (c, B) {
     var w = (B.w - 40) / 3, h = B.h - 150, out = "";
@@ -1085,7 +1086,7 @@
        template has used yet; while the pool is too small for that, the least used ones, never twice in one template. */
     var shared = SHARED.filter(function (f) { return photos.some(function (p) { return p[0] === f; }); });
     var OK = function (p) { return !p[3] || Math.min(p[3], p[4]) >= 600; }; /* a strip-like picture (a short side under 600) is too thin for any frame */
-    var P0 = photos.filter(function (p) { return shared.indexOf(p[0]) < 0 && OK(p); }).map(function (p, i) { return { f: p[0], ko: p[1], g: p[2], i: i, w: p[3] || 0, h: p[4] || 0 }; });
+    var P0 = photos.filter(function (p) { return shared.indexOf(p[0]) < 0 && OK(p); }).map(function (p, i) { return { f: p[0], ko: p[1], g: p[2], i: i, w: p[3] || 0, h: p[4] || 0, pre: p[0].split("-")[0] }; });
     /* a page filled edge to edge by pictures (bleed) takes only landscape ones big enough for 1440 × 900,
        or they are blown up and look soft (templates.html?check=features lists any left: lowres) */
     var WIDE = function (p) { return !p.w || (p.w >= 1150 && p.h >= 720 && p.w / p.h >= 1.3); };
@@ -1093,36 +1094,55 @@
     var demand = HAND_USED.length;
     specs.forEach(function (s) { if (s.cat !== "basic" && s.cat !== "blank") demand += Math.min(L[s.layout].need(s, boxOf(s)) || 0, P0.length); });
     var strict = P0.length >= demand; /* enough pictures for every template to have its own */
+    var N = P0.length, uses = new Int32Array(N), LIKES = {}; /* how often each picture is used so far (kept with `used`), and which suit a layout */
+    P0.forEach(function (p) { uses[p.i] = used[p.f] || 0; });
     specs.forEach(function (s) {
       if (s.cat === "basic") return; /* after the others, below */
       var B = boxOf(s), need = Math.min(L[s.layout].need(s, B) || 0, P0.length);
       if (s.feats.indexOf("model") >= 0 || s.cat === "blank") need = 0; /* wireframes show no photographs */
       if (s.cat === "grad") s.groups = /rake|compare|loupe|daylight|scale/.test(s.feats.join()) ? ART_G : ["art", "obj", "space"];
-      var want = PREFS[s.layout], like = want ? function (p) { return want.indexOf(p.f.split("-")[0]) >= 0; } : function (p) { return s.groups.indexOf(p.g) >= 0; };
+      /* (whether a picture suits, and the sort keys, are worked out once per template: sorting 1,500 pictures for each of
+         1,300 templates with them worked out inside the comparison took over a second on every page load) */
+      if (!need) { s.photos = []; return; }
+      var want = PREFS[s.layout], lkey = want ? "w" + s.layout : "g" + s.groups.join(), lk = LIKES[lkey];
+      if (!lk) { lk = LIKES[lkey] = new Uint8Array(N); P0.forEach(function (p) { lk[p.i] = want ? (want.indexOf(p.pre) >= 0 ? 1 : 0) : (s.groups.indexOf(p.g) >= 0 ? 1 : 0); }); }
+      var like = function (p) { return lk[p.i] === 1; };
       var POOL = L[s.layout].bleed ? P0.filter(WIDE) : P0; need = Math.min(need, POOL.length);
-      var pref = POOL.filter(like), rest = POOL.filter(function (p) { return !like(p); });
       var off = (s.no * 37) % P0.length;
-      function order(a) { return a.slice().sort(function (x, y) { return (used[x.f] || 0) - (used[y.f] || 0) || ((x.i - off + P0.length) % P0.length) - ((y.i - off + P0.length) % P0.length); }); }
+      /* least used first, then (strict) the suiting ones first, then from this template's own starting point in the pool.
+         Each picture's place in that order is one number (the starting-point distance is unique), sorted as numbers. */
+      function ranked(a, withLike, k) {
+        var keys = new Float64Array(a.length);
+        a.forEach(function (p, j) { keys[j] = (uses[p.i] * (withLike ? 2 : 1) + (withLike && !lk[p.i] ? 1 : 0)) * N + (p.i - off + N) % N; });
+        keys.sort();
+        var out = []; for (var j = 0; j < keys.length && (k === undefined || j < k); j++) out.push(P0[(keys[j] % N + off) % N]);
+        return out;
+      }
+      function order(a) { return ranked(a, false); }
       var got;
-      if (strict) got = order(POOL).sort(function (x, y) { return (used[x.f] || 0) - (used[y.f] || 0) || (like(x) ? 0 : 1) - (like(y) ? 0 : 1); }).slice(0, need);
-      else { got = order(pref).slice(0, need); if (got.length < need) got = got.concat(order(rest).slice(0, need - got.length)); }
+      if (strict) got = ranked(POOL, true, need);
+      else { got = order(POOL.filter(like)).slice(0, need); if (got.length < need) got = got.concat(order(POOL.filter(function (p) { return !like(p); })).slice(0, need - got.length)); }
       /* a first picture shown as a wide band (hero layouts) is a large landscape one */
       if (L[s.layout].hero && got.length && !WIDE(got[0])) {
         var gw = got.filter(WIDE)[0] || order(POOL.filter(function (p) { return WIDE(p) && got.indexOf(p) < 0; }))[0];
         if (gw) { var gi = got.indexOf(gw); if (gi > 0) got[gi] = got[0]; got[0] = gw; }
       }
-      s.photos = got.map(function (p) { used[p.f] = (used[p.f] || 0) + 1; return p.f; });
+      s.photos = got.map(function (p) { used[p.f] = (used[p.f] || 0) + 1; uses[p.i]++; return p.f; });
     });
     var W = worksFor(specs, photos, extra, used, handWorks); /* the works pages take the pictures nothing else shows */
     /* basic templates draw from the whole pool, least used first (pictures no other template shows
        come first), so each looks different; never the same picture twice within one */
     var BP = photos.filter(OK).map(function (p, i) { return { f: p[0], i: i, w: p[3] || 0, h: p[4] || 0 }; }), bused = {};
     BP.forEach(function (p) { bused[p.f] = W.taken[p.f] ? 99 : used[p.f] ? 1 : 0; });
+    var buses = new Int32Array(BP.length); BP.forEach(function (p) { buses[p.i] = bused[p.f]; });
     specs.forEach(function (s) {
       if (s.cat !== "basic") return;
       var nb = Math.min(L[s.layout].need(s, boxOf(s)) || 0, 60, BP.length), off = (s.no * 37) % BP.length;
-      s.photos = (L[s.layout].bleed ? BP.filter(WIDE) : BP).slice().sort(function (x, y) { return (bused[x.f] || 0) - (bused[y.f] || 0) || ((x.i - off + BP.length) % BP.length) - ((y.i - off + BP.length) % BP.length); })
-        .slice(0, nb).map(function (p) { bused[p.f] = (bused[p.f] || 0) + 1; return p.f; });
+      var BA = L[s.layout].bleed ? BP.filter(WIDE) : BP, M = BP.length, bk = new Float64Array(BA.length); /* least used first, then from this template's starting point (one number each, as above) */
+      BA.forEach(function (p, j) { bk[j] = buses[p.i] * M + (p.i - off + M) % M; });
+      bk.sort();
+      var chosen = []; for (var j = 0; j < bk.length && j < nb; j++) chosen.push(BP[(bk[j] % M + off) % M]);
+      s.photos = chosen.map(function (p) { bused[p.f] = (bused[p.f] || 0) + 1; buses[p.i]++; return p.f; });
     });
     specs.basicPool = BP.length; specs.works = W.by; specs.worksTaken = W.taken;
     specs.strict = strict; specs.demand = demand; specs.pool = P0.length;

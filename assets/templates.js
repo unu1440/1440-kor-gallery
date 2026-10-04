@@ -237,7 +237,8 @@
     } },
     { desc: "시험 인쇄 · 파랑", bg: "#2437ff", ink: "#d7dcff", html: function () {
       return '<div style="position:absolute;left:720px;top:0;width:720px;height:900px;overflow:hidden;opacity:.55;mix-blend-mode:multiply"><img src="' + src("arch-grid-facade") + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;filter:grayscale(1) contrast(1.2)"></div>' +
-        at("left:22px;right:22px;top:18px;font-size:160px;font-weight:800;line-height:.9;letter-spacing:-.05em;text-transform:uppercase", N.slice(0, 8) + "<br>Test Print<br>No. 26") +
+        at("left:22px;right:22px;top:18px;font-size:160px;font-weight:800;line-height:.9;letter-spacing:-.05em;text-transform:uppercase", /* the whole name, as large as its line allows (data-fit), not cut to eight letters */
+          '<span data-fit="160" style="display:block;white-space:nowrap;overflow:hidden">' + N + "</span>Test Print<br>No. 26") +
         at("left:28px;bottom:110px;width:560px;font-size:17px;line-height:1.45;color:#fff", "A proof sheet: registration marks, a grey scale and one façade, printed in process blue.<br>" + ko("시험 인쇄 — 맞춤표, 회색 단계, 외벽 사진 한 장.", "opacity:.7")) +
         at("left:28px;right:28px;bottom:22px;display:flex;justify-content:space-between;font-size:15px;color:#fff", '<span>Index &nbsp; Info</span>' + CLOCK);
     } },
@@ -308,7 +309,7 @@
         at("right:28px;bottom:26px;text-align:right;font-size:15px;line-height:1.45", N + " — 12-inch LP, 45 rpm<br>" + ko("부드러운 신호 — 열 곡", "opacity:.7"));
     } },
     { desc: "책 표지 · 사진 반반", bg: "#f7f7f5", ink: "#111", html: function () {
-      return at("left:0;top:0;width:700px;bottom:0", '<div style="position:absolute;right:40px;top:70px;text-align:right;font-style:italic;font-weight:700;letter-spacing:-.03em">' +
+      return at("left:0;top:0;width:700px;bottom:0", '<div class="rf-flow" style="position:absolute;right:40px;top:70px;text-align:right;font-style:italic;font-weight:700;letter-spacing:-.03em">' +
           '<span style="font-size:22px;font-weight:500">series </span><span style="font-size:88px">MARGIN</span><br><span style="font-size:40px;font-weight:600;line-height:1">field notes<br>on</span>' +
           '<div style="margin-top:130px;font-size:80px;line-height:.95">CONCRETE</div><div style="font-size:26px;margin-top:6px">Park Studio</div>' +
           '<div style="margin-top:130px;font-size:96px;line-height:1">120</div><div style="font-size:36px">drawings</div></div>') +
@@ -331,7 +332,7 @@
   ];
 
   F.blank = [
-    { name: "빈 템플릿", n: 2, bg: "#fcfcfc", ink: "#111", html: function () {
+    { name: "빈 폼", n: 2, bg: "#fcfcfc", ink: "#111", html: function () {
       return row(N) + '<div style="position:absolute;inset:110px 28px 80px;border:2px dashed #d6d6d6;border-radius:12px;display:grid;place-content:center;text-align:center;gap:8px"><b style="font-size:34px;font-weight:500;letter-spacing:-.03em">Start here.</b><span style="opacity:.45;font-size:20px">Place text, images, video and galleries anywhere.</span><span class="ko" style="opacity:.35;font-size:16px">글, 이미지, 영상, 갤러리를 자유롭게 놓을 수 있습니다.</span></div>';
     } },
     { name: "와이어프레임 W102", n: 2, bg: "#fff", ink: "#111", html: function () {
@@ -363,23 +364,23 @@
   ];
 
   F.populated = [
-    { name: "채워진 템플릿 P101", n: 3, bg: "#fcfcfc", ink: "#111", html: function () {
+    { name: "채워진 폼 P101", n: 3, bg: "#fcfcfc", ink: "#111", html: function () {
       return row(N + " Architecture", "Projects · Office · Contact", "") + ph("int-skylight-tree", "left:28px;right:28px;top:72px;height:430px") +
         '<div style="position:absolute;left:28px;top:516px;font-size:17px"><b style="font-weight:500">Mullae Public Library</b>&nbsp;&nbsp;<span class="dim">2026 · Seoul</span>&nbsp;&nbsp;<span class="ko dim">문래 공공 도서관</span></div>' +
         grid([["arch-grid-facade", "Grid Facade"], ["int-stairs", "Stairs"], ["int-m2", "M2"], ["arch-concrete-blocks", "Concrete Blocks"]], "left:28px;right:28px;top:570px", "repeat(4,1fr)", "4 / 3");
     } },
-    { name: "채워진 템플릿 P202", n: 3, bg: "#111", ink: "#eee", html: function () {
+    { name: "채워진 폼 P202", n: 3, bg: "#111", ink: "#eee", html: function () {
       return row(N, "Photographs · Exhibitions · Contact", CLOCK) +
         grid([["pt-bw-woman", "Portrait I", "3 / 4"], ["sh-walker", "Walker", "4 / 3"], ["ld-dune-bw", "Dune", "4 / 3"], ["pt-bw-man", "Portrait II", "3 / 4"]], "left:28px;right:28px;top:80px;align-items:end", "0.75fr 1.33fr 1.33fr 0.75fr") +
         grid([["sh-bars", "Bars of Light", "4 / 3"], ["st-bw-roses", "Roses", "4 / 3"], ["hd-bw", "Hands", "4 / 3"]], "left:28px;right:28px;top:520px", "repeat(3,1fr)", null, null, 4);
     } },
-    { name: "채워진 템플릿 P303", n: 2, bg: "#fff", ink: "#111", html: function () {
+    { name: "채워진 폼 P303", n: 2, bg: "#fff", ink: "#111", html: function () {
       return '<div style="position:absolute;left:28px;top:22px;width:420px;display:grid;gap:22px;font-size:17px"><b class="tp-name">' + N + ' Gallery</b>' +
         '<div style="font-size:44px;font-weight:500;letter-spacing:-.04em;line-height:1.1">Time of Objects<br><span class="dim ko" style="font-size:24px">사물의 시간</span></div>' +
         '<div class="m" style="font-size:15px;line-height:1.7">Oct 2 — Nov 15, 2026<br>Tue–Sun 11:00 — 19:00<br>Free admission<br><span data-until="2026-10-02">Opening Oct 2</span></div><p style="opacity:.75">Eight photographs about hands, bowls and light.<br><span class="ko" style="opacity:.7;font-size:15px">손과 그릇, 빛에 관한 사진 여덟 점.</span></p></div>' +
         ph("sc-hand", "left:480px;top:22px;width:450px;bottom:22px") + ph("cer-dark-jug", "left:950px;right:28px;top:22px;height:420px") + ph("cer-cup-speckle", "left:950px;right:28px;top:462px;bottom:22px");
     } },
-    { name: "채워진 템플릿 P404", n: 3, bg: "#f6f4f0", ink: "#1b1a14", html: function () {
+    { name: "채워진 폼 P404", n: 3, bg: "#f6f4f0", ink: "#1b1a14", html: function () {
       var items = [["cer-vases-beige", "Three White Jars", "₩ 128,000"], ["ch-tulip", "Tulip Chair", "₩ 340,000"], ["gl-green", "Green Glass Vase", "₩ 86,000"], ["cer-cup-speckle", "Speckled Cup", "₩ 34,000"],
         ["ch-yellow", "Yellow Chair", "₩ 420,000"], ["cer-blue-set", "Blue Ceramic Set", "₩ 210,000"], ["gl-flower", "Glass Flower", "₩ 58,000"], ["st-yellow-jars", "Yellow Jars", "₩ 96,000"]];
       var fl = ["All", "Ceramics", "Furniture", "Glass"].map(function (c, k) { return '<button type="button" class="lv-a" data-filter="' + (k ? c : "*") + '" style="' + (k ? "opacity:.5" : "font-weight:600") + '">' + c + '</button>'; }).join(" · ");
@@ -389,11 +390,11 @@
           return '<div data-cat="' + catOf(x[0]) + '" style="display:grid;gap:8px"><div style="aspect-ratio:1;background:#ece9e2;overflow:hidden"><img src="' + src(x[0]) + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover"></div><div style="display:flex;justify-content:space-between;font-size:15px"><span>' + x[1] + '</span><span class="m">' + x[2] + '</span></div></div>';
         }).join("") + '</div>';
     } },
-    { name: "채워진 템플릿 P505", n: 2, bg: "#000", ink: "#fff", html: function () {
+    { name: "채워진 폼 P505", n: 2, bg: "#000", ink: "#fff", html: function () {
       return ph("dn-blur", "inset:0") + row(N + " Studio", "Work · About", "Enquiries") +
         '<h3 class="big" style="left:24px;bottom:110px;font-size:120px;font-weight:600">Afterimage of Motion</h3><div style="position:absolute;left:28px;bottom:28px;font-size:17px;opacity:.8">Dance · Film · 2026&nbsp;&nbsp;<span class="ko" style="opacity:.7">움직임의 잔상</span></div>';
     } },
-    { name: "채워진 템플릿 P606", n: 3, bg: "#fcfcfc", ink: "#111", html: function () {
+    { name: "채워진 폼 P606", n: 3, bg: "#fcfcfc", ink: "#111", html: function () {
       var cv = '<div style="display:grid;gap:6px">' + [["2026", "Solo show, Time of Objects, Seoul"], ["2025", "Group show, Surface, Busan"], ["2024", "Residency, Helsinki"], ["2023", "Book, A Study of Shadows"]].map(function (x) { return '<div style="display:grid;grid-template-columns:70px 1fr;padding:6px 0;border-top:1px solid #e5e5e5"><span class="m dim">' + x[0] + '</span><span>' + x[1] + '</span></div>'; }).join("") + '</div>';
       return row(N, "Work · CV · Contact", "") + '<div style="position:absolute;left:28px;top:90px;width:560px;display:grid;gap:22px;font-size:17px"><div style="font-size:56px;font-weight:600;letter-spacing:-.045em;line-height:1.05">' + N + '<br><span class="dim" style="font-weight:400">Fashion Photographer</span></div>' + cv + '</div>' +
         ph("fa-white-suit", "left:640px;right:28px;top:90px;height:470px") + grid([["fa-coat", "Coat"], ["fa-profile", "Profile"], ["fa-black-coat", "Black Coat"]], "left:640px;right:28px;top:590px", "repeat(3,1fr)", "4 / 3");
@@ -401,7 +402,7 @@
   ];
 
   F.populated = F.populated.concat([
-    { name: "채워진 템플릿 P707", n: 3, bg: "#ffffff", ink: "#111", html: function () {
+    { name: "채워진 폼 P707", n: 3, bg: "#ffffff", ink: "#111", html: function () {
       return ph("fa-profile", "left:0;top:0;width:760px;height:900px") +
         at("left:790px;right:28px;top:22px;display:flex;justify-content:space-between;font-size:15px", '<b class="tp-name">' + N + ' Journal</b><span>Issues · About</span>') +
         at("left:790px;right:28px;top:110px;font-family:var(--f-serif);font-size:76px;line-height:1;letter-spacing:-.02em", "The Face<br><i>in Profile</i>") +
@@ -410,7 +411,7 @@
           "<p>Issue twelve is about people who would rather not look at the camera. Eight photographers, one question: what does a portrait keep when the face turns away?</p><p>With essays on shadow, on the back of the head, and on the long history of the silhouette in print.</p>") +
         at("left:790px;bottom:24px;font-family:var(--mono);font-size:13px;opacity:.6", "No. 12 — Autumn 2026 — 148 pp.");
     } },
-    { name: "채워진 템플릿 P808", n: 2, bg: "#efe9df", ink: "#2b2520", html: function () {
+    { name: "채워진 폼 P808", n: 2, bg: "#efe9df", ink: "#2b2520", html: function () {
       return row(N + " Ceramics", "Shop · Studio · Classes", "Cart (0)") +
         ph("cer-shelf", "left:28px;top:80px;width:880px;height:560px") +
         at("left:940px;right:28px;top:80px;display:grid;gap:18px;font-size:17px;line-height:1.5", '<div style="font-size:54px;line-height:1;letter-spacing:-.04em;font-weight:500">Slow Wares</div>' +
@@ -420,27 +421,27 @@
           return '<div style="display:grid;gap:6px"><div style="aspect-ratio:4/3;overflow:hidden"><img src="' + src(c) + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover"></div><div style="display:flex;justify-content:space-between;font-size:13px"><span>Piece 0' + (i + 1) + '</span><span class="m">₩ ' + (38 + i * 16) + ',000</span></div></div>';
         }).join(""));
     } },
-    { name: "채워진 템플릿 P909", n: 4, bg: "#fcfcfc", ink: "#111", html: function () {
+    { name: "채워진 폼 P909", n: 4, bg: "#fcfcfc", ink: "#111", html: function () {
       var projects = [["Shadow Studies", "2026"], ["Walking North", "2025"], ["Glass, Water", "2025"], ["White Wall", "2024"], ["Palm House", "2023"], ["Bars of Light", "2022"], ["Night Shop", "2021"]];
       return row(N, "Index · Information", CLOCK) +
         at("left:28px;top:110px;width:560px;font-size:44px;line-height:1.16;letter-spacing:-.035em", projects.map(function (p, i) { return '<div style="display:flex;justify-content:space-between;' + (i === 1 ? "" : "opacity:.28") + '"><span>' + p[0] + '</span><span class="m" style="font-size:18px">' + p[1] + '</span></div>'; }).join("")) +
         at("left:28px;bottom:26px;font-size:15px", ko("사진 연작 색인 — 이름에 마우스를 올리면 사진이 바뀝니다", "opacity:.55")) +
         ph("sh-walker", "left:640px;right:28px;top:110px;bottom:70px");
     } },
-    { name: "채워진 템플릿 P110", n: 3, bg: "#dfe0dc", ink: "#161616", html: function () {
+    { name: "채워진 폼 P110", n: 3, bg: "#dfe0dc", ink: "#161616", html: function () {
       return row(N + " Architects", "Projects · Office · Press", "Contact") +
         at("left:28px;top:84px;font-size:220px;font-weight:600;letter-spacing:-.06em;line-height:.85", "07") +
         at("left:28px;top:300px;width:420px;font-size:18px;line-height:1.5", "<b style='font-weight:500'>House on a Slope</b><br>Gapyeong, 2026<br><br>A concrete house that follows the hill in four steps. Each floor is one room wide and opens to the valley.<br><br>" + ko("비탈의 집 — 언덕을 따라 네 단으로 놓인 콘크리트 주택.", "opacity:.6;font-size:15px")) +
         ph("arch-concrete-blocks", "left:500px;top:84px;width:450px;height:720px") + ph("int-stairs", "left:970px;right:28px;top:84px;height:350px") + ph("arch-steps-teal", "left:970px;right:28px;top:454px;height:350px");
     } },
-    { name: "채워진 템플릿 P111", n: 3, bg: "#f7f6f2", ink: "#111", html: function () {
+    { name: "채워진 폼 P111", n: 3, bg: "#f7f6f2", ink: "#111", html: function () {
       var pins = [["st-tulip", 40, 90, 200, 260, -3], ["fa-yellow-sky", 280, 130, 230, 300, 2], ["gl-green", 540, 80, 210, 210, -2], ["ch-orange", 780, 120, 230, 260, 3], ["bk-red-fan", 1040, 90, 250, 190, -1],
         ["sh-palm", 60, 420, 240, 320, 2], ["cer-blue-set", 330, 470, 250, 220, -2], ["ab-waves-white", 610, 350, 220, 300, 1], ["hd-blue", 860, 420, 200, 280, -3], ["st-coffee", 1100, 330, 240, 240, 2]];
       return row(N + " Moodboard", "Spring 2027", "1 / 4") +
         pins.map(function (p) { return '<div style="position:absolute;left:' + p[1] + 'px;top:' + p[2] + 'px;width:' + p[3] + 'px;height:' + p[4] + 'px;transform:rotate(' + p[5] + 'deg);box-shadow:0 10px 24px -12px rgba(0,0,0,.35);overflow:hidden"><img src="' + src(p[0]) + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover"></div>'; }).join("") +
         at("left:28px;bottom:22px;font-size:15px", "Colour, glass, hands and paper — references for the spring collection. " + ko("봄 컬렉션 레퍼런스", "opacity:.55"));
     } },
-    { name: "채워진 템플릿 P112", n: 2, bg: "#0b0b0b", ink: "#f0f0f0", html: function () {
+    { name: "채워진 폼 P112", n: 2, bg: "#0b0b0b", ink: "#f0f0f0", html: function () {
       return ph("dn-jump", "left:0;top:0;width:900px;height:900px") +
         at("left:930px;right:28px;top:22px;display:flex;justify-content:space-between;font-size:15px", '<b class="tp-name">' + N + ' Dance Company</b><span>Tour · Company</span>') +
         at("left:930px;right:28px;top:120px;font-family:var(--f-cond);font-stretch:62%;font-weight:800;font-size:128px;line-height:.88;text-transform:uppercase", "Weight<br>of Air") +
@@ -475,8 +476,8 @@
      live = true in the large preview and the shuffle stage; cards stay still. */
   var SCHOOL = "College of Art & Design";
   function gradHead(sub) {
-    return at("left:28px;right:28px;top:22px;display:grid;grid-template-columns:1fr auto 1fr;font-size:15px",
-      '<b class="tp-name">' + N + '</b><span>Graduation Show 2026' + (sub ? " — " + sub : "") + '</span><span style="text-align:right">Works · Artists · Visit</span>');
+    return '<div class="gh" style="position:absolute;left:28px;right:28px;top:22px;display:grid;grid-template-columns:1fr auto 1fr;font-size:15px">' +
+      '<b class="tp-name">' + N + '</b><span>Graduation Show 2026' + (sub ? " — " + sub : "") + '</span><span style="text-align:right">Works · Artists · Visit</span></div>';
   }
   function label(t, meta, koT) {
     return '<div style="display:grid;gap:6px;font-size:16px;line-height:1.45"><b style="font-weight:600;font-size:22px;letter-spacing:-.02em">' + t + '</b><span style="opacity:.65">' + meta + '</span>' + (koT ? ko(koT, "opacity:.55;font-size:15px") : "") + '</div>';
@@ -756,16 +757,39 @@
     prev: '<svg viewBox="0 0 24 24"><path d="M19 12H5M10.5 6.5 5 12l5.5 5.5"/></svg>'
   };
   /* on a phone: generated templates are drawn again for 390 wide; hand-made ones reflow into one column */
+  /* the 3D viewer's script (about 1 MB) is fetched the first time a page with a 3D model is drawn, not on every visit */
+  var mvAsked = false;
+  function needMV(html) {
+    if (mvAsked || html.indexOf("<model-viewer") < 0) return;
+    mvAsked = true;
+    var s = document.createElement("script"); s.type = "module"; s.src = "https://cdn.jsdelivr.net/npm/@google/model-viewer@4.3.1/dist/model-viewer.min.js";
+    document.head.appendChild(s);
+  }
   function pageFor(b, mob) {
     var inner, cls = "tp";
     if (mob && b.gen) { var r = GEN.renderMobile(b.gen, genEnv); inner = r.html; b.mstyle = r.style; }
     else { inner = b.html(); if (mob) cls += " tp-reflow"; }
+    needMV(inner);
     return '<div class="' + cls + '" style="--t-bg:' + b.bg + ';--t-ink:' + b.ink + (b.font ? ';--t-font:' + b.font + ';--t-stretch:' + b.stretch : "") + ';' + ((mob && b.gen ? b.mstyle : b.style) || "") + '">' + inner + '</div>';
   }
   /* big display type in a reflowed page is scaled down to fit 390 */
   function reflowType(tp) {
     [].forEach.call(tp.querySelectorAll("[style*='font-size']"), function (el) {
       var fs = parseFloat(el.style.fontSize); if (fs > 34) el.style.fontSize = Math.max(26, Math.round(fs * .34)) + "px";
+    });
+    [].forEach.call(tp.querySelectorAll("[style*='margin-top']"), function (el) { var v = parseFloat(el.style.marginTop); if (v > 40) el.style.marginTop = Math.round(v * .25) + "px"; });
+    /* room made for a 1440-wide page (a 50px inset, a line stepped 500px in) is cut to a phone's size */
+    [].forEach.call(tp.querySelectorAll("[style*='padding']"), function (el) {
+      ["Top", "Right", "Bottom", "Left"].forEach(function (s) { var v = parseFloat(el.style["padding" + s]); if (v > 20) el.style["padding" + s] = Math.max(8, Math.round(v * (s === "Left" && v > 100 ? .27 : .4))) + "px"; });
+    });
+    /* a two-part row of words beside a picture becomes words above the picture: side by side they would run into each other */
+    [].forEach.call(tp.querySelectorAll("[style*='grid-template-columns']"), function (el) {
+      var parts = el.style.gridTemplateColumns.trim().split(/\s+(?![^(]*\))/), kids = [].slice.call(el.children);
+      if (parts.length !== 2 || kids.length !== 2) return;
+      var pic = function (k) { return k.matches("img, .ph, .wf") || !!k.querySelector("img, .ph, .wf"); };
+      if (pic(kids[0]) === pic(kids[1])) return;
+      el.style.setProperty("grid-template-columns", "minmax(0, 1fr)", "important");
+      if (kids[1].style.borderLeft) { kids[1].style.borderTop = kids[1].style.borderLeft; kids[1].style.borderLeft = "none"; } /* the line between them turns with them */
     });
   }
   /* a generic phone browser: status bar on top, the address bar and toolbar at the bottom */
@@ -913,8 +937,8 @@
   var stage = document.getElementById("shuffleStage");
   var cur = 1 + Math.floor(Math.random() * TOTAL);
   function showShuffle() {
-    stage.innerHTML = '<button type="button" class="shuffle-btn shuffle-prev" aria-label="이전 템플릿">' + ICON.prev + '</button>' + card(find(cur), true) +
-      '<button type="button" class="shuffle-btn shuffle-next" aria-label="다른 템플릿">' + ICON.next + '</button>';
+    stage.innerHTML = '<button type="button" class="shuffle-btn shuffle-prev" aria-label="이전 폼">' + ICON.prev + '</button>' + card(find(cur), true) +
+      '<button type="button" class="shuffle-btn shuffle-next" aria-label="다른 폼">' + ICON.next + '</button>';
     fill(stage.querySelector(".tpl-slot"), true);
     document.getElementById("shuffleNo").textContent = tag(cur);
   }
@@ -986,8 +1010,9 @@
       var r2 = el2.getBoundingClientRect(), top2 = (r2.top - cr.top) / s, bot2 = (r2.bottom - cr.top) / s;
       if (top2 > 100 && bot2 < 820) continue;
       var b2 = document.createElement("button");
-      b2.type = "button"; b2.className = "lv-a"; b2.dataset.lv = "info"; b2.textContent = t.nodeValue;
-      t.replaceWith(b2);
+      b2.type = "button"; b2.className = "lv-a"; b2.dataset.lv = "info"; b2.textContent = t.nodeValue.trim();
+      /* the spaces around the name stay outside the button: inside it they vanish ("loremipsumShop") */
+      t.replaceWith(document.createTextNode(/^\s*/.exec(t.nodeValue)[0]), b2, document.createTextNode(/\s*$/.exec(t.nodeValue)[0]));
       return;
     }
   }
@@ -1252,14 +1277,52 @@
     /* things set against the bottom of the first screen (a bottom menu bar, corner links, the first screen's footer)
        stay at the bottom of the first screen: pinned to its top edge before the page grows */
     [].forEach.call(tp.querySelectorAll("*"), function (el) {
-      if (el === more || el.style.top || el.closest(".tp-more, .lv-layer, .bd") || el.offsetParent !== tp) return; /* only what is placed against the page itself */
-      if (getComputedStyle(el).position !== "absolute") return;
+      if (el === more || el.closest(".tp-more, .lv-layer, .bd") || el.offsetParent !== tp) return; /* only what is placed against the page itself */
+      if (el.dataset.pt) { el.style.top = el.dataset.pt; return; } /* pinned before: back to the first screen, and looked at again below */
+      if (el.style.top || getComputedStyle(el).position !== "absolute") return;
       el.style.top = Math.round((el.getBoundingClientRect().top - R.top) / g.k) + "px"; el.style.bottom = "auto";
+      if (!el.classList.contains("tp-nav") && !el.classList.contains("mq")) el.dataset.pt = el.style.top;
     });
+    /* a corner line pinned there (a © line, corner links) that the page's own small words run into (a grid of work that
+       runs a little past its box) moves down just below them, with the lines beside it; big poster type set over it on
+       purpose and pictures under it are left as they are */
+    var own = function (el) { return [].some.call(el.childNodes, function (n) { return n.nodeType === 3 && n.textContent.trim(); }); };
+    var pinned = [].filter.call(tp.querySelectorAll("[data-pt]"), function (p) { return p.getClientRects().length; }), moved = [];
+    var wordsOf = function (p) { return [p].concat([].slice.call(p.querySelectorAll("*"))).filter(own).map(function (el) { return el.getBoundingClientRect(); }).filter(function (r) { return r.width && r.height; }); };
+    var cross = function (A, B) { return A.some(function (q) { return B.some(function (r) { return r.left < q.right - 1 && r.right > q.left + 1 && r.top < q.bottom - 1 && r.bottom > q.top + 1; }); }); };
+    /* two of them that run into each other (slide arrows over the opening hours): the upper one steps up clear of the other */
+    pinned.forEach(function (A) {
+      pinned.forEach(function (B) {
+        if (A === B || A.contains(B) || B.contains(A)) return;
+        var a = A.getBoundingClientRect(), b = B.getBoundingClientRect();
+        if (a.top >= b.top || !cross(wordsOf(A), wordsOf(B))) return;
+        A.style.top = Math.round(parseFloat(A.style.top) - (a.bottom - b.top) / g.k - 8) + "px";
+      });
+    });
+    if (pinned.length) {
+      var small = [];
+      [].forEach.call(tp.querySelectorAll("*"), function (el) {
+        if (!own(el) || el.closest("[data-pt], .tp-nav, .mq, .lv-layer, .tp-more, .bd")) return;
+        var r = el.getBoundingClientRect(); if (r.width && r.height && parseFloat(getComputedStyle(el).fontSize) < 30) small.push(r);
+      });
+      var hit = pinned.filter(function (p) {
+        return [p].concat([].slice.call(p.querySelectorAll("*"))).some(function (el) {
+          if (!own(el)) return false; var q = el.getBoundingClientRect();
+          return small.some(function (r) { return r.left < q.right - 1 && r.right > q.left + 1 && r.top < q.bottom - 1 && r.bottom > q.top + 1; });
+        });
+      });
+      if (hit.length) { var t0 = Math.min.apply(null, hit.map(function (p) { return parseFloat(p.style.top); })); moved = pinned.filter(function (p) { return Math.abs(parseFloat(p.style.top) - t0) < 60; }); }
+    }
     [].forEach.call(tp.querySelectorAll("*"), function (el) {
       if (el.closest(".lv-layer, .tp-more, .tp-nav, .mq, .bd")) return; /* the footer counts: it is held in the first screen above, and on a phone it ends the page */
+      if (moved.length && moved.some(function (m) { return m.contains(el); })) return;
       var r = el.getBoundingClientRect(); if (r.height) low = Math.max(low, (r.bottom - R.top) / g.k);
     });
+    if (moved.length) {
+      var top0 = Math.min.apply(null, moved.map(function (m) { return parseFloat(m.style.top); })), base = Math.ceil(low) + 18;
+      moved.forEach(function (m) { m.style.top = base + parseFloat(m.style.top) - top0 + "px"; });
+      moved.forEach(function (m) { low = Math.max(low, (m.getBoundingClientRect().bottom - R.top) / g.k); });
+    }
     /* on a phone the part below already follows the first screen in the flow: moving it down would leave an empty gap */
     if (more) { if (more.style.position === "absolute") more.style.top = Math.max(g.H, Math.ceil(low) + 40) + "px"; low =Math.max(low, (more.getBoundingClientRect().bottom - R.top) / g.k); }
     cv.style.height = Math.max(g.H, Math.ceil(low + 8)) + "px";

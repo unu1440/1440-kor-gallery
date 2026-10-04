@@ -300,16 +300,34 @@ html.intro .minute { animation: none; }
   color: var(--ink-2);
   letter-spacing: 0;
 }
-.biz dl { margin: 0; display: flex; flex-wrap: wrap; gap: 0.25em 2em; }
+.biz { display: flex; flex-wrap: wrap; gap: 0.25em 2em; }
+.biz dl { margin: 0; display: contents; }
 .biz dl div { display: flex; gap: 0.7em; }
 .biz dt { color: var(--ink-3); }
 .biz dd { margin: 0; min-width: 0; font-variant-numeric: tabular-nums; }
 .biz dt { flex: 0 0 auto; }
 .biz a { color: inherit; text-decoration: underline; text-decoration-color: var(--ink-4); text-underline-offset: 0.2em; }
 @media (hover: hover) { .biz a:hover { color: var(--ink); text-decoration-color: currentColor; } }
+/* the terms and the privacy policy (its name set apart in bold, as the law asks), then the FTC's page that confirms the business */
+.biz-l { display: flex; gap: 1.4em; order: 2; }
+.biz-l a, .biz .ftc { text-decoration: none; color: var(--ink-2); }
+.biz-l b { font-weight: 600; color: var(--ink); }
+.biz .ftc { margin-left: 0.5em; color: var(--ink-3); text-decoration: underline; text-decoration-color: var(--ink-4); text-underline-offset: 0.2em; }
 
+/* a phone: one flowing paragraph (every item stays on the first screen, as the e-commerce law asks) instead of eight rows;
+   the labels that say nothing the value does not (name, address, phone, mail) are left to screen readers */
 @media (max-width: 700px) {
-  .biz dl { flex-direction: column; }
+  .biz { display: block; line-height: 1.62; }
+  .biz dl { display: block; }
+  .biz dl div, .biz dt, .biz dd { display: inline; }
+  .biz dd { white-space: nowrap; } /* a number or an address line never breaks at its hyphens; only the address may wrap */
+  .biz .addr dd { white-space: normal; }
+  .biz dt { margin-right: 0.4em; }
+  .biz dl div:not(:last-child)::after { content: "·"; margin: 0 0.55em; color: var(--ink-4); }
+  .biz .en { display: none; }
+  .biz .q dt, .biz .lg { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .biz .ftc { margin-left: 0.35em; }
+  .biz-l { margin-bottom: 0.45em; gap: 1.2em; }
 }
 
 /* ---------- 정보: comes up over the first page, laid out as a quiet two-column information page ----------
@@ -483,3 +501,9 @@ html.intro .minute { animation: none; }
 .us-err { color: #b42318; }
 .us-l .v { text-align: right; }
 @media (max-width: 760px) { .acct-ov.wide .info-half { padding-left: var(--gutter, 16px); } }
+
+/* a phone zooms the whole page in when it focuses a field set under 16px (and stays zoomed): on touch screens every
+   field keeps at least 16px — the sign-up and payment forms, the editor's boxes, a published site's own forms */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), textarea, select { font-size: max(16px, 1em) !important; }
+}
