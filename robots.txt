@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://1440.kor.gallery/sitemap.xml
