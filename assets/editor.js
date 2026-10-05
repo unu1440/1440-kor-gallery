@@ -981,6 +981,13 @@
   /* -- forms: the one being edited (ME) and the others kept in 홈; each has its own draft -- */
   /* the published site of this account, so its form can be marked 공개 중 (a blue dot) in the folder */
   var liveSite = null, liveFor = "";
+  function isLiveForm(f) { return !!liveSite && (liveSite.fid ? liveSite.fid === fId(f) : (+liveSite.n === +f.n && !f.c)); } /* is this form the one that is public */
+  /* the person stops showing the site (the address stays theirs; publishing again brings it back) */
+  function unpublish() {
+    var A = window.ACCOUNT; if (!A || !liveSite) return;
+    if (!confirm(liveSite.name + ".kor.gallery 공개를 멈출까요?\n사이트가 보이지 않게 되고 올린 사진·영상은 지워져요. 편집한 내용은 그대로 남아 있어서 다시 공개할 수 있어요.")) return;
+    A.unpublishSite().then(function () { liveSite = null; UP = {}; drawFiles(); note("공개를 멈췄어요"); }, function (e) { note((e && e.userMessage) || "멈추지 못했어요"); });
+  }
   function loadLive() {
     var A = window.ACCOUNT; if (!A || CHECK || SV) return;
     var u = A.user; if (!u || A.mode !== "server") { liveFor = ""; if (liveSite) { liveSite = null; drawFiles(); } return; }
@@ -1207,6 +1214,7 @@
       /* moving to another folder without dragging (phones cannot drag) */
       var here = f.p && projById(f.p) ? f.p : "";
       [""].concat(projs().map(function (p) { return p.id; })).forEach(function (id) { if (id !== here) items.push(["mv:" + id, folderName(id) + "(으)로 옮기기"]); });
+      if (isLiveForm(f)) items.push("-", ["unpub", "공개 중단"]);
       items.push("-", [st ? "unstar" : "star", st ? "즐겨찾기에서 빼기" : "즐겨찾기에 넣기"], "-", ["del", "지우기", "Delete", me]);
     } else if (kind === "j:") {
       var pl = projs(), pi = pl.findIndex(function (p) { return p.id === k.slice(2); });
@@ -1225,7 +1233,7 @@
         else if (m === "paste") pasteK(k); else if (m === "hide") hidePg(id); else if (m === "up") stepPg(id, -1); else if (m === "down") stepPg(id, 1); else if (m === "out") outPg(id);
         else if (m === "del") delK(k); else if (m === "newp" || m === "news") { if (kind === "p:") selK = k; else selK = null; addPg(m === "newp" ? "page" : "set"); }
         else if (m === "star" || m === "unstar") star(formByK(k).n, m === "star"); else if (m === "tohome") formToHome({ n: +id, site: T.site || "", c: "" });
-        else if (m === "starme") star(N, !starsNow()[N]);
+        else if (m === "starme") star(N, !starsNow()[N]); else if (m === "unpub") unpublish();
         else if (m === "newj") addProj(); else if (m === "jup" || m === "jdown") moveProj(id, m === "jup" ? -1 : 1); else if (m.indexOf("mv:") === 0) { var mf = formByK(k); setFormProj(mf, m.slice(3) || null); note("옮겼어요: " + fName(mf) + " → " + folderName(m.slice(3))); }
       });
     });
@@ -1277,7 +1285,7 @@
       /* a form is one file: it opens, it holds nothing inside */
       var fRow = function (f, d) {
         var mine = isMe(f), k = "f:" + fId(f);
-        var live = !!liveSite && (liveSite.fid ? liveSite.fid === fId(f) : (+liveSite.n === +f.n && !f.c));
+        var live = isLiveForm(f);
         return row({ k: k, d: d, ic: XI.tpl, name: fName(f), em: mine ? "편집 중" : (f.name ? T.tag(f.n) : ""), cls: "site" + (mine ? " on" : "") + (live ? " live-on" : ""), drag: true, ren: renaming === k, dots: true, cut: cutF === fId(f), title: mine ? "지금 편집 중인 폼" : "두 번 눌러 열기",
           extra: (live ? '<span class="live" title="공개 중 · ' + esc(liveSite.name) + '.kor.gallery"><i></i>공개 중</span>' : "") + (mine ? "" : '<button type="button" class="dots go" data-gok="' + esc(k) + '" tabindex="-1" aria-label="열기" title="열기">' + XI.out + '</button>') });
       };

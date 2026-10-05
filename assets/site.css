@@ -520,3 +520,4 @@ html.intro .minute { animation: none; }
 .tr-t th { color: var(--ink-3); }
 .tr-t th:first-child, .tr-t td:first-child, .tr-t th:nth-child(2), .tr-t td:nth-child(2) { text-align: left; }
 .tr-t td:first-child { color: var(--ink); }
+.acct-dl li[hidden] { display: none; }

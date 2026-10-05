@@ -353,19 +353,43 @@ async function warnPass(env, r, now) {
   try { await sendMail(env, r.email, kind === "soon" ? "1440 이용권이 곧 끝나요" : "1440 이용권이 끝났어요 · " + del + " 사이트 삭제", m.text, m.html); } catch (e) {}
   return true;
 }
-async function removeSite(env, userId) {
+async function dropMedia(env, userId) { /* the person's pictures and files: out of R2 (unless another account has the same one) and the list */
   const ms = await env.DB.prepare("SELECT key FROM media WHERE user_id = ?").bind(userId).all();
   for (const m of ms.results || []) {
     const other = await env.DB.prepare("SELECT 1 FROM media WHERE key = ? AND user_id != ?").bind(m.key, userId).first();
     if (!other && env.MEDIA) { try { await env.MEDIA.delete("m/" + m.key); } catch (e) {} }
   }
   await env.DB.prepare("DELETE FROM media WHERE user_id = ?").bind(userId).run();
+}
+async function removeSite(env, userId) {
+  await dropMedia(env, userId);
   await env.DB.prepare("DELETE FROM sites WHERE user_id = ?").bind(userId).run();
+}
+/* an account and everything of it (used by the person's own leaving and by the admin) */
+async function eraseAccount(env, u) {
+  const s = await env.DB.prepare("SELECT * FROM subs WHERE user_id = ?").bind(u.id).first();
+  if (s && s.status === "active" && s.bid) await expireBid(env, s.bid);
+  await removeSite(env, u.id);
+  if (u.uni_email) await env.DB.prepare("INSERT OR REPLACE INTO uni_used (hash, at) VALUES (?, ?)").bind(await sha("uni:" + u.uni_email), Date.now()).run();
+  for (const t of ["sessions", "codes", "requests", "subs"]) await env.DB.prepare("DELETE FROM " + t + " WHERE user_id = ?").bind(u.id).run();
+  await env.DB.prepare("DELETE FROM attempts WHERE key IN (?, ?, ?)").bind("login:" + u.email, "signup:" + u.email, "del:" + u.id).run();
+  await env.DB.prepare("DELETE FROM users WHERE id = ?").bind(u.id).run();
 }
 
 const siteRoutes = {
   "GET /api/site": async (env, req, u) => {
     if (!u) return fail("로그인해 주세요.", 401);
+    return json({ site: siteOf(await env.DB.prepare("SELECT * FROM sites WHERE user_id = ?").bind(u.id).first()) });
+  },
+  /* the person stops showing the site: the page and its pictures go, the address stays theirs, and publishing again brings it back */
+  "POST /api/site/unpublish": async (env, req, u) => {
+    if (!u) return fail("로그인해 주세요.", 401);
+    const row = await env.DB.prepare("SELECT * FROM sites WHERE user_id = ?").bind(u.id).first();
+    if (!row) return json({ site: null });
+    if (row.data) {
+      await dropMedia(env, u.id);
+      await env.DB.prepare("UPDATE sites SET data = NULL, published = NULL WHERE user_id = ?").bind(u.id).run();
+    }
     return json({ site: siteOf(await env.DB.prepare("SELECT * FROM sites WHERE user_id = ?").bind(u.id).first()) });
   },
   /* the address: taken for this account (one site each; a second name moves the site there) */
@@ -676,13 +700,7 @@ const routes = {
     if (await tooMany(env, "del:" + u.id, 8, 15 * 60000)) return fail("잠시 뒤에 다시 해 주세요.", 429);
     const d = await body(req);
     if (!(await checkPass(String(d.password || ""), u.pass))) { await note(env, "del:" + u.id); return fail("비밀번호가 맞지 않아요.", 403); }
-    const s = await env.DB.prepare("SELECT * FROM subs WHERE user_id = ?").bind(u.id).first();
-    if (s && s.status === "active" && s.bid) await expireBid(env, s.bid);
-    await removeSite(env, u.id);
-    if (u.uni_email) await env.DB.prepare("INSERT OR REPLACE INTO uni_used (hash, at) VALUES (?, ?)").bind(await sha("uni:" + u.uni_email), Date.now()).run();
-    for (const t of ["sessions", "codes", "requests", "subs"]) await env.DB.prepare("DELETE FROM " + t + " WHERE user_id = ?").bind(u.id).run();
-    await env.DB.prepare("DELETE FROM attempts WHERE key IN (?, ?, ?)").bind("login:" + u.email, "signup:" + u.email, "del:" + u.id).run();
-    await env.DB.prepare("DELETE FROM users WHERE id = ?").bind(u.id).run();
+    await eraseAccount(env, u);
     return json({ ok: true }, 200, { "set-cookie": cookie("sid", "", 0) });
   },
 
@@ -744,7 +762,7 @@ const routes = {
   "GET /api/admin/students": async (env, req, u) => {
     if (!isAdmin(env, u)) return fail("관리자만 볼 수 있어요.", 403);
     const reqs = await env.DB.prepare("SELECT r.id, r.uni_email, r.school, r.status, r.created, u.id AS user_id, u.nick, u.email FROM requests r JOIN users u ON u.id = r.user_id ORDER BY r.status = 'pending' DESC, r.created DESC LIMIT 200").all();
-    const users = await env.DB.prepare("SELECT id, nick, email, uni_email, student, trial_until, created FROM users ORDER BY created DESC LIMIT 300").all();
+    const users = await env.DB.prepare("SELECT u.id, u.nick, u.email, u.uni_email, u.student, u.trial_until, u.created, s.name AS site, CASE WHEN s.data IS NOT NULL THEN 1 ELSE 0 END AS live FROM users u LEFT JOIN sites s ON s.user_id = u.id ORDER BY u.created DESC LIMIT 300").all();
     const log = await env.DB.prepare("SELECT at, admin, action, target, ip FROM admin_log ORDER BY at DESC LIMIT 40").all();
     return json({ requests: reqs.results || [], users: users.results || [], log: log.results || [] });
   },
@@ -776,6 +794,24 @@ const routes = {
   "GET /api/admin/traffic": async (env, req, u) => {
     if (!isAdmin(env, u)) return fail("관리자만 볼 수 있어요.", 403);
     return json(await trafficFor(env, +new URL(req.url).searchParams.get("days")));
+  },
+  /* take a site down (page, pictures and address) or an account away (everything of it): the page asks twice, and it is written in the access record */
+  "POST /api/admin/site/delete": async (env, req, u) => {
+    if (!isAdmin(env, u)) return fail("관리자만 할 수 있어요.", 403);
+    const d = await body(req), id = String(d.userId || ""), row = await env.DB.prepare("SELECT name FROM sites WHERE user_id = ?").bind(id).first();
+    if (!row) return fail("이 계정에는 사이트가 없어요.", 404);
+    await removeSite(env, id);
+    return json({ ok: true });
+  },
+  "POST /api/admin/user/delete": async (env, req, u) => {
+    if (!isAdmin(env, u)) return fail("관리자만 할 수 있어요.", 403);
+    const d = await body(req), t = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(String(d.userId || "")).first();
+    if (!t) return fail("그런 사용자가 없어요.", 404);
+    if (t.id === u.id) return fail("내 계정은 여기서 지울 수 없어요.", 400);
+    if (isAdmin(env, t)) return fail("관리자 계정은 지울 수 없어요.", 400);
+    if (String(d.confirm || "").trim().toLowerCase() !== String(t.email).toLowerCase()) return fail("이메일이 맞지 않아요.", 400);
+    await eraseAccount(env, t);
+    return json({ ok: true });
   },
   "POST /api/admin/grant": async (env, req, u) => {
     if (!isAdmin(env, u)) return fail("관리자만 할 수 있어요.", 403);

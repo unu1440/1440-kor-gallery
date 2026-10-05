@@ -270,7 +270,7 @@ const sig = async (tid, amount, ediDate) => hex(tid + amount + ediDate + env.NIC
   const put = (j, bytes, type, extra = {}) => W.fetch(new Request(O + "/api/media", { method: "PUT", headers: { origin: O, "content-type": type, ...extra }, body: bytes }), env);
   // the jar keeps its cookie inside; a raw PUT needs it, so log in again through a fresh request that returns it
   const lr = await W.fetch(new Request(O + "/api/login", { method: "POST", headers: { origin: O, "content-type": "application/json" }, body: JSON.stringify({ email: "site1@mail.com", password: "12345678" }) }), env);
-  const ck = lr.headers.get("set-cookie").split(";")[0];
+  let ck = lr.headers.get("set-cookie").split(";")[0];
   const img = new Uint8Array([255, 216, 255, 1, 2, 3]);
   r = await put(null, img, "image/jpeg", { cookie: ck }); let mu = (await r.json()).url;
   t("media: put by content", r.status === 200 && /^\/m\/[a-f0-9]{64}\.jpg$/.test(mu) && R2.has("m/" + mu.slice(3)), mu);
@@ -312,6 +312,31 @@ const sig = async (tid, amount, ediDate) => hex(tid + amount + ediDate + env.NIC
   r = await s1("POST", "/api/site/publish", { ...snap, fid: "161||" }); t("publish: remembers which folder entry", r.status === 200 && r.body.site.fid === "161||", r.body);
   r = await s1("GET", "/api/site"); t("site: tells which folder entry is live", r.body.site.fid === "161||" && r.body.site.published > 0, r.body);
   r = await s1("POST", "/api/site/publish", snap); t("publish: without one, none is named", r.body.site.fid === "", r.body);
+  // stopping and taking down: the person's own stop keeps the address; the admin sees the address and can remove a site or an account
+  r = await s1("POST", "/api/site/unpublish", {});
+  t("unpublish: the page goes, the address stays", r.status === 200 && r.body.site.name === "haneul-studio" && !r.body.site.published && db.prepare("SELECT COUNT(*) AS n FROM media").get().n === 0 && R2.size === 0, r.body);
+  t("unpublish: the address shows no site", (await site("haneul-studio.kor.gallery")).status === 404);
+  t("unpublish: needs log-in", (await W.fetch(new Request(O + "/api/site/unpublish", { method: "POST", headers: { origin: O, "content-type": "application/json" }, body: "{}" }), env)).status === 401);
+  r = await s1("POST", "/api/site/unpublish", {}); t("unpublish: again changes nothing", r.status === 200 && r.body.site.name === "haneul-studio");
+  mu = (await (await put(null, img, "image/jpeg", { cookie: ck })).json()).url; snap.media = { "u-1": mu };
+  r = await s1("POST", "/api/site/publish", snap); t("unpublish: publishing again brings it back", r.status === 200 && r.body.site.published > 0 && (await site("haneul-studio.kor.gallery")).status === 200, r.body);
+  r = await boss("GET", "/api/admin/students"); const au = (r.body.users || []).find((x) => x.email === "site1@mail.com");
+  t("admin: the list shows the public address", !!au && au.site === "haneul-studio" && au.live === 1, au);
+  const s1id = au && au.id;
+  t("admin: a person cannot take down another's site", (await s2("POST", "/api/admin/site/delete", { userId: s1id })).status === 403);
+  r = await boss("POST", "/api/admin/site/delete", { userId: s1id }); t("admin: a site is taken down", r.status === 200 && !db.prepare("SELECT 1 FROM sites WHERE user_id = ?").get(s1id) && R2.size === 0 && !!db.prepare("SELECT 1 FROM users WHERE id = ?").get(s1id), r.body);
+  t("admin: no site to take down", (await boss("POST", "/api/admin/site/delete", { userId: s1id })).status === 404);
+  t("admin: an account needs its address typed", (await boss("POST", "/api/admin/user/delete", { userId: s1id, confirm: "wrong@mail.com" })).status === 400 && !!db.prepare("SELECT 1 FROM users WHERE id = ?").get(s1id));
+  t("admin: a person cannot remove an account", (await s2("POST", "/api/admin/user/delete", { userId: s1id, confirm: "site1@mail.com" })).status === 403);
+  const bossId = (await boss("GET", "/api/me")).body.user.id;
+  t("admin: not their own account", (await boss("POST", "/api/admin/user/delete", { userId: bossId, confirm: "boss@kor.gallery" })).status === 400);
+  r = await boss("POST", "/api/admin/user/delete", { userId: s1id, confirm: "SITE1@mail.com" }); t("admin: an account is removed", r.status === 200 && !db.prepare("SELECT 1 FROM users WHERE id = ?").get(s1id), r.body);
+  t("admin: removals are written in the record", db.prepare("SELECT COUNT(*) AS n FROM admin_log WHERE action IN ('POST /api/admin/site/delete', 'POST /api/admin/user/delete')").get().n >= 3);
+  // later checks expect site 1 as it was: put it back
+  await join(s1, { email: "site1@mail.com", password: "12345678" }); db.prepare("UPDATE hits SET n = n - 1 WHERE ev = 'signup' AND src = 'direct' AND camp = ''").run(); /* this sign-up is only set-up: not a visit count */ db.prepare("UPDATE users SET paid_until = ? WHERE email = 'site1@mail.com'").run(Date.now() + 30 * 86400000);
+  r = await s1("POST", "/api/site/name", { name: "haneul-studio" }); const lr2 = await W.fetch(new Request(O + "/api/login", { method: "POST", headers: { origin: O, "content-type": "application/json" }, body: JSON.stringify({ email: "site1@mail.com", password: "12345678" }) }), env);
+  ck = lr2.headers.get("set-cookie").split(";")[0]; mu = (await (await put(null, img, "image/jpeg", { cookie: ck })).json()).url; snap.media = { "u-1": mu };
+  r = await s1("POST", "/api/site/publish", snap); t("setup: site 1 is back", r.status === 200, r.body);
   t("publish: no address yet", (await (async () => { const j = jar(); await join(j, { email: "site3@mail.com", password: "12345678" }); db.prepare("UPDATE users SET paid_until = ? WHERE email = 'site3@mail.com'").run(Date.now() + 86400000); return j("POST", "/api/site/publish", snap); })()).status === 409);
   // the page
   let res = await site("haneul-studio.kor.gallery"), html = await res.text();

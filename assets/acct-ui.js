@@ -62,6 +62,7 @@
     $('[data-v="email"]').textContent = me.email;
     /* the pass now: paid days, else the free student month, else none */
     var paid = me.paidUntil > Date.now(), free = me.trialUntil > Date.now();
+    siteLine();
     $('[data-v="plan"]').textContent = paid ? upto(me.paidUntil) : free ? "무료 " + upto(me.trialUntil) : "없음";
     /* the subscription: on (card, next charge, stop) or off (the price, and the card form when asked) */
     var sb = me.sub, on = !!(sb && sb.status === "active");
@@ -309,6 +310,20 @@
   });
   ov.addEventListener("pointerout", function (e) { var g = e.target.closest && e.target.closest(".us-b"); if (g && !g.contains(e.relatedTarget)) { var t = g.closest(".us-area").querySelector(".us-tip"); t.hidden = true; } });
 
+  /* my site on the account page: its address, and a way to stop showing it (the address stays mine; publishing again brings it back) */
+  function siteLine() {
+    var li = $('[data-v="siteRow"]'), v = $('[data-v="siteLine"]'); if (!li) return;
+    li.hidden = true; if (A.mode !== "server") return;
+    A.site().then(function (s) {
+      if (!s || !s.published) return;
+      li.hidden = false; v.innerHTML = '<a class="u" href="' + esc(s.url) + '" target="_blank" rel="noopener">' + esc(s.name) + '.kor.gallery</a> <button type="button" class="u" data-unpub="' + esc(s.name) + '">공개 중단</button>';
+    }, function () {});
+  }
+  ov.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-unpub]"); if (!b) return;
+    if (!confirm(b.dataset.unpub + ".kor.gallery 공개를 멈출까요?\n사이트가 보이지 않게 되고 올린 사진·영상은 지워져요. 편집한 내용은 그대로 남아 있어서 다시 공개할 수 있어요.")) return;
+    b.disabled = true; A.unpublishSite().then(siteLine, function () { b.disabled = false; });
+  });
   /* the admin: requests first, then every account */
   var LIST = null;
   function admin() {
@@ -325,10 +340,12 @@
     var users = LIST.users.filter(function (x) { return !q || (x.nick + " " + x.email + " " + (x.uni_email || "")).toLowerCase().indexOf(q) >= 0; }).slice(0, 60);
     $('[data-v="users"]').innerHTML = users.length ? users.map(function (x) {
       var on = x.trial_until > Date.now();
-      return '<div class="adm-r"><span><b>' + esc(x.email) + '</b><br>' + (x.student === "verified" ? "대학생 · " + esc(x.uni_email) : x.student === "pending" ? "확인 요청 중" : "일반") + ' · 무료 ' + (on ? day(x.trial_until) + "까지" : "없음") + '</span>' +
-        '<span class="adm-b"><button type="button" class="u" data-grant="' + esc(x.id) + '">+30일</button>' + (on ? '<button type="button" class="u" data-revoke="' + esc(x.id) + '">거두기</button>' : "") + '</span></div>';
+      var site = x.site ? '<br><a class="u" href="https://' + esc(x.site) + '.kor.gallery" target="_blank" rel="noopener">' + esc(x.site) + '.kor.gallery</a> · ' + (x.live ? "공개 중" : "주소만") : "", mine = !!(A.user && A.user.id === x.id);
+      return '<div class="adm-r"><span><b>' + esc(x.email) + '</b><br>' + (x.student === "verified" ? "대학생 · " + esc(x.uni_email) : x.student === "pending" ? "확인 요청 중" : "일반") + ' · 무료 ' + (on ? day(x.trial_until) + "까지" : "없음") + site + '</span>' +
+        '<span class="adm-b"><button type="button" class="u" data-grant="' + esc(x.id) + '">+30일</button>' + (on ? '<button type="button" class="u" data-revoke="' + esc(x.id) + '">거두기</button>' : "") +
+        (x.site ? '<button type="button" class="u" data-delsite="' + esc(x.id) + '" data-name="' + esc(x.site) + '">사이트 삭제</button>' : "") + (mine ? "" : '<button type="button" class="u" data-deluser="' + esc(x.id) + '" data-email="' + esc(x.email) + '">계정 삭제</button>') + '</span></div>';
     }).join("") : '<p class="dim">없어요.</p>';
-    var NAMES = { "GET /api/admin/students": "목록 보기", "POST /api/admin/decide": "요청 결정", "POST /api/admin/grant": "무료 기간", "GET /api/admin/traffic": "유입 보기", "GET /api/admin/usage": "사용량 보기" };
+    var NAMES = { "GET /api/admin/students": "목록 보기", "POST /api/admin/decide": "요청 결정", "POST /api/admin/grant": "무료 기간", "POST /api/admin/site/delete": "사이트 삭제", "POST /api/admin/user/delete": "계정 삭제", "GET /api/admin/traffic": "유입 보기", "GET /api/admin/usage": "사용량 보기" };
     $('[data-v="alog"]').innerHTML = (LIST.log || []).length ? LIST.log.map(function (x) {
       var d = new Date(x.at), t = day(x.at) + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
       return '<div class="adm-r dim"><span>' + esc(NAMES[x.action] || x.action) + (x.target ? " · " + esc(x.target) : "") + '</span><span>' + t + '</span></div>';
@@ -336,8 +353,15 @@
   }
   ov.addEventListener("input", function (e) { if (e.target.matches('[data-v="q"]')) drawAdmin(); });
   ov.addEventListener("click", function (e) {
-    var b = e.target.closest("[data-ok],[data-no],[data-grant],[data-revoke]"); if (!b) return;
-    var m = $('[data-v="admMsg"]'), p = b.dataset.ok ? A.admin.decide(b.dataset.ok, true) : b.dataset.no ? A.admin.decide(b.dataset.no, false) : b.dataset.grant ? A.admin.grant(b.dataset.grant, 30) : A.admin.grant(b.dataset.revoke, 0);
+    var b = e.target.closest("[data-ok],[data-no],[data-grant],[data-revoke],[data-delsite],[data-deluser]"); if (!b) return;
+    /* deleting asks twice: a question, and for an account the address typed out */
+    if (b.dataset.delsite && !confirm(b.dataset.name + ".kor.gallery 사이트를 지울까요?\n공개 페이지와 올린 사진·영상이 모두 사라지고 되돌릴 수 없어요.")) return;
+    if (b.dataset.deluser) {
+      if (!confirm(b.dataset.email + " 계정을 지울까요?\n계정, 사이트, 구독, 올린 파일이 모두 사라지고 되돌릴 수 없어요.")) return;
+      var typed = prompt("지우려면 이메일을 그대로 입력하세요.\n" + b.dataset.email); if (typed === null) return;
+      if (typed.trim().toLowerCase() !== b.dataset.email.toLowerCase()) { var m0 = $('[data-v="admMsg"]'); m0.textContent = "이메일이 달라서 지우지 않았어요."; m0.classList.add("err"); return; }
+    }
+    var m = $('[data-v="admMsg"]'), p = b.dataset.delsite ? A.admin.deleteSite(b.dataset.delsite) : b.dataset.deluser ? A.admin.deleteUser(b.dataset.deluser, b.dataset.email) : b.dataset.ok ? A.admin.decide(b.dataset.ok, true) : b.dataset.no ? A.admin.decide(b.dataset.no, false) : b.dataset.grant ? A.admin.grant(b.dataset.grant, 30) : A.admin.grant(b.dataset.revoke, 0);
     b.disabled = true;
     p.then(function () { m.textContent = "바꿨어요."; m.classList.remove("err"); return A.admin.list(); }).then(function (d) { if (d) { LIST = d; drawAdmin(); } A.refresh(); }, function (er) { b.disabled = false; m.textContent = er.userMessage || "하지 못했어요."; m.classList.add("err"); });
   });

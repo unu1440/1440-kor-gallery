@@ -200,6 +200,8 @@
     admin: {
       list: function () { return adminOnly() || (mode === "server" ? api("GET", "/api/admin/students") : L.list()); },
       decide: function (id, ok) { return adminOnly() || (mode === "server" ? api("POST", "/api/admin/decide", { id: id, approve: ok }) : L.decide(id, ok)); },
+      deleteSite: function (userId) { return adminOnly() || (mode === "server" ? api("POST", "/api/admin/site/delete", { userId: userId }) : Promise.reject(err("사이트는 1440.kor.gallery에서 지울 수 있어요."))); },
+      deleteUser: function (userId, email) { return adminOnly() || (mode === "server" ? api("POST", "/api/admin/user/delete", { userId: userId, confirm: email }) : Promise.reject(err("계정은 1440.kor.gallery에서 지울 수 있어요."))); },
       grant: function (userId, days) { return adminOnly() || (mode === "server" ? api("POST", "/api/admin/grant", { userId: userId, days: days }) : L.grant(userId, days)); },
       traffic: function (days) { return adminOnly() || (mode === "server" ? api("GET", "/api/admin/traffic?days=" + (days || 14)) : Promise.reject(err("유입은 1440.kor.gallery에서 볼 수 있어요."))); },
       usage: function () { return adminOnly() || (mode === "server" ? api("GET", "/api/admin/usage") : Promise.reject(err("사용량은 1440.kor.gallery에서 볼 수 있어요."))); }
@@ -240,6 +242,7 @@
       return fetch("/api/media", { method: "PUT", credentials: "same-origin", headers: { "content-type": blob.type || "application/octet-stream" }, body: blob })
         .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) { var e = err(j.error || "사진을 올리지 못했어요."); e.data = j; e.status = r.status; throw e; } return j.url; }); });
     },
+    unpublishSite: function () { return api("POST", "/api/site/unpublish", {}).then(function (r) { return r.site; }); },
     publishSite: function (d) { return api("POST", "/api/site/publish", d).then(function (r) { return r.site; }); }
   };
   var payJs = null;
