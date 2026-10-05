@@ -19,7 +19,7 @@ jobs:
       - name: 템플릿 검사
         run: node tools/check-templates.js
       - name: 올릴 파일만 모으기 (research/ 등은 빠짐)
-        run: mkdir dist && cp -r index.html templates.html robots.txt sitemap.xml assets _headers dist/ && find dist -name '*.md' -delete
+        run: mkdir dist && cp -r index.html templates.html robots.txt sitemap.xml google13193272886f4e9e.html assets _headers dist/ && find dist -name '*.md' -delete
       - name: 스크립트·스타일 압축 (주석 빼기, 원본은 그대로)
         run: npx --yes esbuild@0.25.10 dist/assets/*.js dist/assets/*.css --minify --charset=utf8 --legal-comments=none --outdir=dist/assets --allow-overwrite --log-level=warning
       - name: 토큰 확인
