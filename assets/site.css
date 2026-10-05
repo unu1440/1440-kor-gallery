@@ -66,7 +66,7 @@ html { scrollbar-width: thin; scrollbar-color: var(--ink-4) transparent; }
 .bar .home { justify-self: start; display: inline-grid; align-items: center; justify-items: center; font-weight: 500; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .bar .home > span { grid-area: 1 / 1; transition: opacity .8s ease, filter .9s var(--slow); }
 .bar .home .mid { display: grid; place-items: center; opacity: 0; filter: blur(5px); }
-.bar .home .mid svg { width: 1.6em; height: 1.6em; }
+.bar .home .mid img { width: 1.6em; height: 1.6em; display: block; }
 @media (hover: hover) {
   .bar .home:hover .t, .bar .home:focus-visible .t { opacity: 0; filter: blur(5px); }
   .bar .home:hover .mid, .bar .home:focus-visible .mid { opacity: 1; filter: none; }

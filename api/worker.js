@@ -62,7 +62,7 @@ async function tooMany(env, key, max, win) {
 }
 async function note(env, key) { await env.DB.prepare("INSERT INTO attempts (key, at) VALUES (?, ?)").bind(key, Date.now()).run(); }
 
-/* every mail 1440 sends is one quiet page like the site: the 14|40 mark, a short title, one large line between thin
+/* every mail 1440 sends is one quiet page like the site: the 1440 seal (assets/logo-pay.png), a short title, one large line between thin
    rules (a code, an amount, a date), a few lines of what to know, an optional "→" link, and the small print. Tables
    and inline styles, so every mail program draws it; the plain text goes along for the ones that do not show HTML. */
 function escH(v) { return String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
@@ -76,7 +76,7 @@ export function mailPage(o) {
     '<div style="display:none;max-height:0;overflow:hidden;opacity:0;">' + escH(o.pre || lines[0] || o.title) + '</div>' +
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8f8f6;"><tr><td align="center" style="padding:48px 16px;">' +
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:440px;font-family:' + font + ';color:' + ink + ';">' +
-    '<tr><td style="padding:0 0 40px;"><a href="' + site + '" style="text-decoration:none;color:' + ink + ';"><img src="' + site + '/assets/logo-pay.png" width="28" height="28" alt="1440" style="display:inline-block;vertical-align:middle;border:0;"><span style="display:inline-block;vertical-align:middle;margin-left:10px;font-size:15px;font-weight:600;letter-spacing:-0.01em;">1440</span></a></td></tr>' +
+    '<tr><td style="padding:0 0 40px;"><a href="' + site + '" style="text-decoration:none;color:' + ink + ';"><img src="' + site + '/assets/logo-pay.png" width="44" height="44" alt="1440" style="display:inline-block;vertical-align:middle;border:0;"><span style="display:inline-block;vertical-align:middle;margin-left:10px;font-size:15px;font-weight:600;letter-spacing:-0.01em;">1440</span></a></td></tr>' +
     '<tr><td style="font-size:15px;line-height:1.5;padding:0 0 18px;">' + escH(o.title) + '</td></tr>' + big +
     '<tr><td style="font-size:14px;line-height:1.7;color:' + dim + ';padding:18px 0 0;">' + lines.map(escH).join("<br>") + '</td></tr>' +
     (o.link ? '<tr><td style="font-size:14px;line-height:1.5;padding:22px 0 0;"><a href="' + escH(o.link.href) + '" style="color:' + ink + ';text-decoration:underline;text-underline-offset:3px;">' + escH(o.link.label) + ' →</a></td></tr>' : "") +

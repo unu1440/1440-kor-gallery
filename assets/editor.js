@@ -132,7 +132,7 @@
   root.className = "ed";
   root.innerHTML =
     '<header class="ed-top">' +
-      '<div class="ed-l"><button type="button" class="ed-home" id="edBack" aria-label="폼 다시 고르기" title="폼 다시 고르기"><span class="bk" aria-hidden="true">←</span><svg class="ed-logo" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15.25" fill="#fff" stroke="#111" stroke-width="1.5"/><path d="M16 .75a15.25 15.25 0 0 0 0 30.5z" fill="#111"/><text x="9.4" y="19.6" font-family="Arial,Helvetica,sans-serif" font-size="9.6" font-weight="700" fill="#fff" text-anchor="middle">14</text><text x="22.6" y="19.6" font-family="Arial,Helvetica,sans-serif" font-size="9.6" font-weight="700" fill="#111" text-anchor="middle">40</text></svg></button><span class="ed-no">' + T.tag(N) + '</span>' +
+      '<div class="ed-l"><button type="button" class="ed-home" id="edBack" aria-label="폼 다시 고르기" title="폼 다시 고르기"><span class="bk" aria-hidden="true">←</span><img class="ed-logo" src="assets/favicon.png?v=1" alt=""></button><span class="ed-no">' + T.tag(N) + '</span>' +
       '<img class="ed-fav" id="edFav" alt="" hidden></div>' +
     '<nav class="ed-rail" id="edRail" aria-label="편집 도구">' +
       '<button type="button" id="edFilesBtn" data-tip="패널" aria-label="탐색기·도구·레이어" aria-pressed="false">탐색기 · 도구 · 레이어</button>' +
