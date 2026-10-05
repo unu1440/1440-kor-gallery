@@ -45,7 +45,7 @@ function jar() { let c = ""; return async (method, path, data, extra = {}) => {
 const codeFor = (to) => { const m = mails.filter((x) => x.to[0] === to).pop(); return m && /(\d{6})/.exec(m.subject)[1]; };
 async function join(j, data) {
   const s = await j("POST", "/api/signup", data); if (s.status !== 200) return s;
-  return j("POST", "/api/signup/verify", { email: data.email, code: codeFor(String(data.email).toLowerCase()) });
+  return j("POST", "/api/signup/verify", { email: data.email, code: codeFor(String(data.email).toLowerCase()), src: data.src, camp: data.camp, dev: data.dev });
 }
 let ok = 0, bad = 0; const t = (name, cond, extra) => { if (cond) ok++; else { bad++; console.log("✗", name, JSON.stringify(extra || "")); } };
 
@@ -314,6 +314,30 @@ const sig = async (tid, amount, ediDate) => hex(tid + amount + ediDate + env.NIC
   await W4.sweepSites(env);
   t("cleanup: old records gone, new kept", !db.prepare("SELECT 1 FROM attempts WHERE key = 'old'").get() && !!db.prepare("SELECT 1 FROM attempts WHERE key = 'new'").get() && !db.prepare("SELECT 1 FROM signups WHERE email = 'gone@mail.com'").get());
   t("cleanup: admin log kept two years", !db.prepare("SELECT 1 FROM admin_log WHERE admin = 'old@x'").get() && !!db.prepare("SELECT 1 FROM admin_log WHERE admin = 'new@x'").get());
+  // visit counts for the admin's 유입 page: counted by day, nothing that names a person
+  { const pub = jar(), hit = (d, extra) => pub("POST", "/api/hit", d, extra);
+    r = await hit({ ev: "view", src: "Instagram", camp: "Ad 1!", dev: "m" }, { "cf-ipcountry": "kr" }); t("hit: counted", r.status === 200 && r.body.ok);
+    await hit({ ev: "view", src: "instagram", camp: "ad1", dev: "m" }, { "cf-ipcountry": "KR" });
+    await hit({ ev: "view" }); await hit({ ev: "forms", src: "instagram", camp: "ad1", dev: "m" }); await hit({ ev: "edit", src: "instagram", camp: "ad1", dev: "d" });
+    const row = db.prepare("SELECT * FROM hits WHERE ev = 'view' AND src = 'instagram'").get();
+    t("hit: same visit kind adds up, tags cleaned, country upper-cased", row && row.n === 2 && row.camp === "ad1" && row.dev === "m" && row.ctry === "KR" && row.day === new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10), row);
+    t("hit: no source means direct", !!db.prepare("SELECT 1 FROM hits WHERE ev = 'view' AND src = 'direct' AND camp = '' AND dev = 'd' AND ctry = 'XX'").get());
+    t("hit: only the page events (signup is counted by the server)", (await hit({ ev: "signup" })).status === 400 && (await hit({ ev: "x" })).status === 400 && (await hit({})).status === 400);
+    const before = db.prepare("SELECT SUM(n) AS n FROM hits").get().n;
+    await hit({ ev: "view", src: "bot" }, { "user-agent": "Googlebot/2.1" }); t("hit: crawlers are not counted", db.prepare("SELECT SUM(n) AS n FROM hits").get().n === before);
+    t("hit: nothing of the person is kept", Object.keys(db.prepare("SELECT * FROM hits LIMIT 1").get()).join() === "day,ev,src,camp,dev,ctry,n");
+    await join(jar(), { email: "ad@mail.com", password: "12345678", src: "instagram", camp: "ad1", dev: "m" });
+    t("hit: a sign-up is counted with the campaign it came from", db.prepare("SELECT n FROM hits WHERE ev = 'signup' AND src = 'instagram' AND camp = 'ad1' AND dev = 'm'").get()?.n === 1);
+    await join(jar(), { email: "plain@mail.com", password: "12345678" });
+    const nUsers = db.prepare("SELECT COUNT(*) AS n FROM users").get().n;
+    t("hit: every sign-up is counted once, one with no source as direct", db.prepare("SELECT SUM(n) AS n FROM hits WHERE ev = 'signup'").get().n === nUsers && db.prepare("SELECT SUM(n) AS n FROM hits WHERE ev = 'signup' AND src = 'direct'").get().n === nUsers - 1);
+    t("traffic: not for others", (await pub("GET", "/api/admin/traffic")).status === 403 && (await c("GET", "/api/admin/traffic")).status === 403);
+    r = await boss("GET", "/api/admin/traffic?days=7"); const tr = r.body;
+    t("traffic: totals, days, sources, devices, countries", r.status === 200 && tr.days === 7 && tr.daily.length === 7 && tr.totals.view === 3 && tr.totals.forms === 1 && tr.totals.edit === 1 && tr.totals.signup === nUsers
+      && tr.devices.m === 2 && tr.devices.d === 1 && tr.sources[0].src === "instagram" && tr.sources[0].view === 2 && tr.sources[0].signup === 1 && tr.sources[1].signup === nUsers - 1 && tr.countries[0].c === "KR" && tr.countries[0].n === 2 && tr.daily[6].view === 3, tr);
+    t("traffic: days are kept between 1 and 90", (await boss("GET", "/api/admin/traffic?days=500")).body.days === 90 && (await boss("GET", "/api/admin/traffic")).body.days === 14);
+    db.prepare("INSERT INTO hits (day, ev, src, camp, dev, ctry, n) VALUES (?, 'view', 'old', '', 'd', 'KR', 5), (?, 'view', 'new', '', 'd', 'KR', 5)").run(new Date(Date.now() - 401 * 86400000).toISOString().slice(0, 10), new Date(Date.now() - 399 * 86400000).toISOString().slice(0, 10));
+    await W4.sweepSites(env); t("cleanup: visit counts kept 400 days", !db.prepare("SELECT 1 FROM hits WHERE src = 'old'").get() && !!db.prepare("SELECT 1 FROM hits WHERE src = 'new'").get()); }
   // a pass ending: one mail 3 days before, one on the day it ends; a subscription gets none
   { const nj = jar(); await join(nj, { email: "note@mail.com", password: "12345678" });
     const nid = db.prepare("SELECT id FROM users WHERE email = 'note@mail.com'").get().id;

@@ -109,3 +109,13 @@ CREATE TABLE IF NOT EXISTS admin_log (  -- what the admin looked at or changed, 
   ip TEXT
 );
 CREATE INDEX IF NOT EXISTS admin_log_at ON admin_log (at);
+CREATE TABLE IF NOT EXISTS hits (        -- visit counts by day (no cookie, no address, nothing that names a person): where people came from and how far they got
+  day TEXT NOT NULL,                     -- Korean date, 2026-10-05
+  ev TEXT NOT NULL,                      -- 'view' (front page) | 'forms' (form list) | 'edit' (editor opened) | 'signup' (account made)
+  src TEXT NOT NULL,                     -- utm_source, or the referring site (instagram, kakao, naver, google ...), or 'direct'
+  camp TEXT NOT NULL,                    -- utm_campaign ('' if none)
+  dev TEXT NOT NULL,                     -- 'm' phone | 'd' computer
+  ctry TEXT NOT NULL,                    -- two-letter country from Cloudflare, 'XX' if unknown
+  n INTEGER NOT NULL,
+  PRIMARY KEY (day, ev, src, camp, dev, ctry)
+);

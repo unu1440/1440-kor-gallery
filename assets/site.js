@@ -1,7 +1,7 @@
 (function () {
   var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  /* 나만의 [졸업전시 / 포트폴리오 / 갤러리 / 아카이브 / 스튜디오 / 웹사이트],
+  /* 나만의 [온라인 전시 / 온라인 졸업전시 / 포트폴리오 / 갤러리 / 아카이브 / 스튜디오 / 웹사이트],
      started once the intro has finished */
   var words = document.querySelectorAll("#rot .w"), wi = 0;
   function startRotation() {
@@ -127,7 +127,7 @@
     if (r.top < 0 || r.bottom > innerHeight) form.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
   }
   /* ---------- first-visit intro ----------
-     blank page → "나만의 졸업전시" types in → "내가 원하는 주소로." for 2s → address line.
+     blank page → "나만의 온라인 전시" types in → "내가 원하는 주소로." for 2s → address line.
      A click or key press during the intro skips straight to the end. */
   var root = document.documentElement;
   var typed = document.getElementById("typed");

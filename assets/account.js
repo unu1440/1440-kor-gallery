@@ -170,6 +170,8 @@
   };
 
   /* ---------- one face for both ---------- */
+  /* where this visit came from (set by common.js: no cookie, this tab only) so a sign-up can be counted with it */
+  function seen() { var f = {}; try { f = JSON.parse(sessionStorage.getItem("1440-utm") || "{}") || {}; } catch (e) {} return { s: f.s || "", c: f.c || "", d: matchMedia("(max-width: 760px)").matches ? "m" : "d" }; }
   function adminOnly() { if (!me || !me.admin) return Promise.reject(err("관리자만 할 수 있어요.")); return null; }
   function take(res) { me = res && res.user ? res.user : me; return res; }
   /* a guest who logs in brings the forms they were working on */
@@ -186,7 +188,7 @@
     /* signing up is two steps: the address gets a code ({pending, email}); the code makes the account */
     signup: function (d) { var g = cleanState(get(GKEY, {})); d = { email: d.email, password: d.password, student: !!d.student, state: g }; return mode === "server" ? api("POST", "/api/signup", d) : L.signup(d); },
     resendSignup: function (email) { return mode === "server" ? api("POST", "/api/signup/resend", { email: email }) : L.resend(email); },
-    verifySignup: function (email, code) { return (mode === "server" ? api("POST", "/api/signup/verify", { email: email, code: code }) : L.verifySignup(email, code)).then(adopt); },
+    verifySignup: function (email, code) { return (mode === "server" ? api("POST", "/api/signup/verify", { email: email, code: code, src: seen().s, camp: seen().c, dev: seen().d }) : L.verifySignup(email, code)).then(adopt); },
     login: function (d) { return (mode === "server" ? api("POST", "/api/login", d) : L.login(d)).then(adopt); },
     logout: function () { return (mode === "server" ? api("POST", "/api/logout", {}) : L.logout()).then(function () { me = null; emit(); }); },
     /* 탈퇴: the site, its pictures and the account are deleted (payment records stay, as the law asks) */
@@ -199,6 +201,7 @@
       list: function () { return adminOnly() || (mode === "server" ? api("GET", "/api/admin/students") : L.list()); },
       decide: function (id, ok) { return adminOnly() || (mode === "server" ? api("POST", "/api/admin/decide", { id: id, approve: ok }) : L.decide(id, ok)); },
       grant: function (userId, days) { return adminOnly() || (mode === "server" ? api("POST", "/api/admin/grant", { userId: userId, days: days }) : L.grant(userId, days)); },
+      traffic: function (days) { return adminOnly() || (mode === "server" ? api("GET", "/api/admin/traffic?days=" + (days || 14)) : Promise.reject(err("유입은 1440.kor.gallery에서 볼 수 있어요."))); },
       usage: function () { return adminOnly() || (mode === "server" ? api("GET", "/api/admin/usage") : Promise.reject(err("사용량은 1440.kor.gallery에서 볼 수 있어요."))); }
     },
     state: stateNow, saveState: saveState, touch: touch, hubUrl: hubUrl, formUrl: formUrl, sameForm: sameForm,

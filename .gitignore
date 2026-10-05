@@ -18,3 +18,6 @@ desktop.ini
 # 배포 직전에 모으는 폴더 (GitHub 작업이 만듦)
 dist/
 .wrangler/
+
+# 광고·홍보 소재(이미지·영상): 저장소에 올리지 않음
+promo/

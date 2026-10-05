@@ -24,15 +24,16 @@
   }
   function show(id) {
     var me = A.user;
-    if (!me && /^(account|student|admin|usage|refund|leave)$/.test(id)) id = "login";
+    if (!me && /^(account|student|admin|usage|traffic|refund|leave)$/.test(id)) id = "login";
     if (me && /^(login|signup)$/.test(id)) id = "account";
-    if ((id === "admin" || id === "usage") && !(me && me.admin)) id = "account";
+    if ((id === "admin" || id === "usage" || id === "traffic") && !(me && me.admin)) id = "account";
     pages.forEach(function (p) { p.classList.toggle("on", p.id === "a-" + id); });
-    ov.classList.toggle("wide", id === "usage"); /* the usage page takes the whole width, on paper */
+    ov.classList.toggle("wide", id === "usage" || id === "traffic"); /* the usage and visits pages take the whole width, on paper */
     side.forEach(function (a) { a.classList.toggle("on", a.dataset.to === id); });
     if (id === "account" || id === "student") fill();
     if (id === "admin") admin();
     if (id === "usage") usagePage();
+    if (id === "traffic") trafficPage();
     if (id === "refund") refundBox();
     var f = $("#a-" + id + " input:not([type=checkbox])"); if (f && isOpen() && matchMedia("(hover: hover)").matches) setTimeout(function () { try { f.focus({ preventScroll: true }); } catch (e) {} }, 350);
   }
@@ -224,18 +225,19 @@
   }
   function chart(title, s, limit) {
     if (!s) return "";
-    var max = Math.max.apply(null, s.map(function (x) { return x.v; })), top = max > 0 ? niceTop(max) : 1, W = 560, H = 150, n = s.length, gap = 4, bw = (W - gap * (n - 1)) / n, h = "";
+    var max = Math.max.apply(null, s.map(function (x) { return x.v; })), top = max > 0 ? niceTop(max) : 1, W = 560, H = 150, n = s.length, gap = n > 20 ? 2 : 4, bw = (W - gap * (n - 1)) / n, h = "";
     [0, 0.5, 1].forEach(function (k) { var y = H - k * H; h += '<line class="g" x1="0" x2="' + W + '" y1="' + y + '" y2="' + y + '"></line>'; });
     s.forEach(function (x, i) {
       var bh = x.v ? Math.max(3, x.v / top * H) : 0, X = i * (bw + gap), Y = H - bh, r = Math.min(4, bw / 2, bh);
       h += '<g class="us-b' + (i === n - 1 ? " now" : "") + '" data-tip="' + x.d.slice(5).replace("-", ".") + " · " + fmt(x.v) + '"><rect x="' + X + '" y="0" width="' + bw + '" height="' + H + '" fill="transparent"></rect>' +
         (bh ? '<path d="M' + X + ' ' + H + 'V' + (Y + r) + 'Q' + X + ' ' + Y + ' ' + (X + r) + ' ' + Y + 'H' + (X + bw - r) + 'Q' + (X + bw) + ' ' + Y + ' ' + (X + bw) + ' ' + (Y + r) + 'V' + H + 'Z"></path>' : "") + '</g>';
     });
-    var dates = s.map(function (x, i) { return '<span>' + (i % 2 === (n - 1) % 2 ? (+x.d.slice(5, 7)) + "." + (+x.d.slice(8)) : "") + '</span>'; }).join("");
-    var last = s[n - 1];
-    return '<figure class="us-c"><figcaption><b>' + title + '</b><span>오늘 <strong>' + fmt(last.v) + '</strong> · 한도 ' + fmt(limit) + '/일 (' + pct(last.v, limit) + ')</span></figcaption>' +
+    var step = n <= 10 ? 1 : n <= 16 ? 2 : 5;
+    var dates = s.map(function (x, i) { return '<span>' + ((n - 1 - i) % step === 0 ? (+x.d.slice(5, 7)) + "." + (+x.d.slice(8)) : "") + '</span>'; }).join("");
+    var last = s[n - 1], sum = s.reduce(function (a, x) { return a + x.v; }, 0);
+    return '<figure class="us-c"><figcaption><b>' + title + '</b><span>오늘 <strong>' + fmt(last.v) + '</strong> · ' + (limit == null ? "합계 " + fmt(sum) : "한도 " + fmt(limit) + '/일 (' + pct(last.v, limit) + ')') + '</span></figcaption>' +
       '<div class="us-plot"><div class="us-y"><span>' + fmt(top) + '</span><span>' + fmt(top / 2) + '</span><span>0</span></div>' +
-      '<div class="us-area"><svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' + h + '</svg><div class="us-tip" hidden></div><div class="us-d">' + dates + '</div></div></div>' +
+      '<div class="us-area"><svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true">' + h + '</svg><div class="us-tip" hidden></div><div class="us-d" style="grid-template-columns:repeat(' + n + ',minmax(0,1fr))">' + dates + '</div></div></div>' +
       '<details class="us-t"><summary>표로 보기</summary><table><tr><th>날짜</th><th>값</th></tr>' + s.map(function (x) { return '<tr><td>' + x.d + '</td><td>' + fmt(x.v) + '</td></tr>'; }).join("") + '</table></details></figure>';
   }
   function niceTop(v) { var e = Math.pow(10, Math.floor(Math.log10(v))), m = v / e; return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * e; }
@@ -272,6 +274,30 @@
       box.innerHTML = h;
     }, function (er) { box.innerHTML = '<p class="dim">' + esc(er.userMessage || "불러오지 못했어요.") + '</p>'; });
   }
+  /* the admin's visits page (유입): how many came, from where (an ad's utm tags or the site that sent them), and how far
+     they got: front page → form list → editor → account. Counted by the day with no cookie (the server's hits table). */
+  var TRD = 14;
+  function trafficPage() {
+    var box = $('[data-v="traffic"]'), at = $('[data-v="trAt"]');
+    box.innerHTML = '<p class="dim">불러오는 중…</p>'; at.textContent = "";
+    A.admin.traffic(TRD).then(function (t) {
+      var T = t.totals, v = T.view || 0, rate = function (n, of) { return of ? (n / of * 100 < 10 ? (n / of * 100).toFixed(1) : Math.round(n / of * 100)) + "%" : "—"; };
+      at.textContent = t.from.slice(5).replace("-", ".") + " 부터 " + t.days + "일 · 한국 시간 하루 단위 · 쿠키 없이 센 숫자예요";
+      function k(name, n, sub, share) { return '<div class="us-k"><p class="us-kn">' + name + '</p><p class="us-kp">' + fmt(n) + '</p><p class="us-kv">' + sub + '</p><div class="us-bar" role="img" aria-label="' + name + '"><i style="width:' + Math.min(100, Math.max(n > 0 ? 1 : 0, share)).toFixed(2) + '%"></i></div></div>'; }
+      var h = '<div class="tr-days" role="group" aria-label="기간">' + [7, 14, 30].map(function (d) { return '<button type="button" class="u' + (d === t.days ? " on" : "") + '" data-trd="' + d + '">' + d + '일</button>'; }).join("") + '</div>';
+      if (!v && !T.forms && !T.edit && !T.signup) h += '<p class="us-note">아직 기록이 없어요. 이 기능을 올린 뒤의 방문부터 쌓여요.</p>';
+      h += '<section class="us-g"><h2>어디까지 왔나요</h2><div class="us-ks">' + k("방문", v, "첫 화면", 100) + k("폼 보기", T.forms || 0, "방문의 " + rate(T.forms, v), v ? T.forms / v * 100 : 0) + k("편집 시작", T.edit || 0, "방문의 " + rate(T.edit, v), v ? T.edit / v * 100 : 0) + k("가입", T.signup || 0, "방문의 " + rate(T.signup, v), v ? T.signup / v * 100 : 0) + '</div></section>';
+      h += '<section class="us-g"><h2>하루 방문</h2><div class="us-cs">' + chart("방문", t.daily.map(function (x) { return { d: x.d, v: x.view }; })) + chart("가입", t.daily.map(function (x) { return { d: x.d, v: x.signup }; })) + '</div></section>';
+      h += '<section class="us-g"><h2>어디서 왔나요</h2>' + (t.sources.length ? '<div class="tr-wrap"><table class="tr-t"><tr><th>출처</th><th>캠페인</th><th>방문</th><th>폼 보기</th><th>편집</th><th>가입</th><th>가입률</th></tr>' +
+        t.sources.map(function (x) { return '<tr><td>' + esc(x.src) + '</td><td>' + esc(x.camp || "—") + '</td><td>' + fmt(x.view) + '</td><td>' + fmt(x.forms) + '</td><td>' + fmt(x.edit) + '</td><td>' + fmt(x.signup) + '</td><td>' + rate(x.signup, x.view) + '</td></tr>'; }).join("") + '</table></div>' : '<p class="dim">—</p>') +
+        '<p class="dim">광고 주소 끝에 <code>?utm_source=instagram&amp;utm_campaign=ad1</code>을 붙이면 광고별로 나뉘어요. 붙이지 않으면 링크를 보낸 사이트 이름(instagram, kakao, naver, google …)이나 direct로 보여요.</p></section>';
+      var dv = t.devices, tot = (dv.m || 0) + (dv.d || 0);
+      h += '<section class="us-g us-two"><div><h2>기기 (방문)</h2><ul class="ck us-l"><li><span class="b"></span><span class="t">폰</span><span class="v">' + fmt(dv.m || 0) + ' · ' + rate(dv.m, tot) + '</span></li><li><span class="b"></span><span class="t">컴퓨터</span><span class="v">' + fmt(dv.d || 0) + ' · ' + rate(dv.d, tot) + '</span></li></ul></div>' +
+        '<div><h2>나라 (방문)</h2><ul class="ck us-l">' + (t.countries.length ? t.countries.map(function (x) { return '<li><span class="b"></span><span class="t">' + esc(x.c === "XX" ? "알 수 없음" : x.c) + '</span><span class="v">' + fmt(x.n) + ' · ' + rate(x.n, v) + '</span></li>'; }).join("") : '<li><span class="t dim">—</span></li>') + '</ul></div></section>';
+      box.innerHTML = h;
+    }, function (er) { box.innerHTML = '<p class="dim">' + esc(er.userMessage || "불러오지 못했어요.") + '</p>'; });
+  }
+  ov.addEventListener("click", function (e) { var b = e.target.closest && e.target.closest("[data-trd]"); if (b) { TRD = +b.dataset.trd; trafficPage(); } });
   /* a bar of a chart shows its day and value while pointed at */
   ov.addEventListener("pointerover", function (e) {
     var g = e.target.closest && e.target.closest(".us-b"); if (!g) return;
@@ -302,7 +328,7 @@
       return '<div class="adm-r"><span><b>' + esc(x.email) + '</b><br>' + (x.student === "verified" ? "대학생 · " + esc(x.uni_email) : x.student === "pending" ? "확인 요청 중" : "일반") + ' · 무료 ' + (on ? day(x.trial_until) + "까지" : "없음") + '</span>' +
         '<span class="adm-b"><button type="button" class="u" data-grant="' + esc(x.id) + '">+30일</button>' + (on ? '<button type="button" class="u" data-revoke="' + esc(x.id) + '">거두기</button>' : "") + '</span></div>';
     }).join("") : '<p class="dim">없어요.</p>';
-    var NAMES = { "GET /api/admin/students": "목록 보기", "POST /api/admin/decide": "요청 결정", "POST /api/admin/grant": "무료 기간", "GET /api/admin/usage": "사용량 보기" };
+    var NAMES = { "GET /api/admin/students": "목록 보기", "POST /api/admin/decide": "요청 결정", "POST /api/admin/grant": "무료 기간", "GET /api/admin/traffic": "유입 보기", "GET /api/admin/usage": "사용량 보기" };
     $('[data-v="alog"]').innerHTML = (LIST.log || []).length ? LIST.log.map(function (x) {
       var d = new Date(x.at), t = day(x.at) + " " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
       return '<div class="adm-r dim"><span>' + esc(NAMES[x.action] || x.action) + (x.target ? " · " + esc(x.target) : "") + '</span><span>' + t + '</span></div>';

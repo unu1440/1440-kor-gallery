@@ -507,3 +507,12 @@ html.intro .minute { animation: none; }
 @media (pointer: coarse) {
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]), textarea, select { font-size: max(16px, 1em) !important; }
 }
+
+.tr-days { display: flex; gap: 1.2em; }
+.tr-days .u.on { color: var(--ink); text-decoration: underline; text-underline-offset: 0.25em; }
+.tr-wrap { overflow-x: auto; }
+.tr-t { border-collapse: collapse; font-variant-numeric: tabular-nums; min-width: 100%; }
+.tr-t th, .tr-t td { padding: 0.45em 1.2em 0.45em 0; text-align: right; border-bottom: 1px solid var(--ink-4); font-weight: 400; white-space: nowrap; }
+.tr-t th { color: var(--ink-3); }
+.tr-t th:first-child, .tr-t td:first-child, .tr-t th:nth-child(2), .tr-t td:nth-child(2) { text-align: left; }
+.tr-t td:first-child { color: var(--ink); }

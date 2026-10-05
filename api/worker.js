@@ -324,6 +324,7 @@ export async function sweepSites(env, now = Date.now()) {
   await env.DB.prepare("DELETE FROM uni_used WHERE at < ?").bind(now - 365 * DAY).run();
   await env.DB.prepare("DELETE FROM mail_log WHERE at < ?").bind(now - 62 * DAY).run();
   await env.DB.prepare("DELETE FROM admin_log WHERE at < ?").bind(now - 730 * DAY).run();
+  await env.DB.prepare("DELETE FROM hits WHERE day < ?").bind(kstDay(now - 400 * DAY)).run();
   const rows = await env.DB.prepare("SELECT s.name, s.user_id, s.data, u.email FROM sites s JOIN users u ON u.id = s.user_id").all();
   let gone = 0, warned = 0;
   for (const r of rows.results || []) {
@@ -625,6 +626,7 @@ const routes = {
     if (p.student && uniDomain(email) && !(await uniTaken(env, email)))
       await env.DB.prepare("UPDATE users SET uni_email = ?, student = 'verified', trial_until = ? WHERE id = ?").bind(email, Date.now() + MONTH, id).run();
     await env.DB.prepare("DELETE FROM signups WHERE email = ?").bind(email).run();
+    try { await countHit(env, req, "signup", d.src, d.camp, d.dev); } catch (e) {}
     const u = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(id).first();
     return json({ user: await fullUser(env, u) }, 200, { "set-cookie": await startSession(env, id) });
   },
@@ -740,6 +742,18 @@ const routes = {
     if (!isAdmin(env, u)) return fail("관리자만 볼 수 있어요.", 403);
     return json(await usage(env));
   },
+  /* a page asks to be counted once per visit: no login, no cookie, nothing stored about the person */
+  "POST /api/hit": async (env, req) => {
+    const d = await body(req);
+    if (!HIT_EVENTS.includes(d.ev) || d.ev === "signup") return fail("bad", 400);
+    if (/bot|crawl|spider|slurp|preview|headless/i.test(req.headers.get("user-agent") || "")) return json({ ok: true });
+    await countHit(env, req, d.ev, d.src, d.camp, d.dev);
+    return json({ ok: true });
+  },
+  "GET /api/admin/traffic": async (env, req, u) => {
+    if (!isAdmin(env, u)) return fail("관리자만 볼 수 있어요.", 403);
+    return json(await trafficFor(env, +new URL(req.url).searchParams.get("days")));
+  },
   "POST /api/admin/grant": async (env, req, u) => {
     if (!isAdmin(env, u)) return fail("관리자만 할 수 있어요.", 403);
     const d = await body(req), days = Math.max(-365, Math.min(365, Math.round(+d.days || 0))), t = await env.DB.prepare("SELECT trial_until FROM users WHERE id = ?").bind(String(d.userId || "")).first();
@@ -750,6 +764,34 @@ const routes = {
   },
   ...siteRoutes
 };
+
+/* visit counts for the admin's 유입 page: only counted by day (no cookie, no address stored, nothing that names a person) */
+const HIT_EVENTS = ["view", "forms", "edit", "signup"];
+const hitTag = (v) => String(v == null ? "" : v).toLowerCase().replace(/[^a-z0-9._-]/g, "").slice(0, 32);
+async function countHit(env, req, ev, src, camp, dev, now = Date.now()) {
+  const c = String(req.headers.get("cf-ipcountry") || "").toUpperCase();
+  await env.DB.prepare("INSERT INTO hits (day, ev, src, camp, dev, ctry, n) VALUES (?, ?, ?, ?, ?, ?, 1) ON CONFLICT (day, ev, src, camp, dev, ctry) DO UPDATE SET n = n + 1")
+    .bind(kstDay(now), ev, hitTag(src) || "direct", hitTag(camp), dev === "m" ? "m" : "d", /^[A-Z]{2}$/.test(c) ? c : "XX").run();
+}
+async function trafficFor(env, days, now = Date.now()) {
+  days = Math.max(1, Math.min(90, Math.round(days) || 14));
+  const from = kstDay(now - (days - 1) * DAY);
+  const rows = (await env.DB.prepare("SELECT day, ev, src, camp, dev, ctry, n FROM hits WHERE day >= ? LIMIT 20000").bind(from).all()).results || [];
+  const daily = {}, src = {}, dev = { m: 0, d: 0 }, ctry = {}, tot = { view: 0, forms: 0, edit: 0, signup: 0 };
+  for (let i = days - 1; i >= 0; i--) daily[kstDay(now - i * DAY)] = { view: 0, forms: 0, edit: 0, signup: 0 };
+  for (const r of rows) {
+    if (daily[r.day]) daily[r.day][r.ev] += r.n;
+    const k = r.src + "" + r.camp; (src[k] = src[k] || { src: r.src, camp: r.camp, view: 0, forms: 0, edit: 0, signup: 0 })[r.ev] += r.n;
+    tot[r.ev] += r.n;
+    if (r.ev === "view") { dev[r.dev] += r.n; ctry[r.ctry] = (ctry[r.ctry] || 0) + r.n; }
+  }
+  return {
+    days, from, totals: tot, devices: dev,
+    daily: Object.keys(daily).map((d) => ({ d, ...daily[d] })),
+    sources: Object.values(src).sort((a, b) => b.view - a.view || b.signup - a.signup).slice(0, 60),
+    countries: Object.keys(ctry).map((c) => ({ c, n: ctry[c] })).sort((a, b) => b.n - a.n).slice(0, 8)
+  };
+}
 
 /* every look and change the admin makes at people's records is written down (who, when, what, on whom, from where) and
    kept two years: the access record the personal-information safety rules ask for (개인정보의 안전성 확보조치 기준 제8조).
