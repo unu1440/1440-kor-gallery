@@ -1169,7 +1169,7 @@
   var EN_B = ["Hour", "Room", "Field", "Water", "Light", "Study", "Morning", "Line", "Weather", "Garden", "Shadow", "Stone", "Window", "Season", "Distance", "Table", "Evening", "Surface", "Path", "Air"];
   function enName(f) {
     var w = f.split("-");
-    if (/^[up](?=[0-9a-z]*\d)[0-9a-z]{5,8}$/.test(w[w.length - 1])) {
+    if (/^(u[0-9a-f]{6}|[up](?=[0-9a-z]*\d)[0-9a-z]{5,8})$/.test(w[w.length - 1])) { /* a source id: "u" and six hex digits (some have no number in them: "uaaadfe"), or letters and numbers */
       for (var h = 0, i = 0; i < f.length; i++) h = (h * 31 + f.charCodeAt(i)) >>> 0;
       return EN_A[h % EN_A.length] + " " + EN_B[Math.floor(h / EN_A.length) % EN_B.length];
     }

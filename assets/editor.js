@@ -1339,17 +1339,44 @@
         var r = rel(c); if (r.w < 2 || r.h < 2) { walk(c, front); return; }
         var floats = front || cs.position === "fixed" || cs.position === "sticky" || c.classList.contains("lv-layer") || c.classList.contains("mq") || c.classList.contains("tp-row");
         var photo = c.tagName === "IMG" || c.classList.contains("ph") || c.classList.contains("wf") || c.tagName === "CANVAS" || c.tagName === "MODEL-VIEWER";
-        var own = [].filter.call(c.childNodes, function (n) { return n.nodeType === 3 && n.textContent.trim(); }).map(function (n) { return n.textContent.trim(); }).join(" ");
+        var ownNodes = [].filter.call(c.childNodes, function (n) { return n.nodeType === 3 && n.textContent.trim(); });
+        var own = ownNodes.map(function (n) { return n.textContent.trim(); }).join(" ");
+        /* words with only marked words and line breaks inside ("Open House<br>Nov 13–15", "Work · Info" with links between
+           the dots) are one piece of text, drawn whole as the page shows it. Drawn as its own loose words at the top-left
+           corner plus each marked word on its own sheet, the two ran over each other. */
+        var oneText = !!own && !photo && [].every.call(c.children, function (k) { return k.tagName === "BR" || getComputedStyle(k).display.indexOf("inline") === 0; }) && !c.querySelector("img, canvas, svg, video, model-viewer, .ph, .wf");
         var bgOn = !/^rgba\(0, 0, 0, 0\)$|^transparent$/.test(cs.backgroundColor) || cs.backgroundImage !== "none", bd = parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.borderBottomWidth) > 0;
         var kind = photo ? "photo" : own ? "text" : (bgOn || bd) ? "box" : "";
         if (!kind) { walk(c, floats); return; }
         var big = r.w >= pw * 0.9 && r.h >= ph * 0.9 || c.classList.contains("bd");
+        var tNodes = null;
+        if (kind === "text") { /* the sheet is put exactly where its words are on the page (not at the box's corner: padding, centring,
+                                  a line break or words below a block would move them) */
+          tNodes = oneText ? (function () { var a = [], w = document.createTreeWalker(c, NodeFilter.SHOW_TEXT), t; while ((t = w.nextNode())) if (t.textContent.trim()) a.push(t); return a; })() : ownNodes;
+          var rg = document.createRange(), u = null;
+          tNodes.forEach(function (n) { rg.selectNodeContents(n); [].forEach.call(rg.getClientRects(), function (q) { if (!q.width || !q.height) return; u = u ? { l: Math.min(u.l, q.left), t: Math.min(u.t, q.top), r: Math.max(u.r, q.right), b: Math.max(u.b, q.bottom) } : { l: q.left, t: q.top, r: q.right, b: q.bottom }; }); });
+          if (!u) { if (!oneText) walk(c, floats); return; } /* words that take no room on the page are not drawn */
+          /* words that run out of a box that cuts them off (a repeated name, a long line in a narrow column): only what shows */
+          var cut = false;
+          for (var a = c; a; a = a.parentElement) {
+            var ao = getComputedStyle(a);
+            if (ao.overflowX !== "visible" || ao.overflowY !== "visible") { var q = a.getBoundingClientRect(); if (u.l < q.left || u.t < q.top || u.r > q.right || u.b > q.bottom) cut = true; u = { l: Math.max(u.l, q.left), t: Math.max(u.t, q.top), r: Math.min(u.r, q.right), b: Math.min(u.b, q.bottom) }; }
+            if (a === tp) break;
+          }
+          if (u.r - u.l < 2 || u.b - u.t < 2) { if (!oneText) walk(c, floats); return; } /* all of it is cut off */
+          r = { x: (u.l - t0.left) / z, y: (u.t - t0.top) / z, w: (u.r - u.l) / z + (cut ? 0 : 4), h: (u.b - u.t) / z };
+        }
         var L = { el: c, kind: kind, layer: floats ? 2 : big ? 0 : kind === "text" ? 2 : 1, x: r.x, y: r.y, w: r.w, h: r.h };
-        if (kind === "text") { L.name = own.slice(0, 26); L.txt = own; L.fs = cs.fontSize; L.color = cs.color; L.fw = cs.fontWeight; L.lh = cs.lineHeight; L.ta = cs.textAlign; L.ff = cs.fontFamily; L.ls = cs.letterSpacing; }
+        if (kind === "text") {
+          var txt = oneText ? c.innerText.trim() : own;
+          L.name = txt.replace(/\s+/g, " ").slice(0, 26); L.txt = txt; L.fs = cs.fontSize; L.color = cs.color; L.fw = cs.fontWeight; L.lh = cs.lineHeight; L.ta = cs.textAlign; L.ff = cs.fontFamily; L.ls = cs.letterSpacing;
+          L.fst = cs.fontStyle; L.fx = cs.fontStretch; L.tt = cs.textTransform; L.ws = cs.whiteSpace; /* a narrow face, capitals or italics change where the lines break */
+          L.nodes = tNodes; L.cut = !!cut; /* the words this sheet draws, and whether a box cuts them (?check=layertext) */
+        }
         else if (kind === "photo") { var im = c.tagName === "IMG" ? c : c.querySelector("img"); L.name = c.tagName === "MODEL-VIEWER" ? "3D 모델" : "사진"; L.src = im ? (im.currentSrc || im.src) : ""; if (!im && c.tagName === "CANVAS") { try { L.src = c.toDataURL("image/jpeg", 0.7); } catch (e) {} } if (c.tagName === "MODEL-VIEWER") L.mv = c; L.fit = im ? getComputedStyle(im).objectFit : "cover"; L.bg = cs.backgroundColor; }
         else { L.name = "블록"; L.bg = cs.backgroundColor; }
         out.push(L);
-        if (kind !== "photo") walk(c, floats);
+        if (kind !== "photo" && !(kind === "text" && oneText)) walk(c, floats); /* one piece of text: its marked words are drawn with it */
       });
     })(tp, false);
     return out;
@@ -1404,7 +1431,7 @@
       if (l.kind === "text") {
         var fs = parseFloat(l.fs) || 16;
         if (fs < 15) { var bh = Math.max(5, fs * 0.42); st = "left:" + l.x.toFixed(1) + "px;top:" + (l.y + (l.h - bh) / 2).toFixed(1) + "px;width:" + Math.max(8, Math.min(l.w, (l.txt || "").length * fs * 0.55)).toFixed(1) + "px;height:" + bh.toFixed(1) + "px;--z:" + (l.layer - 1); cls += " bar"; }
-        else { st += ";color:" + l.color + ";font-size:" + l.fs + ";font-weight:" + l.fw + ";line-height:" + l.lh + ";text-align:" + l.ta + ";font-family:" + l.ff.replace(/"/g, "'") + ";letter-spacing:" + l.ls; inner = esc(l.txt); }
+        else { st += ";color:" + l.color + ";font-size:" + l.fs + ";font-weight:" + l.fw + ";line-height:" + l.lh + ";text-align:" + l.ta + ";font-family:" + l.ff.replace(/"/g, "'") + ";letter-spacing:" + l.ls + ";font-style:" + l.fst + ";font-stretch:" + l.fx + ";text-transform:" + l.tt + (/nowrap|pre/.test(l.ws) ? ";white-space:" + l.ws : ""); inner = esc(l.txt); }
       } else if (l.kind === "photo") { inner = l.src ? '<img src="' + esc(l.src) + '" alt="" style="object-fit:' + l.fit + '">' : ""; st += ";background:" + (l.src ? "transparent" : "#dcdcd8"); }
       else { if (l.w < 24 || l.h < 24) return ""; var solid = !/^rgba\(0, 0, 0, 0\)$/.test(l.bg); st += ";background:" + (solid ? l.bg : "transparent"); if (!solid) cls += " ln"; }
       return '<div class="' + cls + '" data-i="' + i + '" style="' + st + '">' + inner + '</div>';
@@ -1848,6 +1875,38 @@
           if (!l.src && l.el.tagName !== "MODEL-VIEWER") lpBad.push(T.tag(n) + ": " + l.el.tagName + "." + (l.el.className || "").toString().slice(0, 30));
         });
       } catch (e) { lpBad.push(T.tag(n) + ": error " + e.message); }
+      setTimeout(step, 0);
+    })();
+    return;
+  }
+
+  /* development check: templates.html?edit=1&check=layertext — in the 3D view of all 1440 templates (computer and phone
+     screens) no words are drawn twice (once with the words around them and again on their own) and no words are drawn
+     away from where they are on the page. Written into <body data-layertext> as { checked, texts, bad }. */
+  if (/[?&]check=layertext/.test(location.search)) {
+    var ltBad = [], ltN = 0, ltDone = 0, ltTexts = 0;
+    (function step() {
+      if (ltN >= T.total) { canvas.innerHTML = ""; T.clearTimers(); document.body.dataset.layertext = JSON.stringify({ checked: ltDone, texts: ltTexts, bad: ltBad.slice(0, 80), badCount: ltBad.length }); return; }
+      var n = ++ltN; document.body.dataset.layertextAt = n;
+      ["desk", "mob"].forEach(function (d) {
+        try {
+          use(n); mode = "edit"; dev = d; S = fresh(); curPage = "home"; render();
+          var view = viewOf(), tp = view && $(".tp", view), z = zoomOf(view), t0 = tp.getBoundingClientRect(), seen = new Map(), rg = document.createRange();
+          layersNow().forEach(function (l) {
+            if (l.kind !== "text" || !l.nodes) return; ltTexts++;
+            var u = null;
+            l.nodes.forEach(function (t) {
+              seen.set(t, (seen.get(t) || 0) + 1);
+              rg.selectNodeContents(t); [].forEach.call(rg.getClientRects(), function (q) { if (!q.width || !q.height) return; u = u ? { l: Math.min(u.l, q.left), t: Math.min(u.t, q.top), r: Math.max(u.r, q.right), b: Math.max(u.b, q.bottom) } : { l: q.left, t: q.top, r: q.right, b: q.bottom }; });
+            });
+            if (!u || l.cut) return; /* (words cut off by their box are drawn only as far as they show) */
+            var x = (u.l - t0.left) / z, y = (u.t - t0.top) / z, w = (u.r - u.l) / z, h = (u.b - u.t) / z, k = 6;
+            if (x < l.x - k || y < l.y - k || x + w > l.x + l.w + k || y + h > l.y + l.h + k || Math.abs(y - l.y) > k) ltBad.push(T.tag(n) + " " + d + ': drawn away from its words "' + l.name + '"');
+          });
+          seen.forEach(function (c, t) { if (c > 1) ltBad.push(T.tag(n) + " " + d + ': drawn twice "' + t.textContent.trim().slice(0, 24) + '"'); });
+        } catch (e) { ltBad.push(T.tag(n) + " " + d + ": error " + e.message); }
+        ltDone++;
+      });
       setTimeout(step, 0);
     })();
     return;
