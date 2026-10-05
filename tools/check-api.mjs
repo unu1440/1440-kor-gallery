@@ -254,7 +254,7 @@ const sig = async (tid, amount, ediDate) => hex(tid + amount + ediDate + env.NIC
 }
 // sites: 이름.kor.gallery — the address, pictures (R2, by content), publishing, the page, and taking it down after the pass + 7 days
 { const W4 = await import(pathToFileURL(copy).href);
-  const R2 = new Map(); env.MEDIA = { async head(k) { return R2.has(k) ? {} : null; }, async put(k, v, o) { R2.set(k, { v: new Uint8Array(v), type: o.httpMetadata.contentType }); }, async get(k, o) { const x = R2.get(k); if (!x) return null; const part = o && o.range ? { offset: 1, length: 2 } : null; return { body: part ? x.v.slice(1, 3) : x.v, size: x.v.length, range: part, httpEtag: '"e"', writeHttpMetadata(h) { h.set("content-type", x.type); } }; }, async delete(k) { R2.delete(k); } };
+  const R2 = new Map(); env.MEDIA = { async head(k) { return R2.has(k) ? {} : null; }, async put(k, v, o) { R2.set(k, { v: new Uint8Array(v), type: o.httpMetadata.contentType }); }, async get(k, o) { const x = R2.get(k); if (!x) return null; const part = o && o.range ? { offset: 1, length: 2 } : null; return { body: new Response(part ? x.v.slice(1, 3) : x.v).body, size: x.v.length, range: part, httpEtag: '"e"', writeHttpMetadata(h) { h.set("content-type", x.type); } }; }, async delete(k) { R2.delete(k); } };
   const SHELL = '<!doctype html><html><head><title>1440: 템플릿</title><meta name="description" content="x"><link rel="icon" href="data:old"></head><body></body></html>';
   env.STATIC = { async fetch(rq) { const u = new URL(rq.url); return u.pathname === "/templates" ? new Response(SHELL, { headers: { "content-type": "text/html" } }) : new Response("asset " + u.pathname); } };
   const site = (host, path = "/", method = "GET") => W.fetch(new Request("https://" + host + path, { method }), env);
@@ -279,6 +279,18 @@ const sig = async (tid, amount, ediDate) => hex(tid + amount + ediDate + env.NIC
   t("media: needs log-in", (await put(null, img, "image/jpeg")).status === 401);
   t("media: needs this site", (await W.fetch(new Request(O + "/api/media", { method: "PUT", headers: { "content-type": "image/jpeg", cookie: ck }, body: img }), env)).status === 403);
   t("media: too big", (await put(null, new Uint8Array(10 * 1048576 + 1), "image/png", { cookie: ck })).status === 413);
+  // the edge cache: a picture seen again is not read from R2 again, a copy lasts a day, and the page still says a year
+  { const store = new Map(), pend = []; let gets = 0; const realGet = env.MEDIA.get;
+    env.MEDIA.get = async function (k, o) { gets++; return realGet.call(this, k, o); };
+    globalThis.caches = { default: { async match(rq) { const x = store.get(rq.url); return x ? new Response(x.body, { status: 200, headers: x.headers }) : undefined; }, async put(rq, rs) { store.set(rq.url, { body: new Uint8Array(await rs.arrayBuffer()), headers: [...rs.headers] }); } } };
+    const ctx = { waitUntil: (p) => pend.push(p) }, pic = (host) => W.fetch(new Request("https://" + host + mu), env, ctx);
+    let a = await pic("haneul.kor.gallery"); await Promise.all(pend); const g1 = gets;
+    let b = await pic("other.kor.gallery");
+    t("cache: first view reads R2 and keeps a copy", a.status === 200 && store.size === 1 && g1 === 1, g1);
+    t("cache: seen again, not read from R2", b.status === 200 && gets === g1 && b.headers.get("cache-control").includes("immutable"), gets);
+    t("cache: the kept copy lasts a day", [...store.values()][0].headers.some(([k, v]) => k === "cache-control" && v === "public, max-age=86400"));
+    store.clear(); pend.length = 0; delete globalThis.caches;
+    env.MEDIA.get = realGet; }
   // a video: kept like a picture, and served in pieces so it can start fast and be skipped through
   const vid = new Uint8Array([0, 0, 0, 24, 102, 116, 121, 112, 109, 112, 52, 50]);
   r = await put(null, vid, "video/mp4", { cookie: ck }); const vu = (await r.json()).url;

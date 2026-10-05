@@ -303,6 +303,7 @@ export function siteNameError(v) {
 }
 const MEDIA_TYPES = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "model/gltf-binary": "glb", "video/mp4": "mp4", "video/webm": "webm" };
 const MEDIA_MAX = { glb: 40 * 1048576, mp4: 40 * 1048576, webm: 40 * 1048576 }, MEDIA_MAX_IMG = 10 * 1048576, MEDIA_TOTAL = 500 * 1048576;
+const FILLING = new Set(); /* videos being copied into the edge cache right now (per instance), so a burst of piece requests starts one copy */
 const MEDIA_URL = /^\/m\/[a-f0-9]{64}\.(jpg|png|webp|gif|glb|mp4|webm)$/;
 /* what a pass gives: paid days, the free student month, or an active subscription */
 async function passNow(env, userId, now = Date.now()) {
@@ -434,19 +435,31 @@ export function siteShell(html, name, snap) {
     (desc ? '<meta property="og:description" content="' + attr(desc) + '">' : "") + "<script>window.SITE_VIEW=" + sv + "</script>";
   return h.replace("</head>", head + "</head>");
 }
-async function serveSite(req, env, url) {
+async function serveSite(req, env, url, ctx) {
   const m = /^([a-z0-9-]+)\.kor\.gallery$/.exec(url.hostname.toLowerCase()), name = m ? m[1] : "", p = url.pathname;
   if (!m || name === "www") return Response.redirect(env.SITE_ORIGIN || "https://1440.kor.gallery", 301);
   if (req.method !== "GET" && req.method !== "HEAD") return page(405, "1440", "읽기만 할 수 있어요.");
   if (p.startsWith("/m/")) {
     const key = p.slice(3); if (!/^[a-f0-9]{64}\.(jpg|png|webp|gif|glb|mp4|webm)$/.test(key) || !env.MEDIA) return new Response("", { status: 404 });
-    const rg = req.headers.get("range"), o = await env.MEDIA.get("m/" + key, rg ? { range: req.headers } : undefined); if (!o) return new Response("", { status: 404 });
+    /* the edge keeps a copy for a day (the cache of the data centre that served it), so a picture or video seen again is not read from R2 again.
+       The copy is short-lived on purpose: a file taken down (site or account deleted) stops being served within a day. */
+    const cache = typeof caches !== "undefined" && caches.default ? caches.default : null, ck = new Request("https://1440.kor.gallery/m/" + key), rg = req.headers.get("range");
+    if (cache) {
+      const hit = await cache.match(rg ? new Request(ck, { headers: { range: rg } }) : ck);
+      if (hit) { const h2 = new Headers(hit.headers); h2.set("cache-control", "public, max-age=31536000, immutable"); return new Response(hit.body, { status: hit.status, headers: h2 }); }
+    }
+    const o = await env.MEDIA.get("m/" + key, rg ? { range: req.headers } : undefined); if (!o) return new Response("", { status: 404 });
     const h = new Headers(); o.writeHttpMetadata(h); h.set("etag", o.httpEtag); h.set("cache-control", "public, max-age=31536000, immutable"); h.set("accept-ranges", "bytes");
+    const keep = function (body) { const sh = new Headers(h); sh.set("cache-control", "public, max-age=86400"); return cache.put(ck, new Response(body, { headers: sh })).catch(function () {}); };
+    if (cache && ctx && rg && o.range && !FILLING.has(key)) { /* a video asks in pieces: keep the whole file once so the next pieces come from the edge */
+      FILLING.add(key); ctx.waitUntil(env.MEDIA.get("m/" + key).then(function (f) { return f ? keep(f.body) : null; }).catch(function () {}).finally(function () { FILLING.delete(key); }));
+    }
     if (rg && o.range) { /* a video asks for a piece at a time so it can start fast and be skipped through */
       const r = o.range, off = r.offset != null ? r.offset : o.size - r.suffix, len = r.length != null ? r.length : o.size - off;
       h.set("content-range", "bytes " + off + "-" + (off + len - 1) + "/" + o.size); h.set("content-length", String(len));
       return new Response(o.body, { status: 206, headers: h });
     }
+    if (cache && ctx && !rg) { const two = o.body.tee(); ctx.waitUntil(keep(two[1])); return new Response(two[0], { headers: h }); }
     return new Response(o.body, { headers: h });
   }
   if (p.startsWith("/assets/")) { /* the same cache rules as 1440.kor.gallery's own _headers: versioned scripts a year, pictures a month */
@@ -815,10 +828,10 @@ async function adminLog(env, req, u, key) {
 export default {
   /* the daily renewal (api/wrangler.jsonc → triggers) */
   async scheduled(event, env, ctx) { ctx.waitUntil(renewSubs(env).then(() => sweepSites(env))); },
-  async fetch(req, env) {
+  async fetch(req, env, ctx) {
     const url = new URL(req.url), key = req.method + " " + url.pathname.replace(/\/+$/, ""), fn = routes[key];
     /* 이름.kor.gallery is a published site; 1440.kor.gallery itself is the static site (only /api/* is ours) */
-    if (url.hostname !== new URL(env.SITE_ORIGIN || "https://1440.kor.gallery").hostname) return serveSite(req, env, url);
+    if (url.hostname !== new URL(env.SITE_ORIGIN || "https://1440.kor.gallery").hostname) return serveSite(req, env, url, ctx);
     if (!url.pathname.startsWith("/api/") && env.STATIC) return env.STATIC.fetch(req);
     if (!fn) return fail("not found", 404);
     if (req.method !== "GET" && key !== "POST /api/pay/return" && key !== "POST /api/pay/hook") { /* NICEPAY's posts come from its own servers */
