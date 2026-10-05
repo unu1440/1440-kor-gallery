@@ -240,7 +240,9 @@ button.ed-pr.tool .nm em { margin-left: auto; padding-left: 0.5em; }
 .ed-rows .k { color: rgba(0, 0, 0, .45); }
 .ed-pics { display: grid; grid-template-columns: repeat(auto-fill, minmax(5em, 1fr)); gap: 0.5em; }
 .ed-pics > button, .ed-pics > .it { position: relative; padding: 0; border: 1px solid var(--line); border-radius: 0.35em; overflow: hidden; background: rgba(0, 0, 0, .06); aspect-ratio: 1; }
-.ed-pics img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ed-pics img, .ed-pics video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ed-pv { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ph.contain > .ed-pv { object-fit: contain; }
 .ed-pics .it > button:first-child { position: absolute; inset: 0; }
 .ed-pics .it .del { position: absolute; right: 0.25em; top: 0.25em; width: 1.7em; height: 1.7em; display: grid; place-items: center; border-radius: 50%; background: rgba(0, 0, 0, .7); color: #fff; }
 .ed-pics .it .del svg { width: 1em; height: 1em; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
@@ -505,3 +507,20 @@ body.editing, .ed { background: #f8f8f6; }
 .ed.ed-site { --top: 0px; --files: 0px; --bar: 0px; }
 .ed-site .ed-top, .ed-site .ed-rail, .ed-site .ed-files, .ed-site .ed-rs, .ed-site .ed-save, .ed-site .ed-pop, .ed-site .ed-tip, .ed-site .ed-dlg, .ed-site .ed-flag, .ed-site .ed-meas, .ed-site .ed-3d { display: none !important; }
 .ed-site .ed-canvas { inset: 0; }
+
+/* the shape of the site's window (화면 비율): a frame of that shape in the middle, the page scrolling inside it */
+.ed-page.has-ratio { align-content: center; background: #ececec; }
+.ed-page.has-ratio .mac-view { box-shadow: 0 0 0 1px var(--line), 0 24px 60px -30px rgba(0, 0, 0, .4); }
+.ed-ratio-btn.on { color: var(--accent, #0a5cff); }
+.ed-ratio-btn[hidden] { display: none; }
+.ed-ratio { position: absolute; z-index: 60; top: calc(var(--top, 3em) - 0.3em); right: calc(var(--files, 0px) + 0.6em); display: grid; min-width: 11.5em; padding: 0.3em; background: #f8f8f6; border: 1px solid var(--line); border-radius: 0.5em; box-shadow: 0 10px 30px -20px rgba(0, 0, 0, .35); }
+.ed-ratio[hidden] { display: none; }
+.ed-ratio button { text-align: left; padding: 0.55em 0.8em; border: 0; border-radius: 0.35em; background: none; font: inherit; color: rgba(0, 0, 0, .55); cursor: pointer; }
+.ed-ratio button:hover { background: rgba(0, 0, 0, .05); color: #000; }
+.ed-ratio button.on { color: #000; }
+.ed-ratio button.on::after { content: "✓"; float: right; margin-left: 1em; }
+@media (max-width: 760px) { .ed-ratio-btn, .ed-ratio { display: none; } }
+
+/* the form that is public: a blue dot and 공개 중 at the right of its row */
+.ed-pr .live { display: inline-flex; align-items: center; flex: none; gap: 0.4em; margin: 0 0.15em 0 0.4em; color: #0a5cff; font-size: 0.88em; white-space: nowrap; }
+.ed-pr .live i { width: 0.5em; height: 0.5em; border-radius: 50%; background: #0a5cff; }

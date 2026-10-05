@@ -254,7 +254,7 @@ const sig = async (tid, amount, ediDate) => hex(tid + amount + ediDate + env.NIC
 }
 // sites: 이름.kor.gallery — the address, pictures (R2, by content), publishing, the page, and taking it down after the pass + 7 days
 { const W4 = await import(pathToFileURL(copy).href);
-  const R2 = new Map(); env.MEDIA = { async head(k) { return R2.has(k) ? {} : null; }, async put(k, v, o) { R2.set(k, { v: new Uint8Array(v), type: o.httpMetadata.contentType }); }, async get(k) { const x = R2.get(k); return x ? { body: x.v, httpEtag: '"e"', writeHttpMetadata(h) { h.set("content-type", x.type); } } : null; }, async delete(k) { R2.delete(k); } };
+  const R2 = new Map(); env.MEDIA = { async head(k) { return R2.has(k) ? {} : null; }, async put(k, v, o) { R2.set(k, { v: new Uint8Array(v), type: o.httpMetadata.contentType }); }, async get(k, o) { const x = R2.get(k); if (!x) return null; const part = o && o.range ? { offset: 1, length: 2 } : null; return { body: part ? x.v.slice(1, 3) : x.v, size: x.v.length, range: part, httpEtag: '"e"', writeHttpMetadata(h) { h.set("content-type", x.type); } }; }, async delete(k) { R2.delete(k); } };
   const SHELL = '<!doctype html><html><head><title>1440: 템플릿</title><meta name="description" content="x"><link rel="icon" href="data:old"></head><body></body></html>';
   env.STATIC = { async fetch(rq) { const u = new URL(rq.url); return u.pathname === "/templates" ? new Response(SHELL, { headers: { "content-type": "text/html" } }) : new Response("asset " + u.pathname); } };
   const site = (host, path = "/", method = "GET") => W.fetch(new Request("https://" + host + path, { method }), env);
@@ -279,6 +279,16 @@ const sig = async (tid, amount, ediDate) => hex(tid + amount + ediDate + env.NIC
   t("media: needs log-in", (await put(null, img, "image/jpeg")).status === 401);
   t("media: needs this site", (await W.fetch(new Request(O + "/api/media", { method: "PUT", headers: { "content-type": "image/jpeg", cookie: ck }, body: img }), env)).status === 403);
   t("media: too big", (await put(null, new Uint8Array(10 * 1048576 + 1), "image/png", { cookie: ck })).status === 413);
+  // a video: kept like a picture, and served in pieces so it can start fast and be skipped through
+  const vid = new Uint8Array([0, 0, 0, 24, 102, 116, 121, 112, 109, 112, 52, 50]);
+  r = await put(null, vid, "video/mp4", { cookie: ck }); const vu = (await r.json()).url;
+  t("media: a video is kept", r.status === 200 && /^\/m\/[a-f0-9]{64}\.mp4$/.test(vu), vu);
+  t("media: a webm video", (await put(null, new Uint8Array([26, 69, 223, 163, 1]), "video/webm", { cookie: ck })).status === 200);
+  t("media: a video too big", (await put(null, new Uint8Array(40 * 1048576 + 1), "video/mp4", { cookie: ck })).status === 413);
+  r = await W.fetch(new Request("https://haneul.kor.gallery" + vu, { headers: { range: "bytes=1-2" } }), env);
+  t("media: a piece of a video", r.status === 206 && r.headers.get("content-range") === "bytes 1-2/12" && r.headers.get("accept-ranges") === "bytes", r.status + " " + r.headers.get("content-range"));
+  r = await W.fetch(new Request("https://haneul.kor.gallery" + vu), env); t("media: the whole video", r.status === 200 && r.headers.get("accept-ranges") === "bytes");
+  for (const k of [...R2.keys()]) if (/\.(mp4|webm)$/.test(k)) { R2.delete(k); db.prepare("DELETE FROM media WHERE key = ?").run(k.slice(2)); } /* the later checks count only the picture */
   // publishing needs a pass
   const snap = { n: 161, site: "haneul", s: { texts: { Work: "Works" }, photos: { "x-1": "u-1" }, title: "Haneul <studio>", desc: "Paintings", fav: "data:image/png;base64,AAAA" }, media: { "u-1": mu } };
   t("publish: needs a pass", (await s1("POST", "/api/site/publish", snap)).status === 402);
@@ -286,6 +296,10 @@ const sig = async (tid, amount, ediDate) => hex(tid + amount + ediDate + env.NIC
   t("publish: someone else's picture", (await s1("POST", "/api/site/publish", { ...snap, media: { "u-1": "/m/" + "a".repeat(64) + ".jpg" } })).status === 400);
   t("publish: not our address", (await s1("POST", "/api/site/publish", { ...snap, media: { "u-1": "https://evil.com/x.jpg" } })).status === 400);
   r = await s1("POST", "/api/site/publish", snap); t("publish", r.status === 200 && r.body.site.published > 0 && r.body.site.n === 161, r);
+  /* the editor's folder marks the published form 공개 중: the server keeps which folder entry it was */
+  r = await s1("POST", "/api/site/publish", { ...snap, fid: "161||" }); t("publish: remembers which folder entry", r.status === 200 && r.body.site.fid === "161||", r.body);
+  r = await s1("GET", "/api/site"); t("site: tells which folder entry is live", r.body.site.fid === "161||" && r.body.site.published > 0, r.body);
+  r = await s1("POST", "/api/site/publish", snap); t("publish: without one, none is named", r.body.site.fid === "", r.body);
   t("publish: no address yet", (await (async () => { const j = jar(); await join(j, { email: "site3@mail.com", password: "12345678" }); db.prepare("UPDATE users SET paid_until = ? WHERE email = 'site3@mail.com'").run(Date.now() + 86400000); return j("POST", "/api/site/publish", snap); })()).status === 409);
   // the page
   let res = await site("haneul-studio.kor.gallery"), html = await res.text();

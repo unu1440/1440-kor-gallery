@@ -278,7 +278,17 @@
     clients: [["Clients", "함께한 곳"], ["Collaborators", "협업"], ["Worked With", "함께 일한 곳"]], timeline: [["Timeline", "연표"], ["Years", "해마다"], ["Chronology", "연대기"]],
     stats: [["In Numbers", "숫자로 보기"], ["Figures", "숫자"], ["So Far", "지금까지"]], quotes: [["Kind Words", "후기"], ["Testimonials", "추천사"], ["What They Say", "함께한 분들의 말"]],
     team: [["Team", "팀"], ["Studio", "작업실 사람들"], ["People", "사람들"]] };
-  var MORE_EN = { table: "Index", list: "Work", cv: "CV", news: "News", clients: "Clients", statement: "Statement", about: "About", contact: "Contact", timeline: "Timeline", stats: "Numbers", quotes: "Words", team: "Team" };
+  /* parts only the 구성 tool can add (never picked by pickMore, so the 1360 generated forms stay as they are) */
+  var MORE_EXTRA = ["video", "available", "faq", "price", "process", "press", "awards", "visit", "links"];
+  HEADS.video = [["Film", "영상"], ["Video", "영상"], ["Watch", "보기"]];
+  HEADS.faq = [["FAQ", "자주 묻는 질문"], ["Questions", "질문"], ["Good to Know", "알아두면 좋은 것"]];
+  HEADS.price = [["Prices", "가격"], ["Services", "서비스"], ["Rates", "작업 비용"]];
+  HEADS.process = [["Process", "작업 과정"], ["How It Works", "진행 방식"], ["Steps", "순서"]];
+  HEADS.press = [["Press", "언론"], ["Mentions", "소개된 곳"], ["Written About", "소개 글"]];
+  HEADS.awards = [["Awards", "수상"], ["Recognition", "선정"], ["Honours", "영예"]];
+  HEADS.visit = [["Visit", "찾아오기"], ["Find Us", "오시는 길"], ["Open Hours", "여는 시간"]];
+  HEADS.links = [["Elsewhere", "다른 곳에서"], ["Links", "링크"], ["Follow", "따라가기"]];
+  var MORE_EN = { video: "Video", available: "Available", faq: "FAQ", price: "Prices", process: "Process", press: "Press", awards: "Awards", visit: "Visit", links: "Links", table: "Index", list: "Work", cv: "CV", news: "News", clients: "Clients", statement: "Statement", about: "About", contact: "Contact", timeline: "Timeline", stats: "Numbers", quotes: "Words", team: "Team" };
   function moreKey(m) { return m.join(">"); }
   function pickMore(r) {
     var n = 2 + Math.floor(r() * 3), b = shuffled(r, MORE_BLOCKS).slice(0, n);
@@ -355,6 +365,59 @@
         return '<div>' + head("team") + '<div style="display:grid;grid-template-columns:' + (flow ? "1fr" : "repeat(3,1fr)") + ';gap:0 24px;font-size:' + fs + 'px">' + ppl.map(function (nm, k) {
           var ro = ROLES[(k + s.seed) % ROLES.length];
           return '<button type="button" class="lv-a" data-member="' + k + '" data-role="' + ro[0] + '" style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;' + line + ';text-align:left;width:100%"><span>' + (w ? c.lines(["60%"], "", 12) : nm) + '</span><span style="font-size:14px;opacity:.55">' + ro[0] + '</span></button>';
+        }).join("") + '</div></div>';
+      },
+      video: function () { /* a frame for a film: the editor fills it with the person's own video (a file, or a YouTube or Vimeo link) */
+        return '<div>' + head("video") + '<div data-video style="position:relative;width:100%;aspect-ratio:16/9;background:color-mix(in srgb,currentColor 8%,transparent);display:grid;place-items:center;overflow:hidden"><span style="display:flex;gap:.6em;align-items:center;font-size:' + fs + 'px;opacity:.55">' + icon("play", Math.round(fs * 1.2)) + (c.ko ? "동영상" : "Video") + '</span></div></div>';
+      },
+      available: function () {
+        var dot = '<i style="display:inline-block;width:.5em;height:.5em;border-radius:50%;background:#1faa59;margin-right:.6em;vertical-align:.08em"></i>';
+        return '<div style="display:flex;flex-wrap:wrap;gap:12px 28px;align-items:baseline;justify-content:' + (c.al === "center" && !flow ? "center" : "space-between") + ';' + line + ';border-bottom:1px solid color-mix(in srgb,currentColor 18%,transparent);padding:' + (flow ? 16 : 24) + 'px 0">' +
+          '<span style="font-size:' + (flow ? Math.min(24, Math.round(fs * 1.05)) : Math.round(fs * 1.5)) + 'px;letter-spacing:-.03em;line-height:1.2;min-width:0;overflow-wrap:anywhere">' + dot + T("Open for commissions from " + ["November", "January", "March", "June"][s.seed % 4], ["11월", "1월", "3월", "6월"][s.seed % 4] + "부터 의뢰를 받아요") + '</span>' +
+          '<button type="button" class="lv-a" data-lv="contact" style="font-size:15px">' + (c.ko ? "문의하기" : "Write to us") + ' →</button></div>';
+      },
+      faq: function () {
+        var Q = [["How long does a project take?", "작업은 얼마나 걸리나요?", "Most projects take four to eight weeks, from first call to final files."], ["Do you work with people abroad?", "해외 의뢰도 받나요?", "Yes. Calls are held online and files are shared in the cloud."], ["Can I see a quote first?", "먼저 견적을 받을 수 있나요?", "Send a short note. A written quote follows within three working days."], ["What do you need from me?", "무엇을 준비해야 하나요?", "A few sentences about the work, a date, and a rough budget."], ["How do I pay?", "결제는 어떻게 하나요?", "Half at the start, half on delivery, by bank transfer."]].slice(0, flow ? 3 : 5);
+        return '<div>' + head("faq") + '<div style="font-size:' + Math.round(fs * .95) + 'px">' + Q.map(function (q) {
+          return '<details style="' + line + ';padding:12px 0"><summary style="cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:16px;align-items:baseline"><span>' + T(q[0], q[1]) + '</span><span class="m" style="opacity:.5">+</span></summary><p style="margin:10px 0 0;opacity:.7;font-size:.88em;line-height:1.45;max-width:640px">' + (w ? c.lines(["90%", "50%"], "", 12) : q[2]) + '</p></details>';
+        }).join("") + '</div></div>';
+      },
+      price: function () {
+        var P = [["Logo and identity", "로고와 아이덴티티", 2400], ["Book design", "책 디자인", 1800], ["Exhibition graphics", "전시 그래픽", 1500], ["Website, one page", "한 페이지 웹사이트", 900], ["Photo day", "사진 촬영 하루", 600], ["Consultation, one hour", "상담 한 시간", 80]];
+        var rows = shuffled(rng(s.seed + 21), P).slice(0, flow ? 4 : 5);
+        return '<div>' + head("price") + '<div style="font-size:' + fs + 'px">' + rows.map(function (x) {
+          return '<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:baseline;padding:11px 0;' + line + '">' + T(x[0], x[1]) + '<span class="m" style="opacity:.7;white-space:nowrap">' + (w ? "" : "from ₩" + (x[2] * 100).toLocaleString("en-US")) + '</span></div>';
+        }).join("") + '</div></div>';
+      },
+      process: function () {
+        var S = [["Listen", "듣기", "A call, a coffee, a look around."], ["Sketch", "스케치", "Three small ideas on paper."], ["Make", "만들기", "One idea, slowly and well."], ["Deliver", "전달", "Files, prints and a thank-you."]];
+        return '<div>' + head("process") + '<div style="display:grid;grid-template-columns:' + (flow ? "1fr" : "repeat(4,1fr)") + ';gap:' + (flow ? 14 : 24) + 'px">' + S.map(function (x, k) {
+          return '<div style="' + line + ';padding-top:12px;display:grid;gap:6px"><span class="m" style="font-size:14px;opacity:.55">' + pad2(k + 1) + '</span>' + T(x[0], x[1], "font-size:" + Math.round(fs * 1.2) + "px;letter-spacing:-.02em") + (w ? "" : '<span style="font-size:15px;opacity:.65;line-height:1.4">' + x[2] + '</span>') + '</div>';
+        }).join("") + '</div></div>';
+      },
+      press: function () {
+        var P = [["The Slow Review", "Making things that last", 2026], ["Paper Weather Journal", "Ten rooms to visit this year", 2025], ["Field Notes Press", "A conversation about quiet work", 2025], ["Second Light Magazine", "Studios to watch", 2024], ["Low Tide Radio", "On the long afternoon", 2023]];
+        return '<div>' + head("press") + '<div style="font-size:' + Math.round(fs * .95) + 'px">' + P.slice(s.seed % 2, s.seed % 2 + (flow ? 3 : 4)).map(function (x, k) {
+          return '<div data-proj="' + k + '" style="display:grid;grid-template-columns:' + (flow ? "minmax(0,1fr) 46px" : "minmax(0,.8fr) minmax(0,1.4fr) 70px") + ';gap:14px;padding:11px 0;' + line + ';align-items:baseline">' + T(x[0], "") + (flow ? "" : T(x[1], "", "opacity:.6")) + '<span class="m" style="font-size:14px;opacity:.55;text-align:right">' + x[2] + '</span></div>';
+        }).join("") + '</div></div>';
+      },
+      awards: function () {
+        var A = [["2026", "Young Makers Prize", "Seoul"], ["2025", "Book Design, Honourable Mention", "Busan"], ["2024", "Emerging Studio Grant", "Jeju"], ["2023", "Poster of the Year, Shortlist", "Daegu"]];
+        return '<div style="display:grid;grid-template-columns:' + (flow ? "1fr" : "1fr 2fr") + ';gap:' + (flow ? 8 : 40) + 'px">' + head("awards") + '<div style="font-size:' + Math.round(fs * .85) + 'px">' + A.slice(0, flow ? 3 : 4).map(function (e, k) {
+          return '<div style="display:grid;grid-template-columns:' + (flow ? "56px 1fr" : "110px 1fr auto") + ';gap:14px;padding:8px 0;' + (k ? line : "") + '"><span class="m" style="opacity:.55">' + e[0] + '</span>' + T(e[1], "") + (flow ? "" : '<span style="opacity:.55">' + e[2] + '</span>') + '</div>';
+        }).join("") + '</div></div>';
+      },
+      visit: function () {
+        var dot = '<i style="display:inline-block;width:.5em;height:.5em;border-radius:50%;background:#1faa59;margin-right:.5em;vertical-align:.08em"></i>';
+        var city = CITIES[s.seed % 10], cell = function (lab, ko, body) { return '<div style="' + line + ';padding-top:12px;display:grid;gap:6px"><span style="font-size:14px;opacity:.55">' + (c.ko ? ko : lab) + '</span><span style="font-size:' + Math.round(fs * .95) + 'px;line-height:1.35">' + body + '</span></div>'; };
+        return '<div>' + head("visit") + '<div style="display:grid;grid-template-columns:' + (flow ? "1fr" : "repeat(3,1fr)") + ';gap:' + (flow ? 14 : 24) + 'px">' +
+          cell("Address", "주소", w ? "" : (12 + s.seed % 60) + " Studio Lane, " + city) + cell("Hours", "시간", w ? "" : dot + "Thu–Sun, 11:00–18:00") + cell("Get in touch", "연락", '<button type="button" class="lv-a" data-lv="contact" style="text-align:left">' + (w ? "" : "Write to us →") + '</button>') + '</div></div>';
+      },
+      links: function () {
+        var L = [["Instagram"], ["Newsletter"], ["Video"], ["Playlist"], ["Shop"]].slice(0, flow ? 3 : 4 + s.seed % 2);
+        var big = flow ? Math.min(30, Math.round(fs * 1.3)) : Math.round(fs * 1.9);
+        return '<div style="' + al + '">' + head("links") + '<div style="font-size:' + big + 'px;line-height:1.15;letter-spacing:-.03em;font-weight:500">' + L.map(function (x) {
+          return '<div><button type="button" class="lv-a" data-lv="out" style="text-align:inherit;font:inherit;letter-spacing:inherit">' + (w ? c.lines(["40%"], "", 16) : x[0]) + ' <span style="opacity:.4;font-size:.6em">↗</span></button></div>';
         }).join("") + '</div></div>';
       },
       contact: function () {
@@ -1293,7 +1356,13 @@
     return { plan: pl, specs: build(photos, pl.map(function (p) { return [p.cat, p.lays, p.gen, p.first + p.hand]; }), extra, handWorksNos(pl)) };
   }
 
-  var API = { MORE: { blocks: MORE_BLOCKS, foots: MORE_FOOTS, en: MORE_EN }, featuresFor: featuresFor, lookKey: lookKey, bigPic: bigPic, SHARED: SHARED, HAND_USED: HAND_USED, icon: icon, renderMobile: renderMobile, build: build, plan: plan, catalogue: catalogue, SECTIONS: SECTIONS, HAND: HAND, render: render, describe: describe, FAMS: FAMS, FACES: FACES, FEAT_KO: FEAT_KO, enName: enName, layouts: L };
+  /* the same lower blocks for a hand-made form: it has no spec of its own, so a plain one stands in (these blocks are words only,
+     in the form's own colours and type); the page chooses the order, and the editor's 구성 tool adds, moves and removes them */
+  function handMore(more, seed, env, flow) {
+    var spec = { no: seed, cat: "graphic", seed: seed, v: 0, nav: "top3", layout: "g-giant", type: { scale: "s", align: "left", "case": "none" }, cap: "none", feats: ["lang"], photos: [], more: more, ko: false };
+    return below(ctx(spec, env), { x: 28, w: 1384 }, !!flow);
+  }
+  var API = { handMore: handMore, MORE: { blocks: MORE_BLOCKS.concat(MORE_EXTRA), foots: MORE_FOOTS, en: MORE_EN }, featuresFor: featuresFor, lookKey: lookKey, bigPic: bigPic, SHARED: SHARED, HAND_USED: HAND_USED, icon: icon, renderMobile: renderMobile, build: build, plan: plan, catalogue: catalogue, SECTIONS: SECTIONS, HAND: HAND, render: render, describe: describe, FAMS: FAMS, FACES: FACES, FEAT_KO: FEAT_KO, enName: enName, layouts: L };
   if (typeof module !== "undefined" && module.exports) module.exports = API;
   root.TPLGEN = API;
 })(typeof window !== "undefined" ? window : globalThis);

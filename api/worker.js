@@ -301,9 +301,9 @@ export function siteNameError(v) {
   if (RESERVED.has(v)) return "쓸 수 없는 주소예요.";
   return "";
 }
-const MEDIA_TYPES = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "model/gltf-binary": "glb" };
-const MEDIA_MAX = { glb: 40 * 1048576 }, MEDIA_MAX_IMG = 10 * 1048576, MEDIA_TOTAL = 500 * 1048576;
-const MEDIA_URL = /^\/m\/[a-f0-9]{64}\.(jpg|png|webp|gif|glb)$/;
+const MEDIA_TYPES = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "model/gltf-binary": "glb", "video/mp4": "mp4", "video/webm": "webm" };
+const MEDIA_MAX = { glb: 40 * 1048576, mp4: 40 * 1048576, webm: 40 * 1048576 }, MEDIA_MAX_IMG = 10 * 1048576, MEDIA_TOTAL = 500 * 1048576;
+const MEDIA_URL = /^\/m\/[a-f0-9]{64}\.(jpg|png|webp|gif|glb|mp4|webm)$/;
 /* what a pass gives: paid days, the free student month, or an active subscription */
 async function passNow(env, userId, now = Date.now()) {
   const u = await env.DB.prepare("SELECT paid_until, trial_until FROM users WHERE id = ?").bind(userId).first();
@@ -312,7 +312,12 @@ async function passNow(env, userId, now = Date.now()) {
 }
 async function canPublish(env, userId, now = Date.now()) { const p = await passNow(env, userId, now); return p.sub || p.until > now; }
 async function siteUp(env, userId, now = Date.now()) { const p = await passNow(env, userId, now); return p.sub || p.until + GRACE > now; }
-function siteOf(row) { return row ? { name: row.name, n: row.n || 0, published: row.published || 0, url: "https://" + row.name + ".kor.gallery" } : null; }
+/* fid: which of the editor's folder entries was published (its form number, name and copy), so the folder can mark it 공개 중 */
+function siteOf(row) {
+  if (!row) return null;
+  let fid = ""; try { fid = String(JSON.parse(row.data || "{}").fid || ""); } catch (e) {}
+  return { name: row.name, n: row.n || 0, fid, published: row.published || 0, url: "https://" + row.name + ".kor.gallery" };
+}
 
 /* the daily cron: a site whose pass ended more than GRACE ago is taken down, with its pictures */
 export async function sweepSites(env, now = Date.now()) {
@@ -379,7 +384,7 @@ const siteRoutes = {
     if (!u) return fail("로그인해 주세요.", 401);
     if (!env.MEDIA) return fail("사진을 둘 곳이 아직 없어요.", 503);
     const type = String(req.headers.get("content-type") || "").split(";")[0].trim().toLowerCase(), ext = MEDIA_TYPES[type];
-    if (!ext) return fail("사진(jpg·png·webp·gif)이나 .glb만 올릴 수 있어요.", 415);
+    if (!ext) return fail("사진(jpg·png·webp·gif), .glb, 영상(mp4·webm)만 올릴 수 있어요.", 415);
     const buf = await req.arrayBuffer(), max = MEDIA_MAX[ext] || MEDIA_MAX_IMG;
     if (!buf.byteLength) return fail("빈 파일이에요.");
     if (buf.byteLength > max) return fail("파일이 너무 커요 (" + Math.round(max / 1048576) + "MB까지).", 413);
@@ -405,11 +410,11 @@ const siteRoutes = {
       keys.push(String(media[k]).slice(3));
     }
     for (const key of new Set(keys)) if (!(await env.DB.prepare("SELECT 1 FROM media WHERE key = ? AND user_id = ?").bind(key, u.id).first())) return fail("올리지 않은 사진이 있어요.");
-    const data = JSON.stringify({ n, site: String(d.site || "").toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 30), s: d.s, media });
+    const data = JSON.stringify({ n, site: String(d.site || "").toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 30), fid: String(d.fid || "").slice(0, 120), s: d.s, media });
     if (data.length > 400000) return fail("내용이 너무 커요.", 413);
     const now = Date.now();
     await env.DB.prepare("UPDATE sites SET n = ?, data = ?, published = ? WHERE user_id = ?").bind(n, data, now, u.id).run();
-    return json({ site: siteOf({ ...site, n, published: now }) });
+    return json({ site: siteOf({ ...site, n, published: now, data }) });
   }
 };
 
@@ -434,9 +439,14 @@ async function serveSite(req, env, url) {
   if (!m || name === "www") return Response.redirect(env.SITE_ORIGIN || "https://1440.kor.gallery", 301);
   if (req.method !== "GET" && req.method !== "HEAD") return page(405, "1440", "읽기만 할 수 있어요.");
   if (p.startsWith("/m/")) {
-    const key = p.slice(3); if (!/^[a-f0-9]{64}\.(jpg|png|webp|gif|glb)$/.test(key) || !env.MEDIA) return new Response("", { status: 404 });
-    const o = await env.MEDIA.get("m/" + key); if (!o) return new Response("", { status: 404 });
-    const h = new Headers(); o.writeHttpMetadata(h); h.set("etag", o.httpEtag); h.set("cache-control", "public, max-age=31536000, immutable");
+    const key = p.slice(3); if (!/^[a-f0-9]{64}\.(jpg|png|webp|gif|glb|mp4|webm)$/.test(key) || !env.MEDIA) return new Response("", { status: 404 });
+    const rg = req.headers.get("range"), o = await env.MEDIA.get("m/" + key, rg ? { range: req.headers } : undefined); if (!o) return new Response("", { status: 404 });
+    const h = new Headers(); o.writeHttpMetadata(h); h.set("etag", o.httpEtag); h.set("cache-control", "public, max-age=31536000, immutable"); h.set("accept-ranges", "bytes");
+    if (rg && o.range) { /* a video asks for a piece at a time so it can start fast and be skipped through */
+      const r = o.range, off = r.offset != null ? r.offset : o.size - r.suffix, len = r.length != null ? r.length : o.size - off;
+      h.set("content-range", "bytes " + off + "-" + (off + len - 1) + "/" + o.size); h.set("content-length", String(len));
+      return new Response(o.body, { status: 206, headers: h });
+    }
     return new Response(o.body, { headers: h });
   }
   if (p.startsWith("/assets/")) { /* the same cache rules as 1440.kor.gallery's own _headers: versioned scripts a year, pictures a month */

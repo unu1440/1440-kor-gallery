@@ -768,7 +768,7 @@
   function pageFor(b, mob) {
     var inner, cls = "tp";
     if (mob && b.gen) { var r = GEN.renderMobile(b.gen, genEnv); inner = r.html; b.mstyle = r.style; }
-    else { inner = b.html(); if (mob) cls += " tp-reflow"; }
+    else { inner = b.html(); if (mob) cls += " tp-reflow"; if (b.moreList && b.moreList.length && GEN.handMore) inner += GEN.handMore(b.moreList, b.first || 1, genEnv, mob); }
     needMV(inner);
     return '<div class="' + cls + '" style="--t-bg:' + b.bg + ';--t-ink:' + b.ink + (b.font ? ';--t-font:' + b.font + ';--t-stretch:' + b.stretch : "") + ';' + ((mob && b.gen ? b.mstyle : b.style) || "") + '">' + inner + '</div>';
   }
@@ -1610,7 +1610,16 @@
       var vc = t.closest("[data-vcard]"); if (vc) { saveVcard(tp); return; }
       var shr = t.closest("[data-share]"); if (shr) { try { navigator.clipboard.writeText("https://" + host + "/work/" + shr.dataset.share); } catch (err) {} toast(tp, (st.ko ? "작업 링크를 복사했습니다" : "Link copied") + " — " + host + "/work/" + shr.dataset.share); return; }
       var pimg = t.closest(".lv-page img[data-pi]"); if (pimg) { openLightbox(tp, pimg.closest(".lv-layer")._items, +pimg.dataset.pi); return; }
+      var ve = t.closest("[data-vembed]"); /* a YouTube or Vimeo film loads only when it is pressed */
+      if (ve && /^https:\/\/(www\.youtube-nocookie\.com\/embed\/|player\.vimeo\.com\/video\/)/.test(ve.dataset.vembed)) {
+        var fr = document.createElement("iframe"); fr.src = ve.dataset.vembed; fr.allow = "autoplay; fullscreen; picture-in-picture"; fr.allowFullscreen = true; fr.title = "video"; fr.style.cssText = "position:absolute;inset:0;width:100%;height:100%;border:0";
+        ve.replaceWith(fr); return;
+      }
       var a = t.closest(".lv-a, .lv-pay");
+      if (a && a.dataset.href && /^(https?:|mailto:|tel:)/i.test(a.dataset.href)) { /* a link the owner gave this button */
+        if (/^https?:/i.test(a.dataset.href)) window.open(a.dataset.href, "_blank", "noopener,noreferrer"); else location.href = a.dataset.href;
+        return;
+      }
       if (a && a.dataset.add != null) { addToCart(tp, st, a.dataset.add, a.closest("[data-add]") !== a ? a : null); return; }
       if (a && a.dataset.filter != null) { filterBy(tp, a); return; }
       if (a && a.dataset.page != null) { pageTo(tp, a); return; }
@@ -1973,7 +1982,7 @@
   function openMenu(tp, st) {
     var seen = {}, items = $$(tp, ".tp-nav .lv-a").filter(function (a) { var k = a.dataset.lv + a.textContent; if (a.dataset.lv === "menu" || a.classList.contains("tp-name") || seen[k]) return false; return (seen[k] = 1); });
     layer(tp, "lv-menu", '<div class="lv-top"><span>' + N + '</span><button type="button" class="lv-x">' + (st.ko ? "닫기" : "Close") + ' ✕</button></div>' +
-      '<div class="lv-menu-list">' + items.map(function (a) { return '<button type="button" class="lv-a" data-lv="' + a.dataset.lv + '">' + a.textContent + '</button>'; }).join("") + '</div>');
+      '<div class="lv-menu-list">' + items.map(function (a) { return '<button type="button" class="lv-a"' + (a.dataset.href ? ' data-href="' + esc(a.dataset.href) + '"' : '') + ' data-lv="' + a.dataset.lv + '">' + a.textContent + '</button>'; }).join("") + '</div>');
   }
   function openSearch(tp, st) {
     var items = st.items && st.items.length ? st.items : gallery(tp), ko = st.ko;

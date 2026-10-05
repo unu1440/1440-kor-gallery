@@ -66,12 +66,13 @@
   };
   var GROUP = { menu: "메뉴에 넣을 것", slides: "사진 넘기는 방법", grid: "작품 목록", hero: "큰 사진 효과", panel: "옆 칸에 넣을 것", when: "시간 알림", page: "페이지 기능" };
   var FACE = { sans: "기본 고딕", cond: "좁은 고딕", wide: "넓은 고딕", serif: "세리프", mono: "타자기", suit: "SUIT 고딕", maru: "마루부리 명조", galmuri: "갈무리 픽셀", instrument: "인스트루먼트", bricolage: "브리콜라주", shoulders: "빅 숄더스", fraunces: "프라운스", unbounded: "언바운디드" };
-  var BLK = { table: "작업 표", list: "큰 작업 목록", cv: "이력 (전시 기록)", news: "소식", clients: "함께한 곳", statement: "큰 문장", about: "소개", contact: "연락", timeline: "연표", stats: "숫자", quotes: "후기", team: "팀" };
+  var BLK = { video: "동영상", table: "작업 표", list: "큰 작업 목록", cv: "이력 (전시 기록)", news: "소식", clients: "함께한 곳", statement: "큰 문장", about: "소개", contact: "연락", timeline: "연표", stats: "숫자", quotes: "후기", team: "팀", available: "의뢰 받는 중", faq: "자주 묻는 질문", price: "가격표", process: "작업 과정", press: "언론 소개", awards: "수상", visit: "찾아오기", links: "링크 모음" };
   var FOOT = { line: "한 줄", columns: "네 칸", name: "큰 이름" };
   var BGS = ["#ffffff", "#fcfcfc", "#f4f4f4", "#f3efe6", "#f6f4f0", "#e9e7e3", "#f4d9cf", "#dfe8d5", "#cfe0ef", "#ffe14d", "#ff8a00", "#0a5cff", "#111111", "#000000"];
   var INKS = ["#111111", "#000000", "#333333", "#ffffff", "#0a5cff", "#1f3fd1", "#b8231a", "#f0462e", "#153f2a", "#2b1bb3"];
   var SVG = function (d, extra) { return '<svg viewBox="0 0 24 24"' + (extra || "") + '>' + d + '</svg>'; };
   var IC = {
+    ratio: SVG('<rect x="5" y="4" width="14" height="16" rx="1.5"/><path d="M9 8h6M9 16h6"/>'),
     back: SVG('<path d="M15 6l-6 6 6 6"/>'),
     undo: SVG('<path d="M9 7 4 12l5 5"/><path d="M4 12h9a6 6 0 0 1 0 12"/>'),
     redo: SVG('<path d="m15 7 5 5-5 5"/><path d="M20 12h-9a6 6 0 0 0 0 12"/>'),
@@ -95,7 +96,7 @@
 
   /* ---------- what was there in the template, and what the person changed ---------- */
   var KEY, orig, S, DATA = {}; /* DATA: pictures added by the person: key → data URL */
-  function fresh() { return { texts: {}, tstyle: {}, slots: {}, photos: {}, fit: {}, lib: [], libN: 0, pages: [{ id: "home", type: "page", name: "홈" }], models: {}, rooms: {}, bg: null, bgImg: null, bgFit: "cover", bgDim: 0, motion: null, fav: null, ink: null, face: null, feats: null, more: null, hours: null, until: null, marquee: null, extra: null, title: "", desc: "" }; }
+  function fresh() { return { texts: {}, tstyle: {}, links: {}, video: null, slots: {}, photos: {}, fit: {}, lib: [], libN: 0, pages: [{ id: "home", type: "page", name: "홈" }], models: {}, rooms: {}, bg: null, bgImg: null, bgFit: "cover", bgDim: 0, motion: null, fav: null, ink: null, face: null, feats: null, more: null, hours: null, until: null, marquee: null, extra: null, title: "", desc: "", ratio: null }; }
   /* the template being changed (the check at the end changes it again and again) */
   function use(n) {
     N = n; b = T.find(n); gen = b.gen; KEY = "1440-edit-" + n + "-" + (T.site || T.defName) + (n === N && C ? "~" + C : "");
@@ -148,6 +149,7 @@
       '<div class="ed-r">' +
         '<button type="button" class="ed-pub ed-pub-mob" id="edPubMob">공개하기</button>' +
         '<button type="button" class="ed-ic" id="edPreview" aria-pressed="false" aria-label="미리보기 ' + CMD + '\\" title="미리보기 ' + CMD + '\\">' + IC.point + '</button>' +
+        '<button type="button" class="ed-ic ed-ratio-btn" id="edRatio" aria-haspopup="true" aria-expanded="false" aria-label="화면 비율" title="화면 비율">' + IC.ratio + '</button>' +
         '<button type="button" class="ed-ic ed-dev-desk" id="edDevice" aria-pressed="false" aria-label="폰 화면으로 보기" title="폰 화면 ' + CMD + '⇧X">' + IC.mob + '</button>' +
         '</div>' +
     '</header>' +
@@ -196,7 +198,7 @@
   /* ---------- drawing the page ---------- */
   function model() {
     if (gen) { gen.feats = (S.feats || orig.feats).slice(); gen.more = (S.more || orig.more || []).slice(); gen.hours = S.hours || undefined; gen.until = S.until || undefined; gen.marqueeText = S.marquee || undefined; }
-    else T.handExtra(N, S.extra || orig.extra);
+    else { T.handExtra(N, S.extra || orig.extra); b.moreList = S.more && S.more.length ? S.more.slice() : null; }
     b.bg = S.bg || orig.bg; b.ink = S.ink || orig.ink;
     if (S.face && GEN.FACES[S.face]) { b.font = GEN.FACES[S.face][0]; b.stretch = GEN.FACES[S.face][1]; } else { b.font = orig.font; b.stretch = orig.stretch; }
   }
@@ -208,6 +210,7 @@
     canvas.innerHTML = '<div class="ed-page' + (mob ? " is-mob" : "") + '"><div class="mac-view"' + (mob ? ' data-w="390"' : "") + '><div class="canvas' + (mob ? " mob" : "") + '">' + T.pageFor(b, mob) + '</div></div></div>';
     canvas.classList.toggle("ed-edit", mode === "edit"); canvas.classList.toggle("ed-try", mode === "try");
     var view = viewOf();
+    applyRatio();
     var other = swapPage(view, mob);
     view.dataset.edit = mode === "edit" ? "1" : "";
     $$("canvas.rake", view).forEach(function (cv) { var u = photoUrl(cv.dataset.img); if (u) cv.dataset.src = u; });
@@ -257,6 +260,7 @@
     function slot(el) { el.dataset.sk = "l" + (li++); el.dataset.slotHtml = el.innerHTML; el.dataset.slotStyle = el.getAttribute("style") || ""; el.classList.add("ed-t", "ed-slot"); }
     function bars(el) { return el.children.length > 0 && [].every.call(el.children, function (c) { return c.classList.contains("wl"); }); }
     (function walk(el) {
+      if (el.matches("[data-video]")) { el.dataset.vh = el.innerHTML; el.classList.add("ed-v"); return; } /* a film frame: changed as a whole */
       if (el.matches(".mq")) { el.classList.add("ed-mq"); return; } /* the moving line of news: changed as a whole */
       if (el.matches("model-viewer")) { el.dataset.pk = "m:" + (el.getAttribute("src") || "").replace(/^.*\//, "").replace(/\.gltf$/, ""); el.classList.add("ed-m"); return; } /* a 3D object */
       if (el.matches("canvas.rake")) { el.dataset.pk = el.dataset.img; el.classList.add("ed-p"); return; } /* the painting the light moves over */
@@ -292,24 +296,68 @@
   }
   function emptySlot(el) { el.innerHTML = el.dataset.slotHtml; el.setAttribute("style", el.dataset.slotStyle); el.classList.remove("ed-filled"); }
   /* how a piece of text is set: size, weight, slant, alignment, colour (kept by what the text said in the template) */
+  /* a link given to a button or word: what was typed becomes a web, mail or phone address (anything else is dropped) */
+  function hrefOf(v) {
+    v = String(v || "").trim(); if (!v) return "";
+    if (/^(https?:|mailto:|tel:)/i.test(v)) return v;
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return "mailto:" + v;
+    if (/^\+?[\d\s-]{7,}$/.test(v)) return "tel:" + v.replace(/[\s-]/g, "");
+    if (/^[^\s:]+\.[^\s:]{2,}/.test(v) && !/\s/.test(v)) return "https://" + v;
+    return "";
+  }
+  function setHref(el, v) { var h = hrefOf(v); if (h) el.dataset.href = h; else delete el.dataset.href; }
   function styleText(el) {
     var st = S.tstyle[el.dataset.orig] || {}, base = +el.dataset.fs || 16;
     el.style.fontSize = st.s ? (base * (1 + 0.12 * st.s)).toFixed(1) + "px" : "";
     el.style.fontWeight = st.b ? "700" : ""; el.style.fontStyle = st.i ? "italic" : ""; el.style.textAlign = st.a || ""; el.style.color = st.c || "";
   }
+  /* a film: a file the person put up, or a YouTube / Vimeo / .mp4 link. Only addresses built here are used: a film from a link is a plain
+     video tag or a frame of YouTube-nocookie / Vimeo built from its id, and it loads only when pressed */
+  function videoOf(v) {
+    v = String(v || "").trim(); var m;
+    if ((m = /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/i.exec(v))) return { kind: "embed", label: "YouTube", url: "https://www.youtube-nocookie.com/embed/" + m[1] + "?autoplay=1&rel=0" };
+    if ((m = /vimeo\.com\/(?:video\/)?(\d{6,})/i.exec(v))) return { kind: "embed", label: "Vimeo", url: "https://player.vimeo.com/video/" + m[1] + "?autoplay=1" };
+    if (/^https?:\/\/[^\s"'<>]+\.(mp4|webm)(\?[^\s"'<>]*)?$/i.test(v)) return { kind: "file", url: v };
+    return null;
+  }
+  /* a video in "my pictures": kept like a picture (a file as it was read, or /m/… once the site is published) and shown by what it is */
+  var REDUCE = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function isVid(u) { return /^data:video\//.test(u || "") || /^\/m\/[a-f0-9]{64}\.(mp4|webm)$/.test(u || ""); }
+  function thumb(u, cls) { return isVid(u) ? '<video class="' + (cls || "") + '" src="' + esc(u) + '#t=0.1" muted playsinline preload="metadata"></video>' : '<img class="' + (cls || "") + '" src="' + esc(u) + '" alt="">'; }
+  /* a video where a picture was: it plays by itself, silent and in a loop (stays still for people who asked for less motion) */
+  function vidFrom(src, url, fit) {
+    var v = document.createElement("video"); v.src = url + (/^data:/.test(url) ? "" : "#t=0.1"); v.muted = true; v.loop = true; v.playsInline = true; v.preload = "metadata"; v.setAttribute("muted", ""); v.setAttribute("playsinline", "");
+    if (!REDUCE) v.autoplay = true;
+    v.className = (src.className || "") + " ed-pv"; v.setAttribute("style", src.getAttribute("style") || ""); if (src.dataset && src.dataset.pk) v.dataset.pk = src.dataset.pk;
+    if (fit) v.style.objectFit = fit;
+    return v;
+  }
+  function fillVideo(el) {
+    var v = S.video, src = "", emb = null;
+    if (v && v.id && DATA[v.id]) src = DATA[v.id]; else if (v && v.link) { var p = videoOf(v.link); if (p) { if (p.kind === "file") src = p.url; else emb = p; } }
+    if (src) el.innerHTML = '<video controls playsinline preload="metadata" style="position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000"></video>', el.firstChild.src = src;
+    else if (emb) el.innerHTML = '<button type="button" class="lv-a" data-vembed="' + emb.url + '" style="position:absolute;inset:0;width:100%;height:100%;display:grid;place-items:center;font-size:1.1em;background:#000;color:#fff">▶ ' + emb.label + '</button>';
+    else el.innerHTML = el.dataset.vh;
+  }
   function applyEdits(view) { /* `view` may be any part of the page */
-    $$(".ed-t:not(.ed-slot)", view).forEach(function (el) { var o = el.dataset.orig; if (o !== undefined && S.texts[o] !== undefined) el.textContent = S.texts[o]; if (o !== undefined && S.tstyle[o]) styleText(el); });
+    $$(".ed-t:not(.ed-slot)", view).forEach(function (el) { var o = el.dataset.orig; if (o !== undefined && S.texts[o] !== undefined) el.textContent = S.texts[o]; if (o !== undefined && S.tstyle[o]) styleText(el); if (o !== undefined && el.classList.contains("lv-a")) setHref(el, S.links && S.links[o]); });
     $$(".ed-slot", view).forEach(function (el) { if (S.slots[el.dataset.sk]) fillSlot(el, S.slots[el.dataset.sk]); });
     if (S.marquee) $$(".ed-mq", view).forEach(function (mq) { mqSet(mq, S.marquee.split(NL).filter(function (x) { return x.trim(); })); });
+    $$(".ed-v", view).forEach(fillVideo);
     $$(".ed-m", view).forEach(function (m) { var id = S.models[m.dataset.pk]; if (id && DATA[id]) m.setAttribute("src", DATA[id]); });
     $$(".ed-room", view).forEach(function (g) { var a = S.rooms[g.dataset.rk]; if (a) g.dataset.over = JSON.stringify(a.map(function (id) { return id === "-" ? "-" : ((id && DATA[id]) || ""); })); });
     $$(".ed-p", view).forEach(function (el) {
       var pk = el.dataset.pk, url = photoUrl(pk), fit = S.fit[pk];
-      if (url) {
+      if (url && isVid(url) && el.tagName !== "CANVAS") {
+        var host = el.tagName === "IMG" || el.tagName === "VIDEO" ? el : el.querySelector("img, video"), nv;
+        if (el.classList.contains("wf")) { nv = document.createElement("div"); nv.className = "ph ed-p"; nv.dataset.pk = pk; nv.setAttribute("style", el.getAttribute("style") || ""); nv.appendChild(vidFrom(document.createElement("i"), url, fit)); el.replaceWith(nv); el = nv; }
+        else if (host === el) { nv = vidFrom(el, url, fit); el.replaceWith(nv); el = nv; }
+        else if (host) host.replaceWith(vidFrom(host, url, fit));
+      } else if (url) {
         if (!el.classList.contains("wf")) { var im0 = el.tagName === "IMG" ? el : el.querySelector("img"); if (im0) { im0.removeAttribute("srcset"); im0.src = url; } }
         else { var d = document.createElement("div"); d.className = "ph ed-p"; d.dataset.pk = pk; d.setAttribute("style", el.getAttribute("style") || ""); var im = document.createElement("img"); im.src = url; im.alt = ""; d.appendChild(im); el.replaceWith(d); el = d; }
       }
-      if (fit) { var im1 = el.tagName === "IMG" ? el : el.querySelector("img"); if (im1) { im1.style.objectFit = fit; im1.style.setProperty("--fit", fit); } }
+      if (fit) { var im1 = el.tagName === "IMG" || el.tagName === "VIDEO" ? el : el.querySelector("img, video"); if (im1) { im1.style.objectFit = fit; im1.style.setProperty("--fit", fit); } }
     });
   }
 
@@ -317,7 +365,7 @@
   function onClick(e) {
     var lk = e.target.closest("[data-pg]"); if (lk) { e.preventDefault(); e.stopPropagation(); gotoPage(lk.dataset.pg); return; }
     if (mode !== "edit" || bypass) return;
-    var el = e.target.closest(".ed-t, .ed-p, .ed-mq, .ed-m, .ed-room");
+    var el = e.target.closest(".ed-t, .ed-p, .ed-mq, .ed-m, .ed-room, .ed-v");
     e.preventDefault(); e.stopPropagation();
     if (el) return select(el);
     select(null);
@@ -348,6 +396,7 @@
     if (sel.classList.contains("ed-mq")) return tipMarquee();
     if (sel.classList.contains("ed-slot")) return tipSlot();
     if (sel.classList.contains("ed-m")) return tipModel();
+    if (sel.classList.contains("ed-v")) return tipVideo();
     if (sel.classList.contains("ed-room")) return tipRoom();
     if (sel.classList.contains("ed-t")) return tipText();
     tipPhoto();
@@ -384,6 +433,7 @@
         '<button type="button" data-tb aria-pressed="' + !!st.b + '" aria-label="굵게" title="굵게"><b>B</b></button><button type="button" data-ti aria-pressed="' + !!st.i + '" aria-label="기울임" title="기울임"><i>I</i></button><span class="sp"></span>' +
         '<button type="button" data-ta="left" aria-pressed="' + (st.a === "left") + '" aria-label="왼쪽 정렬">' + IC.left + '</button><button type="button" data-ta="center" aria-pressed="' + (st.a === "center") + '" aria-label="가운데 정렬">' + IC.center + '</button><button type="button" data-ta="right" aria-pressed="' + (st.a === "right") + '" aria-label="오른쪽 정렬">' + IC.right + '</button><span class="sp"></span>' +
         '<label title="글자색" aria-label="글자색"><input type="color" id="edTc" value="' + (st.c || "#111111") + '"></label></div>' +
+      (sel.classList.contains("lv-a") ? '<div class="ed-box"><label class="ed-sr" for="edHref">링크</label><input class="ed-in" id="edHref" type="text" inputmode="url" autocomplete="off" placeholder="링크 (https://…, 이메일, 전화)" value="' + esc((S.links && S.links[o]) || "") + '"></div>' : '') +
       (same > 1 ? '<p class="ed-p2">' + same + '곳 함께</p>' : '') +
       ((S.texts[o] !== undefined || S.tstyle[o]) ? '<button type="button" class="ed-link" id="edTxtReset">원래대로 되돌리기</button>' : '') + '</div>' + openBtn());
     bindLayer(); bindOpen();
@@ -393,6 +443,11 @@
       if (v === o) delete S.texts[o]; else S.texts[o] = v;
       $$(".ed-t:not(.ed-slot)", canvas).forEach(function (el) { if (el.dataset.orig === o && S.tstyle[o]) styleText(el); });
       commit(); placeTip();
+    });
+    var hf = $("#edHref"); if (hf) hf.addEventListener("input", function () {
+      S.links = S.links || {}; var v = hf.value.trim(); if (v) S.links[o] = v; else delete S.links[o];
+      $$(".ed-t:not(.ed-slot)", canvas).forEach(function (el) { if (el.dataset.orig === o) setHref(el, v); });
+      hf.setAttribute("aria-invalid", v && !hrefOf(v) ? "true" : "false"); commit();
     });
     function setStyle(fn) { var s = S.tstyle[o] || (S.tstyle[o] = {}); fn(s); if (!s.s && !s.b && !s.i && !s.a && !s.c) delete S.tstyle[o]; $$(".ed-t:not(.ed-slot)", canvas).forEach(function (el) { if (el.dataset.orig === o) styleText(el); }); commit(true); tipText(); }
     $$("[data-ts]", tip).forEach(function (x) { x.addEventListener("click", function () { setStyle(function (s) { s.s = Math.max(-4, Math.min(8, (s.s || 0) + +x.dataset.ts)); }); }); });
@@ -419,6 +474,27 @@
   function mqSet(mq, words) {
     var inn = $(".mq-in", mq); if (!inn || !words.length) return;
     var line = words.map(esc).join(" &nbsp;✦&nbsp; ") + " &nbsp;✦&nbsp; "; inn.innerHTML = line + line + line + line;
+  }
+  /* a film frame: a link (YouTube, Vimeo or an .mp4 address) or the person's own video file (mp4 or webm) */
+  function tipVideo() {
+    var v = S.video || {}, mine = !!(v.id && DATA[v.id]);
+    tipOpen("동영상", '<div class="ed-box"><label class="ed-sr" for="edVl">링크</label><input class="ed-in" id="edVl" type="text" inputmode="url" autocomplete="off" placeholder="YouTube·Vimeo 링크" value="' + esc(v.link || "") + '">' +
+      '<input type="file" accept="video/mp4,video/webm,.mp4,.webm" id="edVf" class="ed-sr"><button type="button" class="ed-btn" id="edVp">' + (mine ? "다른 영상 파일 올리기" : "영상 파일 올리기") + '</button>' +
+      '<p class="ed-p2" id="edVm">' + (mine ? "내 영상 파일" : "mp4 · webm · 40MB까지") + '</p>' + ((v.link || v.id) ? '<button type="button" class="ed-link" id="edVr">비우기</button>' : "") + '</div>');
+    function paint() { $$(".ed-v", canvas).forEach(fillVideo); commit(true); }
+    $("#edVl").addEventListener("input", function () { var t = this.value.trim(); if (t) S.video = { link: t }; else S.video = null; this.setAttribute("aria-invalid", t && !videoOf(t) ? "true" : "false"); $("#edVm").textContent = t && !videoOf(t) ? "이 링크는 쓸 수 없어요" : "mp4 · webm · 40MB까지"; paint(); });
+    $("#edVp").addEventListener("click", function () { $("#edVf").click(); });
+    $("#edVf").addEventListener("change", function () {
+      var f = this.files && this.files[0]; if (!f) return; var msg = $("#edVm");
+      if (!/^video\/(mp4|webm)$/.test(f.type)) { msg.textContent = "mp4나 webm 영상만 올릴 수 있어요."; return; }
+      if (f.size > 40 * 1048576) { msg.textContent = "파일이 너무 커요. 40MB 이하로 줄여 주세요."; return; }
+      msg.textContent = "파일을 읽고 있어요…";
+      var rd = new FileReader();
+      rd.onload = function () { var url = String(rd.result || ""), id = "v-" + Date.now().toString(36); DATA[id] = url; dbPut(id, url); S.video = { id: id }; paint(); tipVideo(); };
+      rd.onerror = function () { msg.textContent = "파일을 읽지 못했어요."; };
+      rd.readAsDataURL(f);
+    });
+    var rs = $("#edVr"); if (rs) rs.addEventListener("click", function () { S.video = null; paint(); tipVideo(); });
   }
   /* a 3D object: the person's own model (a .glb file) in its place */
   function tipModel() {
@@ -463,7 +539,7 @@
     $$("[data-rx]", tip).forEach(function (x) { x.addEventListener("click", function () { var i = +x.dataset.rx; set(i, list[i].gone ? null : "-"); }); });
     $("#edRoomAdd").addEventListener("click", function () { target = list.length; fi.click(); });
     fi.addEventListener("change", function () {
-      var f = this.files && this.files[0]; if (!f) return; var msg = $("#edRoomMsg"); msg.textContent = "사진을 준비하고 있어요…";
+      var f = this.files && this.files[0]; if (!f) return; var msg = $("#edRoomMsg"); msg.textContent = "준비하고 있어요…";
       addPhoto(f, function (id, err) { if (!id) { msg.textContent = err || "이 사진은 열 수 없어요. JPG나 PNG 사진을 골라 주세요."; return; } set(target, id); });
     });
   }
@@ -479,8 +555,8 @@
   function tipPhoto() {
     var pk = sel.dataset.pk, mine = !!photoUrl(pk), pim = sel.tagName === "IMG" ? sel : sel.querySelector("img"), src = photoUrl(pk) || (pim ? pim.currentSrc || pim.src : sel.tagName === "CANVAS" ? T.photoUrl(pk) : ""), fit = S.fit[pk] || "";
     tipOpen("사진", layerNote() + '<div class="ed-box">' +
-      (src ? '<img class="ed-thumb" src="' + esc(src) + '" alt="">' : '') +
-      '<input type="file" accept="image/*" id="edFile" class="ed-sr"><button type="button" class="ed-btn" id="edPick">내 사진 올리기</button>' +
+      (src ? thumb(src, 'ed-thumb') : '') +
+      '<input type="file" accept="image/*,video/mp4,video/webm" id="edFile" class="ed-sr"><button type="button" class="ed-btn" id="edPick">내 사진·영상 올리기</button>' +
       (S.lib.length ? '<button type="button" class="ed-btn ghost" id="edFromLib">올려 둔 사진에서 고르기</button>' : '') +
       '<div class="ed-tools" role="group" aria-label="사진 채우는 방식"><button type="button" data-fit="cover" aria-pressed="' + (fit === "cover") + '">꽉 채우기</button><button type="button" data-fit="contain" aria-pressed="' + (fit === "contain") + '">통째로 보이기</button></div>' +
       '<p class="ed-p2" id="edPhotoMsg"></p>' +
@@ -509,6 +585,13 @@
   }
   /* into "my pictures" (kept, and can be used again) */
   function addPhoto(file, cb) {
+    if (/^video\/(mp4|webm)$/.test(file.type)) { /* a video goes in as it is (40MB at most) */
+      if (file.size > 40 * 1048576) return cb(null, "영상이 너무 커요. 40MB 이하로 줄여 주세요.");
+      var rd = new FileReader();
+      rd.onload = function () { var url = String(rd.result || ""), id = "u-" + (++S.libN); DATA[id] = url; S.lib.push({ id: id, name: file.name || "영상" }); dbPut(id, url); cb(id); };
+      rd.onerror = function () { cb(null, "파일을 읽지 못했어요."); };
+      rd.readAsDataURL(file); return;
+    }
     shrink(file, function (url) {
       if (!url) return cb(null);
       var id = "u-" + (++S.libN); DATA[id] = url; S.lib.push({ id: id, name: file.name || "사진" }); dbPut(id, url); cb(id);
@@ -579,14 +662,13 @@
   /* -- the page's parts, in order (the list of parts): add, remove, move -- */
   function moreParts() { var m = (S.more || orig.more || []).slice(), foot = m.length && /^f-/.test(m[m.length - 1]) ? m.pop().slice(2) : "line"; return { blocks: m, foot: foot }; }
   function setMore(blocks, foot) {
-    var m = blocks.concat("f-" + foot); S.more = JSON.stringify(m) === JSON.stringify(orig.more) ? null : m;
+    var m = blocks.concat("f-" + foot); S.more = JSON.stringify(m) === JSON.stringify(orig.more) || (!gen && !blocks.length) ? null : m; /* a hand-made form with no parts added is as it was made */
     commit(true); var v = viewOf(), st = v ? v.scrollTop : 0; render(); var v2 = viewOf(); if (v2) v2.scrollTop = st;
   }
   function panelBlocks(pb) {
-    if (!gen) { pb.innerHTML = '<div class="ed-box"><p class="ed-p2">구성이 정해진 폼이에요.</p></div>'; return; }
     var mp = moreParts(), left = GEN.MORE.blocks.filter(function (k) { return mp.blocks.indexOf(k) < 0; });
     pb.innerHTML = '<div class="ed-box"></div>' +
-      '<div class="ed-box"><div class="ed-blk lock"><span class="ed-grip" aria-hidden="true">•</span><span class="n">첫 화면<small>' + esc(GEN.layouts[gen.layout].ko) + '</small></span><span></span></div>' +
+      '<div class="ed-box"><div class="ed-blk lock"><span class="ed-grip" aria-hidden="true">•</span><span class="n">첫 화면<small>' + esc(gen ? GEN.layouts[gen.layout].ko : "이 폼") + '</small></span><span></span></div>' +
       '<div id="edBlks">' + mp.blocks.map(function (k, i) {
         return '<div class="ed-blk" draggable="true" data-i="' + i + '"><span class="ed-grip" aria-hidden="true">⋮⋮</span><button type="button" class="n" data-go="' + i + '" style="text-align:left">' + BLK[k] + '<small>' + GEN.MORE.en[k] + '</small></button><span class="b"><button type="button" data-mv="-1" aria-label="위로" ' + (i ? "" : "disabled") + '>' + IC.up + '</button><button type="button" data-mv="1" aria-label="아래로" ' + (i < mp.blocks.length - 1 ? "" : "disabled") + '>' + IC.down + '</button><button type="button" data-rm aria-label="빼기">' + IC.x + '</button></span></div>';
       }).join("") + '</div></div>' +
@@ -633,12 +715,12 @@
   /* -- my pictures: put in once, use anywhere (click one while a picture on the page is chosen, or drag it onto a picture) -- */
   function panelImages(pb) {
     var pic = sel && sel.classList.contains("ed-p") ? sel : null;
-    pb.innerHTML = '<label class="ed-drop-zone" id="edZone"><span><b>사진 올리기</b></span><span>끌어 놓거나 눌러서 올리기</span><input type="file" accept="image/*" multiple id="edLibFile" class="ed-sr"></label>' +
+    pb.innerHTML = '<label class="ed-drop-zone" id="edZone"><span><b>사진 · 영상 올리기</b></span><span>끌어 놓거나 눌러서 올리기</span><input type="file" accept="image/*,video/mp4,video/webm" multiple id="edLibFile" class="ed-sr"></label>' +
       '<p class="ed-p2" id="edLibMsg">' + (pic ? "넣을 사진을 누르세요" : "") + '</p>' +
-      (S.lib.length ? '<div class="ed-pics">' + S.lib.map(function (it) { return DATA[it.id] ? '<div class="it"><button type="button" data-u="' + it.id + '" draggable="true" aria-label="' + esc(it.name) + '"><img src="' + esc(DATA[it.id]) + '" alt=""></button><button type="button" class="del" data-del="' + it.id + '" aria-label="지우기">' + IC.x + '</button></div>' : ""; }).join("") + '</div>' : '<p class="ed-p2">없음</p>');
+      (S.lib.length ? '<div class="ed-pics">' + S.lib.map(function (it) { return DATA[it.id] ? '<div class="it"><button type="button" data-u="' + it.id + '" draggable="true" aria-label="' + esc(it.name) + '">' + thumb(DATA[it.id]) + '</button><button type="button" class="del" data-del="' + it.id + '" aria-label="지우기">' + IC.x + '</button></div>' : ""; }).join("") + '</div>' : '<p class="ed-p2">없음</p>');
     var zone = $("#edZone", pb), inp = $("#edLibFile", pb);
     function many(files) {
-      var fs = [].slice.call(files || []).filter(function (f) { return /^image\//.test(f.type) || /\.(jpe?g|png|gif|webp|avif)$/i.test(f.name); }); if (!fs.length) return;
+      var fs = [].slice.call(files || []).filter(function (f) { return /^(image|video)\//.test(f.type) || /\.(jpe?g|png|gif|webp|avif|mp4|webm)$/i.test(f.name); }); if (!fs.length) return;
       var msg = $("#edLibMsg", pb); msg.textContent = fs.length + "장을 준비하고 있어요…"; var left = fs.length;
       fs.forEach(function (f) { addPhoto(f, function () { if (--left === 0) { commit(true); refreshPanel(); } }); });
     }
@@ -736,7 +818,13 @@
   function swHtml(list, cur, kind) { return '<div class="ed-sws">' + list.map(function (c) { return '<button type="button" class="ed-c" style="background:' + c + '" aria-label="' + c + '" aria-pressed="' + (c.toLowerCase() === String(cur).toLowerCase()) + '" data-c="' + c + '" data-kind="' + kind + '"></button>'; }).join("") + '<input type="color" class="ed-cin" value="' + (/^#[0-9a-f]{6}$/i.test(cur) ? cur : "#ffffff") + '" data-kind="' + kind + '" aria-label="직접 고르기"></div>'; }
   function applyBg(view) {
     var tp = $(".tp", view), url = S.bgImg && DATA[S.bgImg]; if (!tp) return;
+    var ov = [].filter.call(tp.children, function (x) { return x.classList.contains("ed-bgv"); })[0]; if (ov) ov.remove();
     if (!url) { tp.style.backgroundImage = ""; return; }
+    if (isVid(url)) { /* a video behind the page: silent, in a loop, under everything (the page makes its own layer so it cannot slip behind the window) */
+      var bv = vidFrom(document.createElement("i"), url, S.bgFit === "contain" ? "contain" : "cover"), dd = Math.max(0, Math.min(0.8, +S.bgDim || 0));
+      bv.className = "ed-bgv"; bv.setAttribute("aria-hidden", "true"); bv.setAttribute("style", "position:absolute;top:0;left:0;width:100%;height:100%;object-fit:" + (S.bgFit === "contain" ? "contain" : "cover") + ";z-index:-1;pointer-events:none" + (dd ? ";filter:brightness(" + (1 - dd) + ")" : ""));
+      tp.style.backgroundImage = ""; tp.style.isolation = "isolate"; tp.insertBefore(bv, tp.firstChild); return;
+    }
     var d = Math.max(0, Math.min(0.8, +S.bgDim || 0)), fit = S.bgFit || "cover", img = 'url("' + url + '")', sz = fit === "tile" ? "34%" : fit;
     tp.style.backgroundImage = d ? "linear-gradient(rgba(0,0,0," + d + "), rgba(0,0,0," + d + "))," + img : img;
     tp.style.backgroundSize = d ? "100% 100%," + sz : sz;
@@ -747,9 +835,9 @@
     var bg = S.bg || orig.bg, url = S.bgImg && DATA[S.bgImg], fit = S.bgFit || "cover";
     return '<div class="ed-box"><h3 class="ed-h">바탕색</h3>' + swHtml(BGS, bg, "bg") + '</div>' +
       '<div class="ed-box"><h3 class="ed-h">배경 사진</h3>' +
-      (url ? '<img class="ed-thumb" src="' + esc(url) + '" alt="">' : '') +
-      '<input type="file" accept="image/*" id="edBgFile" class="ed-sr"><button type="button" class="ed-btn" id="edBgPick">' + (url ? "다른 사진으로 바꾸기" : "배경 사진 올리기") + '</button>' +
-      (S.lib.length ? '<button type="button" class="ed-btn ghost" id="edBgLib">올려 둔 사진에서 고르기</button><div class="ed-pics" id="edBgPics" hidden>' + S.lib.map(function (it) { return DATA[it.id] ? '<button type="button" data-u="' + it.id + '" aria-label="' + esc(it.name) + '"><img src="' + esc(DATA[it.id]) + '" alt=""></button>' : ""; }).join("") + '</div>' : "") +
+      (url ? thumb(url, 'ed-thumb') : '') +
+      '<input type="file" accept="image/*,video/mp4,video/webm" id="edBgFile" class="ed-sr"><button type="button" class="ed-btn" id="edBgPick">' + (url ? "다른 사진·영상으로 바꾸기" : "배경 사진·영상 올리기") + '</button>' +
+      (S.lib.length ? '<button type="button" class="ed-btn ghost" id="edBgLib">올려 둔 사진에서 고르기</button><div class="ed-pics" id="edBgPics" hidden>' + S.lib.map(function (it) { return DATA[it.id] ? '<button type="button" data-u="' + it.id + '" aria-label="' + esc(it.name) + '">' + thumb(DATA[it.id]) + '</button>' : ""; }).join("") + '</div>' : "") +
       (url ? '<div class="ed-tools" role="group" aria-label="배경 사진 놓는 방식"><button type="button" data-bf="cover" aria-pressed="' + (fit === "cover") + '">꽉 채우기</button><button type="button" data-bf="contain" aria-pressed="' + (fit === "contain") + '">통째로</button><button type="button" data-bf="tile" aria-pressed="' + (fit === "tile") + '">타일처럼 반복</button></div>' +
         '<label class="ed-rng"><span>사진 어둡게</span><input type="range" id="edBgDim" min="0" max="80" step="5" value="' + Math.round((+S.bgDim || 0) * 100) + '"></label>' +
         '<button type="button" class="ed-link" id="edBgOff">배경 사진 빼기</button>' : "") +
@@ -761,8 +849,8 @@
     $$(".ed-cin", root).forEach(function (x) { x.addEventListener("change", function () { S.bg = x.value; commit(true); redo(); }); });
     var f = $("#edBgFile", root); $("#edBgPick", root).addEventListener("click", function () { f.click(); });
     f.addEventListener("change", function () {
-      var file = f.files && f.files[0]; if (!file) return; var msg = $("#edBgMsg", root); msg.textContent = "사진을 준비하고 있어요…";
-      addPhoto(file, function (id) { if (!id) { msg.textContent = "이 사진은 열 수 없어요. JPG나 PNG 사진을 골라 주세요."; return; } S.bgImg = id; commit(true); redo(); });
+      var file = f.files && f.files[0]; if (!file) return; var msg = $("#edBgMsg", root); msg.textContent = "준비하고 있어요…";
+      addPhoto(file, function (id, err) { if (!id) { msg.textContent = err || "이 사진은 열 수 없어요. JPG나 PNG 사진을 골라 주세요."; return; } S.bgImg = id; commit(true); redo(); });
     });
     var lb = $("#edBgLib", root); if (lb) lb.addEventListener("click", function () { var g = $("#edBgPics", root); g.hidden = !g.hidden; });
     $$("[data-u]", root).forEach(function (x) { x.addEventListener("click", function () { S.bgImg = x.dataset.u; commit(true); redo(); }); });
@@ -891,6 +979,14 @@
   function gotoPage(id) { if (!pgById(id)) id = "home"; curPage = id; select(null); render(); drawFiles(); }
 
   /* -- forms: the one being edited (ME) and the others kept in 홈; each has its own draft -- */
+  /* the published site of this account, so its form can be marked 공개 중 (a blue dot) in the folder */
+  var liveSite = null, liveFor = "";
+  function loadLive() {
+    var A = window.ACCOUNT; if (!A || CHECK || SV) return;
+    var u = A.user; if (!u || A.mode !== "server") { liveFor = ""; if (liveSite) { liveSite = null; drawFiles(); } return; }
+    if (liveFor === u.id) return; liveFor = u.id;
+    A.site().then(function (x) { liveSite = x && x.published ? x : null; drawFiles(); }, function () { liveFor = ""; });
+  }
   var ME = { n: N, site: T.site || "", c: C };
   function fId(f) { return f.n + "|" + (f.site || "") + "|" + (f.c || ""); }
   function fKey(f) { return "1440-edit-" + f.n + "-" + (f.site || T.defName) + (f.c ? "~" + f.c : ""); }
@@ -1181,8 +1277,9 @@
       /* a form is one file: it opens, it holds nothing inside */
       var fRow = function (f, d) {
         var mine = isMe(f), k = "f:" + fId(f);
-        return row({ k: k, d: d, ic: XI.tpl, name: fName(f), em: mine ? "편집 중" : (f.name ? T.tag(f.n) : ""), cls: "site" + (mine ? " on" : ""), drag: true, ren: renaming === k, dots: true, cut: cutF === fId(f), title: mine ? "지금 편집 중인 폼" : "두 번 눌러 열기",
-          extra: mine ? "" : '<button type="button" class="dots go" data-gok="' + esc(k) + '" tabindex="-1" aria-label="열기" title="열기">' + XI.out + '</button>' });
+        var live = !!liveSite && (liveSite.fid ? liveSite.fid === fId(f) : (+liveSite.n === +f.n && !f.c));
+        return row({ k: k, d: d, ic: XI.tpl, name: fName(f), em: mine ? "편집 중" : (f.name ? T.tag(f.n) : ""), cls: "site" + (mine ? " on" : "") + (live ? " live-on" : ""), drag: true, ren: renaming === k, dots: true, cut: cutF === fId(f), title: mine ? "지금 편집 중인 폼" : "두 번 눌러 열기",
+          extra: (live ? '<span class="live" title="공개 중 · ' + esc(liveSite.name) + '.kor.gallery"><i></i>공개 중</span>' : "") + (mine ? "" : '<button type="button" class="dots go" data-gok="' + esc(k) + '" tabindex="-1" aria-label="열기" title="열기">' + XI.out + '</button>') });
       };
       /* 홈 and every project are folders side by side; a form lives in one of them */
       var loose = hf.filter(function (f) { return !f.p || !known[f.p]; });
@@ -1506,7 +1603,7 @@
   })();
   window.addEventListener("storage", function (e) { if (e.key === "1440-stars" || e.key === CLIPK || e.key === "1440-guest") drawFiles(); });
   /* the account: the top of the tree is the person, and the form being edited becomes the one My hub opens */
-  if (window.ACCOUNT && !CHECK && !SV) { ACCOUNT.on(function () { drawFiles(); }); ACCOUNT.ready.then(function () { ACCOUNT.touch(N, T.site || "", C); drawFiles(); }); }
+  if (window.ACCOUNT && !CHECK && !SV) { ACCOUNT.on(function () { drawFiles(); loadLive(); }); ACCOUNT.ready.then(function () { ACCOUNT.touch(N, T.site || "", C); drawFiles(); loadLive(); }); }
   var touchedAt = Date.now();
   window.addEventListener("focus", function () { if (!renaming) drawFiles(); });
 
@@ -1543,6 +1640,39 @@
   function setDev(d) { dev = d; select(null); $("#edDevice").setAttribute("aria-pressed", String(d === "mob")); $("#edDevice").innerHTML = d === "mob" ? IC.desk : IC.mob; $("#edDevice").setAttribute("aria-label", d === "mob" ? "컴퓨터 화면으로 보기" : "폰 화면으로 보기"); render(); }
   $("#edPreview").addEventListener("click", function () { setMode(mode === "edit" ? "try" : "edit"); });
   $("#edDevice").addEventListener("click", function () { setDev(dev === "mob" ? "desk" : "mob"); });
+  /* ---------- the shape of the site's window: free, or an Instagram / video ratio ----------
+     Only the editor's window changes (the page is drawn at the width of the frame and scrolls inside it): a way to see,
+     and to take a picture of, the site at the shape a post needs. A published site is not touched. */
+  var RATIOS = [["", "꽉 채우기"], ["1:1", "1:1 · 정사각"], ["4:5", "4:5 · 인스타 피드"], ["3:4", "3:4 · 인스타 격자"], ["9:16", "9:16 · 릴스 · 스토리"], ["16:9", "16:9 · 영상"], ["4:3", "4:3"], ["3:2", "3:2"]];
+  /* the shape is for the computer view only: in the editor's phone view (and on a phone) the page keeps its own phone shape and the control is gone */
+  function ratioOf() { var m = /^(\d+):(\d+)$/.exec(phone.matches || dev === "mob" ? "" : S.ratio || ""); return m ? [+m[1], +m[2]] : null; }
+  function applyRatio() {
+    var page = $(".ed-page", canvas), view = viewOf(); if (!page || !view) return;
+    var r = ratioOf(), rb = $("#edRatio"); page.classList.toggle("has-ratio", !!r);
+    if (rb) { rb.hidden = dev === "mob"; rb.classList.toggle("on", !!r); if (rb.hidden) ratioMenu(false); }
+    if (!r) { view.style.width = view.style.height = view.style.background = ""; return; }
+    view.style.background = b.bg || ""; /* a short page: the rest of the frame is the page's own colour */
+    var pad = SV ? 20 : 28, aw = Math.max(80, canvas.clientWidth - pad * 2), ah = Math.max(80, canvas.clientHeight - pad * 2), q = r[0] / r[1];
+    var fw = Math.max(80, Math.min(aw, ah * q)); view.style.width = Math.round(fw) + "px"; view.style.height = Math.round(fw / q) + "px";
+    T.scale(view); T.fitHeight(view);
+  }
+  if (window.ResizeObserver) new ResizeObserver(function () { applyRatio(); }).observe(canvas);
+  function ratioMenu(open) {
+    var m = $("#edRatioMenu"), b = $("#edRatio");
+    if (!m) {
+      m = document.createElement("div"); m.id = "edRatioMenu"; m.className = "ed-ratio"; m.setAttribute("role", "menu"); m.hidden = true;
+      m.innerHTML = RATIOS.map(function (x) { return '<button type="button" role="menuitemradio" data-r="' + x[0] + '">' + x[1] + '</button>'; }).join("");
+      root.appendChild(m);
+      m.addEventListener("click", function (e) { var t = e.target.closest("[data-r]"); if (!t) return; setRatio(t.dataset.r); });
+    }
+    if (open === undefined) open = m.hidden;
+    $$("[data-r]", m).forEach(function (x) { var on = x.dataset.r === (S.ratio || ""); x.setAttribute("aria-checked", String(on)); x.classList.toggle("on", on); });
+    m.hidden = !open; b.setAttribute("aria-expanded", String(open));
+  }
+  function setRatio(v) { S.ratio = v || null; commit(); applyRatio(); ratioMenu(false); select(null); }
+  $("#edRatio").addEventListener("click", function (e) { e.stopPropagation(); ratioMenu(); });
+  document.addEventListener("click", function (e) { var m = $("#edRatioMenu"); if (m && !m.hidden && !e.target.closest("#edRatioMenu, #edRatio")) ratioMenu(false); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { var m = $("#edRatioMenu"); if (m && !m.hidden) ratioMenu(false); } });
   $("#edBack").addEventListener("click", function () { location.href = "templates.html" + (T.site ? "?site=" + encodeURIComponent(T.site) : ""); });
 
   /* ---------- publish: the address is chosen here, at the end ---------- */
@@ -1561,13 +1691,14 @@
     var ids = {}, add = function (id) { if (id && id !== "-" && DATA[id]) ids[id] = 1; };
     Object.keys(S.photos || {}).forEach(function (pk) { var v = S.photos[pk]; add(v === 1 ? pk : v); });
     Object.keys(S.models || {}).forEach(function (k) { add(S.models[k]); });
+    if (S.video && S.video.id) add(S.video.id);
     Object.keys(S.rooms || {}).forEach(function (k) { (S.rooms[k] || []).forEach(add); });
     add(S.bgImg);
     return Object.keys(ids);
   }
   function toBlob(id, url) {
     return fetch(url).then(function (r) { return r.blob(); }).then(function (bl) {
-      var type = /^m-/.test(id) ? "model/gltf-binary" : bl.type; /* a .glb read from a file has no picture type */
+      var type = /^m-/.test(id) ? "model/gltf-binary" : bl.type; /* a video keeps the type its file had */ /* a .glb read from a file has no picture type */
       return bl.type === type ? bl : new Blob([bl], { type: type });
     });
   }
@@ -1590,8 +1721,9 @@
       }, Promise.resolve());
     }).then(function () {
       say("공개하는 중…");
-      return A.publishSite({ n: N, site: T.site || "", s: S, media: media });
+      return A.publishSite({ n: N, site: T.site || "", fid: fId(ME), s: S, media: media });
     }).then(function (site) {
+      liveSite = site; if (A.user) liveFor = A.user.id; drawFiles();
       if (addr) addr.innerHTML = '<a href="' + esc(site.url) + '" target="_blank" rel="noopener">' + esc(site.name + ".kor.gallery") + ' ↗</a>';
       say("공개했어요. 고친 뒤 다시 공개하면 바뀌어요.");
     }, function (e) {
@@ -1724,6 +1856,11 @@
         drawFiles(); var el = $("#edFiles");
         if (!$('[data-p="bg"]', el) || !$("#ed3d3", el)) cNote(n, "the tools or layers are missing from the side panel");
         if (!$("#edAddProj", el) || $("#edAddPg", el) || $('[data-k="p:t-pg"]', el) || !$("#edStarMe", el)) cNote(n, "the folder list is missing its parts (or shows files inside a form)");
+        /* the public form is marked in the folder (a blue dot and 공개 중), only the right one, and nothing when none is public */
+        liveSite = { name: "x", n: N, fid: fId(ME), published: 1 }; drawFiles();
+        var lv = $$(".ed-pr .live", el); if (lv.length !== 1 || !$(".ed-pr.site.on .live", el) || lv[0].textContent.trim() !== "공개 중") cNote(n, "the public form is not marked in the folder");
+        liveSite = { name: "x", n: N, fid: "999||other", published: 1 }; drawFiles(); if ($$(".ed-pr .live", el).length) cNote(n, "another entry is marked public");
+        liveSite = null; drawFiles(); if ($$(".ed-pr .live", el).length) cNote(n, "a public mark shows with no public site");
         movePg("t-pg", "home", false); if (pgById("t-pg").parent) cNote(n, "a page does not move out of a set");
         movePg("t-pg", "t-set", true); if (pgById("t-pg").parent !== "t-set") cNote(n, "a page does not move into a set");
         dupPg("t-pg"); if (S.pages.length !== 4) cNote(n, "a page is not duplicated");
@@ -1738,6 +1875,20 @@
         try { render(); } catch (e) { cNote(n, d + " draw failed: " + e.message); return; }
         var view = viewOf(), tp = view && $(".tp", view);
         if (!tp || !tp.children.length) return cNote(n, d + " empty page");
+        /* the shape of the window: every ratio gives a frame of that shape that fits the area; "free" gives it back */
+        if (!phone.matches && d === "mob" && (n === from || n % 120 === 1)) {
+          S.ratio = "4:5"; applyRatio(); var vm = viewOf(); if ((vm.parentNode.classList.contains("has-ratio") || vm.style.width) || !$("#edRatio").hidden) cNote(n, "the phone view shows a ratio frame or the ratio control");
+          S.ratio = null; applyRatio();
+        }
+        if (!phone.matches && d === "desk" && (n === from || n % 120 === 1)) {
+          try {
+            RATIOS.forEach(function (rt) {
+              if (!rt[0]) return; S.ratio = rt[0]; applyRatio(); var v = viewOf(), pg = v && v.parentNode, q = rt[0].split(":"), w = v.getBoundingClientRect();
+              if (!pg || !pg.classList.contains("has-ratio") || Math.abs(w.width / w.height - q[0] / q[1]) > 0.02 || w.width > canvas.clientWidth + 1 || w.height > canvas.clientHeight + 1) cNote(n, d + " the " + rt[0] + " frame is not that shape or does not fit");
+            });
+            S.ratio = null; applyRatio(); var v0 = viewOf(); if (v0.style.width || v0.parentNode.classList.contains("has-ratio")) cNote(n, d + " the free frame is not given back");
+          } catch (e) { cNote(n, d + " ratio failed: " + e.message); }
+        }
         var ts = $$(".ed-t:not(.ed-slot)", view), sl = $$(".ed-slot", view), ps = $$(".ed-p", view);
         if (!ts.length && !sl.length && !ps.length) cNote(n, d + " nothing can be changed");
         if (ts.length) {
@@ -1748,6 +1899,33 @@
           var up = $('[data-ts="1"]', tip); if (up) { up.click(); if (!S.tstyle[o] || S.tstyle[o].s !== 1) cNote(n, d + " a text size does not change"); }
           render(); var again = $$(".ed-t:not(.ed-slot)", canvas).filter(function (x) { return x.dataset.orig === o; })[0];
           if (!again || again.textContent !== "테스트 글") cNote(n, d + " a changed text is lost when the page is drawn again");
+        }
+        var lk = $$(".ed-t.lv-a:not(.ed-slot)", canvas)[0];
+        if (lk) { /* a button takes a link: it is kept on the button, bad words are dropped, and it survives drawing the page again */
+          var lo = lk.dataset.orig; select(lk); var hf = $("#edHref"); if (!hf) cNote(n, d + " no link box on a button");
+          else {
+            hf.value = "example.com/a"; hf.dispatchEvent(new Event("input"));
+            if (lk.dataset.href !== "https://example.com/a" || !S.links || S.links[lo] !== "example.com/a") cNote(n, d + " a link does not stay on its button");
+            hf.value = "javascript:alert(1)"; hf.dispatchEvent(new Event("input"));
+            if (lk.dataset.href) cNote(n, d + " an unsafe link was kept");
+            hf.value = "hi@example.com"; hf.dispatchEvent(new Event("input")); render();
+            var lk2 = $$(".ed-t.lv-a:not(.ed-slot)", canvas).filter(function (x) { return x.dataset.orig === lo; })[0];
+            if (!lk2 || lk2.dataset.href !== "mailto:hi@example.com") cNote(n, d + " a link is lost when the page is drawn again");
+            delete S.links[lo]; commit(true); render();
+          }
+        }
+        if (d === "desk") { /* a film frame: a YouTube link becomes a press-to-play frame, a bad address shows nothing, a video file plays in place */
+          var mv = moreParts(); setMore(mv.blocks.concat("video"), mv.foot); var vf = $(".ed-v", canvas);
+          if (!vf) cNote(n, d + " the video part cannot be added");
+          else {
+            S.video = { link: "https://youtu.be/dQw4w9WgXcQ" }; fillVideo(vf); if (!$("[data-vembed]", vf)) cNote(n, d + " a YouTube link makes no frame");
+            S.video = { link: "javascript:alert(1)" }; fillVideo(vf); if ($("[data-vembed], video", vf)) cNote(n, d + " an unsafe video link was used");
+            DATA["t-v"] = "data:video/webm;base64,AAAA"; S.video = { id: "t-v" }; fillVideo(vf); if (!$("video", vf)) cNote(n, d + " a video file makes no player");
+            var pk0 = $$(".ed-p", canvas).filter(function (x) { return x.tagName !== "CANVAS"; })[0];
+            if (pk0) { var pid = pk0.dataset.pk; S.photos[pid] = "t-v"; render(); if (!$('.ed-p[data-pk="' + pid + '"] video, video.ed-p[data-pk="' + pid + '"]', canvas)) cNote(n, d + " a video in a picture place is not shown"); delete S.photos[pid]; }
+            S.bgImg = "t-v"; render(); if (!$(".ed-bgv", canvas)) cNote(n, d + " a video behind the page is not shown"); S.bgImg = null;
+          }
+          S.video = null; delete DATA["t-v"]; setMore(mv.blocks, mv.foot);
         }
         if (sl.length) { select(null); select($$(".ed-slot", canvas)[0]); var t2 = $("#edTa"); if (t2) { t2.value = "자리 글"; t2.dispatchEvent(new Event("input")); } }
         var mqe = $(".ed-mq", canvas);
@@ -1783,7 +1961,14 @@
               } catch (e) { cNote(n, "changing the parts of the page failed: " + e.message); }
             });
             S.more = null;
-          } else { S.extra = ["search", "news"]; try { render(); } catch (e) { cNote(n, "switching menu items failed: " + e.message); } S.extra = null; }
+          } else {
+            S.extra = ["search", "news"]; try { render(); } catch (e) { cNote(n, "switching menu items failed: " + e.message); } S.extra = null;
+            /* a hand-made form can take the lower parts too (구성): added they show below the page, taken out it is as it was */
+            try {
+              S.more = ["table", "about", "f-line"]; render(); if (!$(".tp-more", canvas) || $$(".tp-more [data-sec]", canvas).length !== 2) cNote(n, d + " the parts added to a hand-made form do not show");
+              S.more = null; render(); if ($(".tp-more", canvas)) cNote(n, d + " the added parts stay after being taken out");
+            } catch (e) { cNote(n, "parts on a hand-made form failed: " + e.message); }
+          }
           S.bg = "#ffcc00"; S.ink = "#222222"; S.face = "serif";
           try { render(); var st = $(".tp", canvas).getAttribute("style") || ""; if (st.indexOf("#ffcc00") < 0) cNote(n, "the background colour does not show"); } catch (e) { cNote(n, "colours failed: " + e.message); }
           /* the page's background picture, the scrolling effects, the tab icon and the size under the pointer */
@@ -1913,7 +2098,7 @@
   }
 
   /* a published site: its pictures are on the server (/m/…), the page is drawn once, and that is all */
-  if (SV) { root.classList.add("ed-site"); var md = SV.media || {}; for (var mk in md) if (/^\/m\/[a-f0-9]{64}\.(jpg|png|webp|gif|glb)$/.test(md[mk])) DATA[mk] = md[mk]; render(); return; }
+  if (SV) { root.classList.add("ed-site"); var md = SV.media || {}; for (var mk in md) if (/^\/m\/[a-f0-9]{64}\.(jpg|png|webp|gif|glb|mp4|webm)$/.test(md[mk])) DATA[mk] = md[mk]; render(); return; }
   /* start: the pictures the person added before, then the page */
   undoState();
   var wasOpen = true; try { wasOpen = localStorage.getItem(FILES_KEY) !== "0"; } catch (e) {}
