@@ -949,19 +949,31 @@
   var stage = document.getElementById("shuffleStage");
   var cur = early, nextN = 0, shownAt = Date.now(), held = false, inView = true;
   function randomOther() { var n = nextN && nextN !== cur ? nextN : cur; while (n === cur && TOTAL > 1) n = 1 + Math.floor(Math.random() * TOTAL); return n; }
-  function showShuffle() {
+  /* the page inside the window slides: the old page leaves to one side while the new one comes in from the other, and the window itself stays */
+  function showShuffle(dir) {
     shownAt = Date.now();
+    var oldView = stage.querySelector(".mac-view"), oldBar = stage.querySelector(".mac-bar");
+    if (oldView) oldView.remove();
     stage.innerHTML = '<button type="button" class="shuffle-btn shuffle-prev" aria-label="이전 폼">' + ICON.prev + '</button>' + card(find(cur), true) +
       '<button type="button" class="shuffle-btn shuffle-next" aria-label="다른 폼">' + ICON.next + '</button>';
     fill(stage.querySelector(".tpl-slot"), true);
+    var newView = stage.querySelector(".mac-view");
+    if (oldView && oldBar && newView && !reduce && newView.animate) {
+      var mac = newView.parentNode, d = dir === "prev" ? -1 : 1, W = newView.offsetWidth;
+      oldView.style.cssText += ";position:absolute;left:" + newView.offsetLeft + "px;top:" + newView.offsetTop + "px;width:" + W + "px;pointer-events:none;z-index:2";
+      mac.appendChild(oldView);
+      var opt = { duration: 650, easing: "cubic-bezier(.65,0,.25,1)", fill: "both" };
+      newView.animate([{ transform: "translateX(" + 100 * d + "%)" }, { transform: "none" }], opt);
+      oldView.animate([{ transform: "none" }, { transform: "translateX(" + -100 * d + "%)" }], opt).onfinish = function () { oldView.remove(); };
+    }
     document.getElementById("shuffleNo").textContent = tag(cur);
     /* the next random form is decided now, so its pictures can be fetched ahead of time */
     nextN = 0; nextN = randomOther();
-    if (!frugal() && !reduce) (window.requestIdleCallback || function (f) { setTimeout(f, 600); })(function () { try { warm(nextN, 4); } catch (e) {} }, { timeout: 1500 });
+    if (!frugal() && !reduce) (window.requestIdleCallback || function (f) { setTimeout(f, 600); })(function () { try { warm(nextN, 8); } catch (e) {} }, { timeout: 1500 });
   }
   stage.addEventListener("click", function (e) {
     if (e.target.closest(".shuffle-next")) { cur = randomOther(); showShuffle(); }
-    if (e.target.closest(".shuffle-prev")) { cur = cur > 1 ? cur - 1 : TOTAL; showShuffle(); }
+    if (e.target.closest(".shuffle-prev")) { cur = cur > 1 ? cur - 1 : TOTAL; showShuffle("prev"); }
   });
   /* the random form moves on to another by itself every 3 seconds. It waits while the pointer or the keyboard is on it, while it is out of
      sight or the tab is hidden, while a preview is open, and always when the person asked for less motion; pressing a button starts the count again. */
