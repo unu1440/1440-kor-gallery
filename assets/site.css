@@ -521,3 +521,5 @@ html.intro .minute { animation: none; }
 .tr-t th:first-child, .tr-t td:first-child, .tr-t th:nth-child(2), .tr-t td:nth-child(2) { text-align: left; }
 .tr-t td:first-child { color: var(--ink); }
 .acct-dl li[hidden] { display: none; }
+.info-page .pay { display: grid; gap: 0.6em; padding-top: 1.1em; margin-top: 0.6em; border-top: 1px solid var(--ink-4); }
+.info-page .info-title + .pay { border-top: 0; padding-top: 0.4em; margin-top: 0; }
