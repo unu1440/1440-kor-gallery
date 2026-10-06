@@ -9,7 +9,7 @@ const DAY = 86400000, MONTH = 30 * DAY, SESSION = 60 * DAY, CODE_LIFE = 10 * 600
 const ITER = 100000; /* the most Workers allow for PBKDF2 */
 const enc = new TextEncoder();
 /* what can be bought: the amount is decided here, never by the page */
-const PLANS = { month: { amount: 4900, days: 30, goods: "1440 이용권 30일" }, year: { amount: 46000, days: 365, goods: "1440 이용권 365일" } };
+const PLANS = { month: { amount: 4900, days: 30, goods: "1440 이용권 30일" } }; /* the 365-day pass is no longer sold (a long paid membership is a business type the card companies do not take); payments already made for it can still be refunded (DAYS_OF) */
 
 /* the monthly subscription (NICEPAY billing): charged when the pass runs out, renewed by the daily cron */
 const SUB = { amount: 4900, days: 30, goods: "1440 월 구독", tries: 3 };
@@ -137,7 +137,7 @@ async function chargeSub(env, user, bid) {
 }
 /* a payment taken back (all or part): the days it bought come off the pass (never below now), and a subscription
    charge also stops the subscription so it is not charged again */
-const DAYS_OF = { month: PLANS.month.days, year: PLANS.year.days, sub: SUB.days };
+const DAYS_OF = { month: PLANS.month.days, year: 365, sub: SUB.days };
 async function undoPayment(env, o, cancelled) {
   const full = cancelled >= o.amount, days = Math.round((DAYS_OF[o.plan] || 0) * Math.min(1, cancelled / o.amount));
   await env.DB.prepare("UPDATE payments SET status = ?, message = ? WHERE order_id = ?").bind(full ? "cancelled" : "partial", "취소 " + cancelled + "원", o.order_id).run();
@@ -510,7 +510,7 @@ async function serveSite(req, env, url, ctx) {
 const routes = {
   "GET /api/health": async () => json({ ok: true }),
 
-  /* ---------- paying: a pass of 30 or 365 days, through NICEPAY's payment window: card and easy pay in one window (server approval) ----------
+  /* ---------- paying: a pass of 30 days, through NICEPAY's payment window: card and easy pay in one window (server approval) ----------
      1. the page asks for an order: the server fixes the amount and keeps the order
      2. the page opens NICEPAY's window (AUTHNICE.requestPay) with that order
      3. NICEPAY posts the card authentication to /api/pay/return; the server checks the signature and the amount,
@@ -677,7 +677,7 @@ const routes = {
       await env.DB.prepare("UPDATE users SET uni_email = ?, student = 'verified', trial_until = ? WHERE id = ?").bind(email, Date.now() + 365 * DAY, id).run();
     else if (p.student && uniDomain(email) && !(await uniTaken(env, email)))
       await env.DB.prepare("UPDATE users SET uni_email = ?, student = 'verified', trial_until = ? WHERE id = ?").bind(email, Date.now() + MONTH, id).run();
-    await env.DB.prepare("DELETE FROM signups WHERE email = ?").bind(email).run();
+    try { await env.DB.prepare("DELETE FROM signups WHERE email = ?").bind(email).run(); } catch (e) { console.error("signup cleanup", e && e.message); } /* the waiting row expires by itself: a failed clean-up must not undo a sign-up that has already been made */
     try { await countHit(env, req, "signup", d.src, d.camp, d.dev); } catch (e) {}
     const u = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(id).first();
     return json({ user: await fullUser(env, u) }, 200, { "set-cookie": await startSession(env, id) });
@@ -886,6 +886,6 @@ export default {
       if (url.pathname.startsWith("/api/admin/") && isAdmin(env, u)) await adminLog(env, req, u, key);
       return await fn(env, req, u);
     }
-    catch (e) { return fail("잠시 문제가 생겼어요.", 500); }
+    catch (e) { console.error("api error", key, e && e.message); return fail("잠시 문제가 생겼어요.", 500); } /* what went wrong shows in `wrangler tail`, not to the person */
   }
 };

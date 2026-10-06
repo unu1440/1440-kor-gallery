@@ -1687,7 +1687,7 @@
   var dlg = $("#edDlg");
   function closeDlg() { dlg.hidden = true; }
   /* 공개하기 in steps, in the one quiet window: ① the address → ② an account (only without one: sign up with the
-     mail code, or log in) → ③ a pass (only without one: the monthly subscription, 30 days, a year; NICEPAY's window
+     mail code, or log in) → ③ a pass (only without one: the monthly subscription, 30 days; NICEPAY's window
      comes back here) → ④ the site goes up at 이름.kor.gallery (goLive). */
   var PUB = { email: "" };
   function acct() { return window.ACCOUNT || null; }
@@ -1755,8 +1755,7 @@
     if (step === "login") h += fld("email", "이메일", 'type="email" autocomplete="email"') + fld("password", "비밀번호", 'type="password" autocomplete="current-password"');
     if (step === "plan") h += '<div class="ed-plans">' +
       '<button type="button" class="ed-plan" data-plan="sub"><span>매월 구독</span><span>' + won(4900) + '</span></button>' +
-      '<button type="button" class="ed-plan" data-plan="month"><span>30일</span><span>' + won(4900) + '</span></button>' +
-      '<button type="button" class="ed-plan" data-plan="year"><span>1년</span><span>' + won(46000) + '</span></button></div>' +
+      '<button type="button" class="ed-plan" data-plan="month"><span>30일</span><span>' + won(4900) + '</span></button></div>' +
       '<p class="ed-p2">대학생은 학교 메일로 가입하면 첫 한 달이 무료예요. 결제 전에 <a href="./#terms" target="_blank" rel="noopener">요금·환불 조건</a>을 확인해 주세요.</p>';
     if (step === "card") h += fld("cardNo", "카드 번호", 'inputmode="numeric" autocomplete="cc-number" maxlength="19"') + fld("exp", "유효기간 <em>MM/YY</em>", 'inputmode="numeric" autocomplete="cc-exp" maxlength="5" placeholder="MM/YY"') +
       fld("idNo", "생년월일 <em>6자리 · 법인은 사업자번호</em>", 'inputmode="numeric" maxlength="10" autocomplete="off"') + fld("cardPw", "비밀번호 <em>앞 2자리</em>", 'type="password" inputmode="numeric" maxlength="2" autocomplete="off"') +
@@ -1812,7 +1811,7 @@
       ["cardNo", "idNo", "cardPw"].forEach(function (n) { f(n).addEventListener("input", function () { var v = f(n).value.replace(/\D/g, ""); if (n === "cardNo") v = v.slice(0, 16).replace(/(\d{4})(?=\d)/g, "$1 "); if (f(n).value !== v) f(n).value = v; }); });
       f("exp").addEventListener("input", function () { var v = f("exp").value.replace(/\D/g, "").slice(0, 4); v = v.length > 2 ? v.slice(0, 2) + "/" + v.slice(2) : v; if (f("exp").value !== v) f("exp").value = v; });
     }
-    /* a pass: the subscription asks for a card here; 30 days and a year open NICEPAY's window, which comes back to this form */
+    /* a pass: the subscription asks for a card here; 30 days opens NICEPAY's window, which comes back to this form */
     [].forEach.call(box.querySelectorAll("[data-plan]"), function (b) { b.addEventListener("click", function () {
       if (b.dataset.plan === "sub") { pubStep("card"); return; }
       var back = location.pathname + location.search.replace(/([?&])(pay|m)=[^&]*/g, "$1").replace(/[?&]+$/, "").replace(/&&+/g, "&");

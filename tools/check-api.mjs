@@ -130,11 +130,12 @@ r = await post({ ...good, signature: await hex("TOK" + "S2_test" + "4900" + env.
 t("approval call", approvals.length === 1 && approvals[0].url === "https://sandbox-api.nicepay.co.kr/v1/payments/T123" && approvals[0].auth === "Basic " + btoa("S2_test:" + env.NICEPAY_SECRET_KEY) && approvals[0].body.amount === 4900, approvals);
 let me1 = (await a("GET", "/api/me")).body.user; t("pass 30 days", me1.paidUntil > Date.now() + 29 * 86400000 && me1.paidUntil < Date.now() + 31 * 86400000, me1);
 t("same order twice", (await post({ ...good, signature: await hex("TOK" + "S2_test" + "4900" + env.NICEPAY_SECRET_KEY) })).to.indexOf("fail") >= 0 && approvals.length === 1);
-r = await a("POST", "/api/pay/order", { plan: "year", method: "naverpayCard" }); const o2 = r.body;
+t("the 365-day pass is not sold", (await a("POST", "/api/pay/order", { plan: "year", method: "naverpayCard" })).status === 400);
+r = await a("POST", "/api/pay/order", { plan: "month", method: "naverpayCard" }); const o2 = r.body;
 t("cancelled window", (await post({ authResultCode: "9999", authResultMsg: "취소", orderId: o2.orderId })).to.indexOf("fail") >= 0);
-r = await a("POST", "/api/pay/order", { plan: "year", method: "naverpayCard" });
-await post({ ...good, orderId: r.body.orderId, amount: "46000", tid: "T456", signature: await hex("TOK" + "S2_test" + "46000" + env.NICEPAY_SECRET_KEY) });
-me1 = (await a("GET", "/api/me")).body.user; t("year adds on", me1.paidUntil > Date.now() + 394 * 86400000, me1);
+r = await a("POST", "/api/pay/order", { plan: "month", method: "naverpayCard" });
+await post({ ...good, orderId: r.body.orderId, amount: "4900", tid: "T456", signature: await hex("TOK" + "S2_test" + "4900" + env.NICEPAY_SECRET_KEY) });
+me1 = (await a("GET", "/api/me")).body.user; t("a second pass adds on", me1.paidUntil > Date.now() + 59 * 86400000, me1);
 r = await a("GET", "/api/pay/history"); t("history", r.body.payments.filter((x) => x.status === "paid").length === 2 && r.body.payments.length === 3, r);
 
 // the monthly subscription: card → billing key → first month, renewals by the cron, failures, stopping
@@ -218,12 +219,12 @@ const sig = async (tid, amount, ediDate) => hex(tid + amount + ediDate + env.NIC
   // the webhook for that same cancel comes after: nothing more is taken
   const ed = "2026-10-02T16:00:00+0900"; await hookPost({ tid: "RA1", status: "cancelled", amount: 4900, balanceAmt: 0, ediDate: ed, signature: await sig("RA1", 4900, ed) });
   t("webhook after own refund does nothing", (await g("GET", "/api/me")).body.user.paidUntil === 0);
-  // 2. a year pass, bought 100 days ago: the 265 unused days back
-  await buy("year", "RA2");
-  db.prepare("UPDATE payments SET paid_at = ? WHERE tid = 'RA2'").run(Date.now() - 100 * 86400000 - 3600000);
-  db.prepare("UPDATE users SET paid_until = ? WHERE id = ?").run(Date.now() + 265 * 86400000 - 3600000, uid);
-  q = (await g("GET", "/api/pay/refund")).body.quote; t("year prorate quote", q.rule === "prorate" && q.daysBack === 264 && q.refund === Math.floor(46000 * 264 / 365), q);
-  r = await g("POST", "/api/pay/refund", { orderId: q.orderId }); t("year prorate refund", r.status === 200 && cancels[cancels.length - 1].body.cancelAmt === Math.floor(46000 * 264 / 365) && r.body.user.paidUntil > Date.now() && r.body.user.paidUntil < Date.now() + 86400000, r);
+  // 2. a 30-day pass, bought 10 days ago: the 19 unused days back
+  await buy("month", "RA2");
+  db.prepare("UPDATE payments SET paid_at = ? WHERE tid = 'RA2'").run(Date.now() - 10 * 86400000 - 3600000);
+  db.prepare("UPDATE users SET paid_until = ? WHERE id = ?").run(Date.now() + 20 * 86400000 - 3600000, uid);
+  q = (await g("GET", "/api/pay/refund")).body.quote; t("month prorate quote", q.rule === "prorate" && q.daysBack === 19 && q.refund === Math.floor(4900 * 19 / 30), q);
+  r = await g("POST", "/api/pay/refund", { orderId: q.orderId }); t("month prorate refund", r.status === 200 && cancels[cancels.length - 1].body.cancelAmt === Math.floor(4900 * 19 / 30) && r.body.user.paidUntil > Date.now() && r.body.user.paidUntil < Date.now() + 86400000, r);
   t("prorated payment marked partial", db.prepare("SELECT status FROM payments WHERE tid = 'RA2'").get().status === "partial");
   t("stale refund refused", (await g("POST", "/api/pay/refund", { orderId: q.orderId })).status === 409);
   // 3. the subscription after its first day: like a pass, the unused days back, and it stops
