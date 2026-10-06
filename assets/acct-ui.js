@@ -156,7 +156,7 @@
   [].forEach.call(ov.querySelectorAll("form[data-f]"), function (f) { f.addEventListener("submit", function (e) { e.preventDefault(); FORMS[f.dataset.f](f); }); });
 
   /* refunds (the 1440 rules): the latest payment, what it would give back, and the button */
-  var RF = null, PLAN = { month: "30일권", year: "1년권", sub: "구독" };
+  var RF = null, PLAN = { week: "7일권", month: "30일권", quarter: "90일권", year: "1년권", sub: "구독" };
   function won(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "₩"; }
   function refundBox() {
     var box = $('[data-v="rfBox"]');

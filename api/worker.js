@@ -9,7 +9,7 @@ const DAY = 86400000, MONTH = 30 * DAY, SESSION = 60 * DAY, CODE_LIFE = 10 * 600
 const ITER = 100000; /* the most Workers allow for PBKDF2 */
 const enc = new TextEncoder();
 /* what can be bought: the amount is decided here, never by the page */
-const PLANS = { month: { amount: 4900, days: 30, goods: "1440 이용권 30일" } }; /* the 365-day pass is no longer sold (a long paid membership is a business type the card companies do not take); payments already made for it can still be refunded (DAYS_OF) */
+const PLANS = { week: { amount: 1900, days: 7, goods: "1440 이용권 7일" }, month: { amount: 4900, days: 30, goods: "1440 이용권 30일" }, quarter: { amount: 12900, days: 90, goods: "1440 이용권 90일" } }; /* the 365-day pass is no longer sold (a long paid membership is a business type the card companies do not take); payments already made for it can still be refunded (DAYS_OF) */
 
 /* the monthly subscription (NICEPAY billing): charged when the pass runs out, renewed by the daily cron */
 const SUB = { amount: 4900, days: 30, goods: "1440 월 구독", tries: 3 };
@@ -137,7 +137,7 @@ async function chargeSub(env, user, bid) {
 }
 /* a payment taken back (all or part): the days it bought come off the pass (never below now), and a subscription
    charge also stops the subscription so it is not charged again */
-const DAYS_OF = { month: PLANS.month.days, year: 365, sub: SUB.days };
+const DAYS_OF = { week: 7, month: 30, quarter: 90, year: 365, sub: SUB.days }; /* kept for every pass ever sold, so a pass that is no longer on sale can still be refunded */
 async function undoPayment(env, o, cancelled) {
   const full = cancelled >= o.amount, days = Math.round((DAYS_OF[o.plan] || 0) * Math.min(1, cancelled / o.amount));
   await env.DB.prepare("UPDATE payments SET status = ?, message = ? WHERE order_id = ?").bind(full ? "cancelled" : "partial", "취소 " + cancelled + "원", o.order_id).run();
@@ -150,7 +150,7 @@ async function undoPayment(env, o, cancelled) {
 }
 /* ---------- refunds the person asks for (the rules of 1440):
    1. on the day of buying (KST): the whole amount back, and the days it bought go
-   2. a 30-day or 1-year pass after that day: the unused days back (a day already begun counts as used)
+   2. a 7-, 30- or 90-day pass (or an earlier 1-year one) after that day: the unused days back (a day already begun counts as used)
    3. the subscription after that day: like a pass, the unused days back, and the subscription stops
    Only the latest payment can be taken back: its days are the last part of the pass. ---------- */
 function kstDay(ms) { return new Date(ms + 9 * 3600000).toISOString().slice(0, 10); }
@@ -546,7 +546,7 @@ const routes = {
       await env.DB.prepare("UPDATE payments SET status = 'failed', tid = ?, message = ? WHERE order_id = ?").bind(tid, String(a.resultMsg || r.status).slice(0, 200), orderId).run();
       return back("fail&m=" + encodeURIComponent(a.resultMsg || "결제 승인에 실패했어요."));
     }
-    const u = await env.DB.prepare("SELECT paid_until FROM users WHERE id = ?").bind(o.user_id).first(), until = Math.max((u && u.paid_until) || 0, Date.now()) + PLANS[o.plan].days * DAY;
+    const u = await env.DB.prepare("SELECT paid_until FROM users WHERE id = ?").bind(o.user_id).first(), until = Math.max((u && u.paid_until) || 0, Date.now()) + (DAYS_OF[o.plan] || 0) * DAY;
     await env.DB.prepare("UPDATE payments SET status = 'paid', tid = ?, paid_at = ? WHERE order_id = ?").bind(tid, Date.now(), orderId).run();
     await env.DB.prepare("UPDATE users SET paid_until = ? WHERE id = ?").bind(until, o.user_id).run();
     return back("ok");

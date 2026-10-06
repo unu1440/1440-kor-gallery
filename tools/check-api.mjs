@@ -137,6 +137,12 @@ r = await a("POST", "/api/pay/order", { plan: "month", method: "naverpayCard" })
 await post({ ...good, orderId: r.body.orderId, amount: "4900", tid: "T456", signature: await hex("TOK" + "S2_test" + "4900" + env.NICEPAY_SECRET_KEY) });
 me1 = (await a("GET", "/api/me")).body.user; t("a second pass adds on", me1.paidUntil > Date.now() + 59 * 86400000, me1);
 r = await a("GET", "/api/pay/history"); t("history", r.body.payments.filter((x) => x.status === "paid").length === 2 && r.body.payments.length === 3, r);
+for (const [pl, amt, days] of [["week", 1900, 7], ["quarter", 12900, 90]]) { /* the other passes on sale: their price, name and days */
+  r = await a("POST", "/api/pay/order", { plan: pl, method: "kakaopay" }); const before = (await a("GET", "/api/me")).body.user.paidUntil;
+  t("order " + pl, r.status === 200 && r.body.amount === amt && r.body.goodsName === "1440 이용권 " + days + "일", r.body);
+  await post({ ...good, orderId: r.body.orderId, amount: String(amt), tid: "T" + pl, signature: await hex("TOK" + "S2_test" + amt + env.NICEPAY_SECRET_KEY) });
+  const after = (await a("GET", "/api/me")).body.user.paidUntil; t("pass " + pl + " adds " + days + " days", Math.abs(after - before - days * 86400000) < 5000, { before, after });
+}
 
 // the monthly subscription: card → billing key → first month, renewals by the cron, failures, stopping
 const W2 = await import(pathToFileURL(copy).href);
