@@ -849,7 +849,7 @@
     var b = find(+slot.dataset.n);
     slot.innerHTML = slot.closest(".shuffle") ? windowFor(b) : shotFor(b);
     var view = slot.querySelector(".mac-view");
-    scale(view); if (ro) ro.observe(view);
+    scale(view); if (ro) ro.observe(view); if (live) tuneImages(view);
     INITS.forEach(function (f) { f(view, !!live); });
     liveText(view);
     tick();
@@ -935,17 +935,31 @@
 
   /* ---------- shuffle ---------- */
   var stage = document.getElementById("shuffleStage");
-  var cur = 1 + Math.floor(Math.random() * TOTAL);
+  var cur = 1 + Math.floor(Math.random() * TOTAL), shownAt = Date.now(), held = false, inView = true;
+  function randomOther() { var n = cur; while (n === cur && TOTAL > 1) n = 1 + Math.floor(Math.random() * TOTAL); return n; }
   function showShuffle() {
+    shownAt = Date.now();
     stage.innerHTML = '<button type="button" class="shuffle-btn shuffle-prev" aria-label="이전 폼">' + ICON.prev + '</button>' + card(find(cur), true) +
       '<button type="button" class="shuffle-btn shuffle-next" aria-label="다른 폼">' + ICON.next + '</button>';
     fill(stage.querySelector(".tpl-slot"), true);
     document.getElementById("shuffleNo").textContent = tag(cur);
   }
   stage.addEventListener("click", function (e) {
-    if (e.target.closest(".shuffle-next")) { cur = 1 + Math.floor(Math.random() * TOTAL); showShuffle(); }
+    if (e.target.closest(".shuffle-next")) { cur = randomOther(); showShuffle(); }
     if (e.target.closest(".shuffle-prev")) { cur = cur > 1 ? cur - 1 : TOTAL; showShuffle(); }
   });
+  /* the random form moves on to another by itself every 3 seconds. It waits while the pointer or the keyboard is on it, while it is out of
+     sight or the tab is hidden, while a preview is open, and always when the person asked for less motion; pressing a button starts the count again. */
+  stage.addEventListener("mouseenter", function () { held = true; });
+  stage.addEventListener("mouseleave", function () { held = false; shownAt = Date.now(); });
+  stage.addEventListener("focusin", function () { held = true; });
+  stage.addEventListener("focusout", function () { held = false; shownAt = Date.now(); });
+  if ("IntersectionObserver" in window) new IntersectionObserver(function (es) { inView = es[0].isIntersecting; if (inView) shownAt = Date.now(); }).observe(stage);
+  setInterval(function () {
+    var pv = document.getElementById("preview");
+    if (reduce || held || !inView || document.hidden || (pv && !pv.hidden) || document.body.classList.contains("solo")) return;
+    if (Date.now() - shownAt >= 3000) { cur = randomOther(); showShuffle(); }
+  }, 300);
 
   /* ---------- live clocks inside the pages ---------- */
   function tick() {
@@ -2076,12 +2090,22 @@
     scale(mStage.querySelector(".mac-view")); /* the hint may have wrapped and changed the window's size */
   }
   /* a page that works like the real site: shared by the preview and the page opened in its own window */
+  /* the pictures in the first screen are fetched at once (and the first few first of all); the rest wait until they are near, as they were marked */
+  function tuneImages(view) {
+    var tp = view.querySelector(".tp"); if (!tp) return;
+    var r0 = tp.getBoundingClientRect(), s = r0.width / (tp._w || 1440) || 1, firstH = (tp._h || 900) * s, n = 0;
+    [].forEach.call(tp.querySelectorAll("img"), function (im) {
+      if (im.complete || im.closest(".lv-layer")) return;
+      var r = im.getBoundingClientRect(); if (!r.width || r.top - r0.top >= firstH) return;
+      im.loading = "eager"; if (n++ < 3) im.setAttribute("fetchpriority", "high");
+    });
+  }
   function bringToLife(view, b, mob, fit) {
     view.classList.add("live");
     var tp0 = view.querySelector(".tp");
     tp0._w = mob ? 390 : 1440; tp0._h = mob ? 697 : 900; tp0._no = b.first;
     if (mob && !b.gen) reflowType(tp0);
-    scale(view); if (ro) ro.observe(view);
+    scale(view); if (ro) ro.observe(view); tuneImages(view);
     INITS.forEach(function (f) { f(view, true); });
     liveText(view);
     tick();

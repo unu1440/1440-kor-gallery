@@ -571,14 +571,20 @@
     $$("[data-fit]", tip).forEach(function (x) { x.addEventListener("click", function () { S.fit[pk] = S.fit[pk] === x.dataset.fit ? "" : x.dataset.fit; if (!S.fit[pk]) delete S.fit[pk]; commit(true); var keep = pk; render(); var again = $('.ed-p[data-pk="' + keep + '"]', canvas); if (again) select(again); }); });
     var r = $("#edPhotoReset"); if (r) r.addEventListener("click", function () { delete S.photos[pk]; commit(true); render(); });
   }
-  /* a picture from the phone or the computer, made smaller (long side 1800) so it is quick to keep and to load */
+  /* a picture from the phone or the computer, made smaller (long side 1800, WebP) so it is quick to keep and to load */
   function shrink(file, cb) {
     var url = URL.createObjectURL(file), im = new Image();
     im.onload = function () {
       var k = Math.min(1, 1800 / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement("canvas");
       c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
       c.getContext("2d").drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
-      try { cb(c.toDataURL("image/jpeg", 0.86)); } catch (e) { cb(null); }
+      try {
+        /* WebP is about 40% lighter than JPEG at the same look (transparent parts stay transparent). A browser that cannot write WebP
+           hands back a PNG instead; then it is JPEG as before. */
+        var out = c.toDataURL("image/webp", 0.82);
+        if (!/^data:image\/webp/.test(out)) out = c.toDataURL("image/jpeg", 0.86);
+        cb(out);
+      } catch (e) { cb(null); }
     };
     im.onerror = function () { URL.revokeObjectURL(url); cb(null); };
     im.src = url;

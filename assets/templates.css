@@ -874,3 +874,7 @@ body.solo > :not(.solo-page) { display: none !important; }
 .tp-reflow > .gh > :nth-child(2) { order: 3; grid-column: 1 / -1; opacity: .6; }
 /* a block of words set into a corner of a half-page panel goes into the flow on a phone (its panel has no height there) */
 .tp-reflow .rf-flow { position: relative !important; right: auto !important; top: auto !important; text-align: left !important; }
+/* the random form comes in softly each time it changes */
+@keyframes shufIn { from { opacity: 0; } to { opacity: 1; } }
+.shuffle .tpl, .shuffle .mac { animation: shufIn 0.5s ease both; }
+@media (prefers-reduced-motion: reduce) { .shuffle .tpl, .shuffle .mac { animation: none; } }
