@@ -15,6 +15,9 @@ const PLANS = { month: { amount: 4900, days: 30, goods: "1440 이용권 30일" }
 const SUB = { amount: 4900, days: 30, goods: "1440 월 구독", tries: 3 };
 
 export const UNI = /(^|\.)(ac\.[a-z]{2}|edu(\.[a-z]{2})?)$/i; /* snu.ac.kr, mit.edu, unimelb.edu.au, ox.ac.uk */
+/* a Gachon University address (n@gachon.ac.kr) gets a free year the moment the sign-up code is entered, whether or not "student" was ticked.
+   It is not announced anywhere on the site. The address is the proof (the code went to it), and a hash of it keeps a second account from getting it again. */
+export function gachonEmail(email) { const d = String(email).split("@")[1] || ""; return /(^|[.])gachon[.]ac[.]kr$/i.test(d); }
 export function uniDomain(email) { const d = String(email).split("@")[1] || ""; return UNI.test(d); }
 const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,190}\.[a-z]{2,}$/i;
 const NICK = /^[\p{L}\p{N}_.-]{2,20}$/u;
@@ -670,7 +673,9 @@ const routes = {
     const id = b64(rand(12));
     await env.DB.prepare("INSERT INTO users (id, email, nick, pass, state, created) VALUES (?, ?, ?, ?, ?, ?)").bind(id, email, nick, p.pass, p.state || "{}", Date.now()).run();
     /* the code went to this address, so a university address is a checked one: the student month */
-    if (p.student && uniDomain(email) && !(await uniTaken(env, email)))
+    if (gachonEmail(email) && !(await uniTaken(env, email)))
+      await env.DB.prepare("UPDATE users SET uni_email = ?, student = 'verified', trial_until = ? WHERE id = ?").bind(email, Date.now() + 365 * DAY, id).run();
+    else if (p.student && uniDomain(email) && !(await uniTaken(env, email)))
       await env.DB.prepare("UPDATE users SET uni_email = ?, student = 'verified', trial_until = ? WHERE id = ?").bind(email, Date.now() + MONTH, id).run();
     await env.DB.prepare("DELETE FROM signups WHERE email = ?").bind(email).run();
     try { await countHit(env, req, "signup", d.src, d.camp, d.dev); } catch (e) {}

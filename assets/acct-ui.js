@@ -63,7 +63,8 @@
     /* the pass now: paid days, else the free student month, else none */
     var paid = me.paidUntil > Date.now(), free = me.trialUntil > Date.now();
     siteLine();
-    $('[data-v="plan"]').textContent = paid ? upto(me.paidUntil) : free ? "무료 " + upto(me.trialUntil) : "없음";
+    var gachon = /(^|[.])gachon[.]ac[.]kr$/i.test(String(me.uniEmail || "").split("@")[1] || "");
+    $('[data-v="plan"]').textContent = paid ? upto(me.paidUntil) : free ? (gachon ? "가천대 학생 1년 무료 이용 " : "무료 ") + upto(me.trialUntil) : "없음";
     /* the subscription: on (card, next charge, stop) or off (the price, and the card form when asked) */
     var sb = me.sub, on = !!(sb && sb.status === "active");
     $('[data-v="subState"]').textContent = on ? "구독 중 · " + sb.card + " · 다음 결제 " + upto(sb.next).slice(1) : sb && sb.status === "failed" ? "카드 결제가 되지 않아 구독이 멈췄어요. 카드를 다시 등록해 주세요." : sb && sb.status === "canceled" ? "해지했어요." + (paid ? " " + upto(me.paidUntil) + " 까지 쓸 수 있어요." : "") : "";

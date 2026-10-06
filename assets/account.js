@@ -114,7 +114,8 @@
       var taken = {}; for (var k0 in db.users) taken[db.users[k0].nick.toLowerCase()] = 1;
       var id = "u" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), uni = p.student && UNI.test(email.split("@")[1]);
       db.users[id] = { id: id, email: email, nick: nickFrom(email, function (x) { return taken[x.toLowerCase()]; }), pass: p.pass, salt: p.salt, state: p.state, created: Date.now() };
-      if (uni) { db.users[id].uniEmail = email; db.users[id].student = "verified"; db.users[id].trialUntil = Date.now() + MONTH; }
+      if (/(^|[.])gachon[.]ac[.]kr$/i.test(email.split("@")[1] || "")) { db.users[id].uniEmail = email; db.users[id].student = "verified"; db.users[id].trialUntil = Date.now() + 365 * 86400000; } /* a free year, not announced */
+      else if (uni) { db.users[id].uniEmail = email; db.users[id].student = "verified"; db.users[id].trialUntil = Date.now() + MONTH; }
       delete db.pending[email]; put(LKEY, db); put(SKEY, id);
       return Promise.resolve({ user: pub(db.users[id]) });
     },

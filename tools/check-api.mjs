@@ -424,5 +424,20 @@ const sig = async (tid, amount, ediDate) => hex(tid + amount + ediDate + env.NIC
 r = await boss("GET", "/api/admin/usage");
 t("usage: admin sees counts", r.status === 200 && r.body.now.mailDay > 0 && r.body.series.mail.length === 14 && r.body.now.users > 0 && r.body.free.workers === 100000 && r.body.errors.workers === "token", r.body);
 t("usage: admin only", (await a("GET", "/api/admin/usage")).status === 403);
+// a Gachon University address gets a free year at sign-up, ticked as student or not; nobody else does
+{ const yr = (u) => u && u.trialUntil > Date.now() + 364 * 86400000 && u.trialUntil < Date.now() + 366 * 86400000;
+  const g1 = await join(jar(), { email: "g1@gachon.ac.kr", password: "12345678" });
+  t("gachon: a plain sign-up gets a free year", g1.status === 200 && yr(g1.body.user) && g1.body.user.student === "verified" && g1.body.user.uniEmail === "g1@gachon.ac.kr", g1.body.user);
+  const g2 = await join(jar(), { email: "g2@gachon.ac.kr", password: "12345678", student: true });
+  t("gachon: a student sign-up gets a free year, not a month", g2.status === 200 && yr(g2.body.user), g2.body.user);
+  const g3 = await join(jar(), { email: "G3@Student.Gachon.ac.kr", password: "12345678" });
+  t("gachon: a sub-domain counts too", g3.status === 200 && yr(g3.body.user), g3.body.user);
+  const o1 = await join(jar(), { email: "x@notgachon.ac.kr", password: "12345678" }), o2 = await join(jar(), { email: "x@gachon.ac.kr.evil.com", password: "12345678" }), o3 = await join(jar(), { email: "x@other.ac.kr", password: "12345678" });
+  t("gachon: look-alike and other addresses get nothing", o1.body.user.trialUntil === 0 && o2.body.user.trialUntil === 0 && o3.body.user.trialUntil === 0, [o1, o2, o3].map((r) => r.body.user && r.body.user.trialUntil));
+  const gj = jar(); await join(gj, { email: "g4@gachon.ac.kr", password: "12345678" });
+  t("gachon: it opens publishing", (await gj("POST", "/api/site/name", { name: "gachon-g4" })).status === 200);
+  await gj("POST", "/api/me/delete", { password: "12345678" });
+  const g5 = await join(jar(), { email: "g4@gachon.ac.kr", password: "12345678" });
+  t("gachon: the same address does not get a second year", g5.status === 200 && g5.body.user.trialUntil === 0, g5.body.user && g5.body.user.trialUntil); }
 console.log(ok + " passed, " + bad + " failed");
 if (bad) process.exit(1);
