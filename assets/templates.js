@@ -854,6 +854,18 @@
     liveText(view);
     tick();
   }
+  /* pictures are asked for before they are drawn: the random form's first pictures start loading while the rest of this file is still running,
+     and while one random form is on screen the next one's first pictures are fetched when the browser is idle (not on a data-saver or slow
+     connection, and only a few pictures, so nothing heavy is fetched for a form that may never be shown) */
+  var warmed = {};
+  function warm(n, count) {
+    var b = find(n); if (!b) return;
+    var m = pageFor(b).match(/src="[^"]+\.(?:jpe?g|webp|png)"/g) || [];
+    m.slice(0, count).forEach(function (x) { var u = x.slice(5, -1); if (!warmed[u]) { warmed[u] = 1; new Image().src = u; } });
+  }
+  function frugal() { var c = navigator.connection; return !!(c && (c.saveData || /(^|-)2g$|3g/.test(c.effectiveType || ""))); }
+  var early = 1 + Math.floor(Math.random() * TOTAL);
+  if (!/[?&](view|edit|check)=/.test(location.search) && !window.SITE_VIEW) { try { warm(early, 3); } catch (e) {} }
   var io = "IntersectionObserver" in window ? new IntersectionObserver(function (es) {
     es.forEach(function (e) { if (e.isIntersecting) { io.unobserve(e.target); fill(e.target); } });
   }, { rootMargin: "600px 0px" }) : null;
@@ -935,14 +947,17 @@
 
   /* ---------- shuffle ---------- */
   var stage = document.getElementById("shuffleStage");
-  var cur = 1 + Math.floor(Math.random() * TOTAL), shownAt = Date.now(), held = false, inView = true;
-  function randomOther() { var n = cur; while (n === cur && TOTAL > 1) n = 1 + Math.floor(Math.random() * TOTAL); return n; }
+  var cur = early, nextN = 0, shownAt = Date.now(), held = false, inView = true;
+  function randomOther() { var n = nextN && nextN !== cur ? nextN : cur; while (n === cur && TOTAL > 1) n = 1 + Math.floor(Math.random() * TOTAL); return n; }
   function showShuffle() {
     shownAt = Date.now();
     stage.innerHTML = '<button type="button" class="shuffle-btn shuffle-prev" aria-label="이전 폼">' + ICON.prev + '</button>' + card(find(cur), true) +
       '<button type="button" class="shuffle-btn shuffle-next" aria-label="다른 폼">' + ICON.next + '</button>';
     fill(stage.querySelector(".tpl-slot"), true);
     document.getElementById("shuffleNo").textContent = tag(cur);
+    /* the next random form is decided now, so its pictures can be fetched ahead of time */
+    nextN = 0; nextN = randomOther();
+    if (!frugal() && !reduce) (window.requestIdleCallback || function (f) { setTimeout(f, 600); })(function () { try { warm(nextN, 4); } catch (e) {} }, { timeout: 1500 });
   }
   stage.addEventListener("click", function (e) {
     if (e.target.closest(".shuffle-next")) { cur = randomOther(); showShuffle(); }
