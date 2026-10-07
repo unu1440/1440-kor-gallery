@@ -277,3 +277,26 @@
   openFromHash();
   window.addEventListener("hashchange", openFromHash); /* the same page with #terms typed or linked again */
 })();
+
+/* 구독 및 이용권 상세정보: 열고 닫을 때 높이가 부드럽게 늘고 줄며, 내용은 흐림 속에서 선명해짐 (움직임 줄이기 설정이면 바로 열고 닫음) */
+(function () {
+  var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.addEventListener("click", function (e) {
+    var sum = e.target.closest && e.target.closest(".benefit > summary"); if (!sum) return;
+    var d = sum.parentNode, body = d.querySelector(".benefit-body"); if (reduce || !body || !body.animate) return;
+    e.preventDefault();
+    if (d._anim) d._anim.cancel();
+    var opening = !d.open, ease = "cubic-bezier(.3,0,.2,1)", ms = 500;
+    if (opening) d.open = true;
+    var h = body.offsetHeight, mt = getComputedStyle(body).marginTop;
+    var frames = opening
+      ? [{ height: "0px", marginTop: "0px", opacity: 0, filter: "blur(4px)" }, { height: h + "px", marginTop: mt, opacity: 1, filter: "blur(0)" }]
+      : [{ height: h + "px", marginTop: mt, opacity: 1, filter: "blur(0)" }, { height: "0px", marginTop: "0px", opacity: 0, filter: "blur(4px)" }];
+    var wrap = body; wrap.style.overflow = "hidden";
+    var a = d._anim = wrap.animate(frames, { duration: ms, easing: ease });
+    d.classList.toggle("closing", !opening); /* the arrow turns at once */
+    var done = false, finish = function () { if (done || d._anim !== a) return; done = true; wrap.style.overflow = ""; d._anim = null; d.classList.remove("closing"); if (!opening) d.open = false; };
+    a.onfinish = finish; setTimeout(finish, ms + 60); /* the timer covers a tab that is hidden, where the end of an animation can come late */
+    a.oncancel = function () { wrap.style.overflow = ""; };
+  });
+})();
