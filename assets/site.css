@@ -458,6 +458,7 @@ html.intro .minute { animation: none; }
 }
 .acct-ov .pay { display: grid; gap: 0.6em; border-top: 1px solid var(--ink-4); padding-top: 1.1em; margin-top: 0.6em; }
 .acct-ov .pay .ck .v { text-align: right; }
+.acct-ov .pay > .dim:empty, .acct-ov .pay > .acct-msg:empty { display: none; } /* 빈 줄이 칸 사이 간격을 늘리지 않게 */
 .acct-ov .pay button[disabled] { opacity: .35; cursor: default; }
 .info-page .rule { border-top: 1px solid var(--ink-4); padding-top: 1.2em; margin-top: 0.4em; }
 
