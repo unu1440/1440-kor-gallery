@@ -387,7 +387,7 @@
       var catOf = function (f) { return /^ch-/.test(f) ? "Furniture" : /^gl-/.test(f) ? "Glass" : "Ceramics"; };
       return row(N + " Shop", fl, "Cart (0)") +
         '<div style="position:absolute;left:28px;right:28px;top:80px;display:grid;grid-template-columns:repeat(4,1fr);gap:30px 16px">' + items.map(function (x) {
-          return '<div data-cat="' + catOf(x[0]) + '" style="display:grid;gap:8px"><div style="aspect-ratio:1;background:#ece9e2;overflow:hidden"><img src="' + src(x[0]) + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover"></div><div style="display:flex;justify-content:space-between;font-size:15px"><span>' + x[1] + '</span><span class="m">' + x[2] + '</span></div></div>';
+          return '<div data-cat="' + catOf(x[0]) + '" style="display:grid;gap:8px"><div style="aspect-ratio:1;background:#ece9e2;overflow:hidden"><img src="' + src(x[0]) + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover"></div><div style="display:flex;justify-content:space-between;font-size:15px"><span>' + x[1] + '</span><span class="m" style="white-space:nowrap">' + x[2] + '</span></div></div>';
         }).join("") + '</div>';
     } },
     { name: "채워진 폼 P505", n: 2, bg: "#000", ink: "#fff", html: function () {
@@ -418,7 +418,7 @@
           '<p>Hand-thrown stoneware from a two-person studio. Every piece is fired twice and glazed by hand, so no two are the same.</p>' + ko("둘이 운영하는 공방의 물레 성형 석기. 두 번 굽고 손으로 유약을 입힙니다.", "opacity:.6;font-size:15px") +
           '<span style="border-top:1px solid;padding-top:12px">New batch — 12 cups, 6 jugs</span>') +
         at("left:28px;right:28px;top:668px;display:grid;grid-template-columns:repeat(5,1fr);gap:14px", ["cer-cup-speckle", "cer-dark-jug", "cer-vases-beige", "cer-blue-set", "st-yellow-jars"].map(function (c, i) {
-          return '<div style="display:grid;gap:6px"><div style="aspect-ratio:4/3;overflow:hidden"><img src="' + src(c) + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover"></div><div style="display:flex;justify-content:space-between;font-size:13px"><span>Piece 0' + (i + 1) + '</span><span class="m">₩ ' + (38 + i * 16) + ',000</span></div></div>';
+          return '<div style="display:grid;gap:6px"><div style="aspect-ratio:4/3;overflow:hidden"><img src="' + src(c) + '" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover"></div><div style="display:flex;justify-content:space-between;font-size:13px"><span>Piece 0' + (i + 1) + '</span><span class="m" style="white-space:nowrap">₩ ' + (38 + i * 16) + ',000</span></div></div>';
         }).join(""));
     } },
     { name: "채워진 폼 P909", n: 4, bg: "#fcfcfc", ink: "#111", html: function () {

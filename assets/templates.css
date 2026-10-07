@@ -874,3 +874,5 @@ body.solo > :not(.solo-page) { display: none !important; }
 .tp-reflow > .gh > :nth-child(2) { order: 3; grid-column: 1 / -1; opacity: .6; }
 /* a block of words set into a corner of a half-page panel goes into the flow on a phone (its panel has no height there) */
 .tp-reflow .rf-flow { position: relative !important; right: auto !important; top: auto !important; text-align: left !important; }
+/* numbers and prices in a form never break at a comma or a slash (WebKit) */
+.lv-cart .m, .lv-row .m, .pd-price { white-space: nowrap; }

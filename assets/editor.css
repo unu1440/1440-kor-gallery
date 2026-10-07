@@ -493,7 +493,7 @@ body.editing, .ed { background: #f8f8f6; }
 .ed-plan { display: flex; justify-content: space-between; gap: 1em; padding: 0.55em 0; color: rgba(0, 0, 0, .7); transition: color .4s; }
 .ed-plan + .ed-plan { border-top: 1px solid rgba(0, 0, 0, .07); }
 .ed-plan:hover, .ed-plan:focus-visible { color: #000; outline: none; }
-.ed-plan span:last-child { font-variant-numeric: tabular-nums; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 0.22em; transition: text-decoration-color .4s; }
+.ed-plan span:last-child { white-space: nowrap; font-variant-numeric: tabular-nums; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 0.22em; transition: text-decoration-color .4s; }
 .ed-plan:hover span:last-child { text-decoration-color: currentColor; }
 .ed-done { margin: 0; font-size: max(16px, 1.1em); }
 .ed-pmsg:empty { display: none; }

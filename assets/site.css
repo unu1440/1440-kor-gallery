@@ -386,6 +386,10 @@ html.intro .minute { animation: none; }
 .ck .b { width: 0.42em; height: 0.42em; border-radius: 50%; background: currentColor; align-self: center; }
 .ck em { font-style: normal; color: var(--ink-3); margin-left: 0.5em; }
 .ck .v { text-align: right; }
+/* a price or a number must never be split at its comma (WebKit, i.e. Safari and every iPhone browser, squeezes the narrow value column and breaks "4,900₩" into "4," / "900₩") */
+.nb { white-space: nowrap; }
+.pay .ck .v, .pay .ck .v button { white-space: nowrap; }
+.info-page a[href^="tel:"], .info-page a[href^="mailto:"] { white-space: nowrap; }
 /* documents: articles set one under the other, each with its short title */
 .doc { gap: 1.1em; }
 .doc section { display: grid; gap: 0.4em; align-content: start; }
@@ -441,7 +445,7 @@ html.intro .minute { animation: none; }
 .acct-ov .u { text-decoration: underline; text-decoration-color: var(--ink-4); text-underline-offset: 0.2em; transition: text-decoration-color .5s, color .5s; font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
 @media (hover: hover) { .acct-ov .u:hover { text-decoration-color: currentColor; } }
 .acct-local { margin-top: 2.6em; max-width: 30em; }
-.acct-dl .v { text-align: right; min-width: 0; overflow-wrap: anywhere; }
+.acct-dl .v { text-align: right; min-width: 0; overflow-wrap: break-word; }
 .adm { display: grid; gap: 0.5em; border-top: 1px solid var(--ink-4); padding-top: 1em; }
 .adm-q { max-width: 18em; }
 .adm-r { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.3em 1.2em; padding: 0.55em 0; border-bottom: 1px solid var(--ink-4); align-items: start; }
@@ -523,3 +527,4 @@ html.intro .minute { animation: none; }
 .acct-dl li[hidden] { display: none; }
 .info-page .pay { display: grid; gap: 0.6em; padding-top: 1.1em; margin-top: 0.6em; border-top: 1px solid var(--ink-4); }
 .info-page .info-title + .pay { border-top: 0; padding-top: 0.4em; margin-top: 0; }
+.us-kp, .us-kv, .us-y span { white-space: nowrap; }
