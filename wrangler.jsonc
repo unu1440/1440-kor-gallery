@@ -7,7 +7,7 @@
   "compatibility_date": "2025-09-01",
   "assets": {
     // only what the site needs is copied here before a deploy (see the GitHub workflows):
-    // index.html, templates.html, assets/. research/ (third-party sources) is never deployed.
+    // index.html, templates.html, assets/.
     "directory": "./dist"
   },
   // production: only the custom domain, no workers.dev address

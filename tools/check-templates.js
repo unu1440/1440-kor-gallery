@@ -35,7 +35,7 @@ var use = {};
 specs.forEach(function (s) {
   /* the second layer of a before/after and the loupe lens magnify the same picture on purpose */
   var r = G.render(s, env), out = r.html.replace(/<img data-dup[^>]*>/g, "").replace(/background-image:url\([^)]*\)/g, "");
-  var seen = {}, basicOk = s.cat === "basic"; /* basic templates share pictures, as Cargo's do */
+  var seen = {}, basicOk = s.cat === "basic"; /* basic templates share pictures */
   (out.match(/samples\/[a-z0-9-]+\.jpg/g) || []).concat((out.match(/data-img="[a-z0-9-]+"/g) || []).map(function (m) { return "samples/" + m.slice(10, -1) + ".jpg"; })).forEach(function (m) {
     if (seen[m] && !(basicOk && s.photos.length > G.SHARED.length)) bad(s.no + " uses " + m + " twice"); seen[m] = 1;
   });

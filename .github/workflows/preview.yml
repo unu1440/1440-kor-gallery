@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v5
       - name: 템플릿 검사
         run: node tools/check-templates.js
-      - name: 올릴 파일만 모으기 (research/ 등은 빠짐)
+      - name: 올릴 파일만 모으기
         run: mkdir dist && cp -r index.html templates.html robots.txt sitemap.xml assets _headers dist/ && find dist -name '*.md' -delete
       - name: 스크립트·스타일 압축 (주석 빼기, 원본은 그대로)
         run: npx --yes esbuild@0.25.10 dist/assets/*.js dist/assets/*.css --minify --charset=utf8 --legal-comments=none --outdir=dist/assets --allow-overwrite --log-level=warning

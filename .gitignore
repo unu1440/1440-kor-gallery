@@ -13,7 +13,6 @@ desktop.ini
 # 개인 서류(사업자등록증 등): 개인정보가 들어 있어 저장소에 올리지 않음
 *사업자등록증*
 *.pdf
-!research/**/*.pdf
 
 # 배포 직전에 모으는 폴더 (GitHub 작업이 만듦)
 dist/
@@ -24,3 +23,8 @@ promo/
 
 # 개인 사업 비용 정리: 저장소에 올리지 않음
 비용/
+
+# 로컬 전용 자료: 벤치마킹 원본 데이터, 작업 메모
+research/
+CLAUDE.local.md
+TODO.local.md
