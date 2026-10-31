@@ -307,6 +307,20 @@ export function siteNameError(v) {
 const MEDIA_TYPES = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif", "model/gltf-binary": "glb", "video/mp4": "mp4", "video/webm": "webm" };
 const MEDIA_MAX = { glb: 40 * 1048576, mp4: 40 * 1048576, webm: 40 * 1048576 }, MEDIA_MAX_IMG = 10 * 1048576, MEDIA_TOTAL = 500 * 1048576;
 const FILLING = new Set(); /* videos being copied into the edge cache right now (per instance), so a burst of piece requests starts one copy */
+/* the first bytes of a file must match what it says it is (the Content-Type header is only what the sender claims) */
+function mediaSignatureOk(ext, b) {
+  const at = (i, s) => s.split("").every((c, k) => b[i + k] === c.charCodeAt(0));
+  switch (ext) {
+    case "jpg": return b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff;
+    case "png": return b[0] === 0x89 && at(1, "PNG");
+    case "gif": return at(0, "GIF8");
+    case "webp": return at(0, "RIFF") && at(8, "WEBP");
+    case "glb": return at(0, "glTF");
+    case "mp4": return at(4, "ftyp");
+    case "webm": return b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3;
+  }
+  return false;
+}
 const MEDIA_URL = /^\/m\/[a-f0-9]{64}\.(jpg|png|webp|gif|glb|mp4|webm)$/;
 /* what a pass gives: paid days, the free student month, or an active subscription */
 async function passNow(env, userId, now = Date.now()) {
@@ -416,6 +430,7 @@ const siteRoutes = {
     const buf = await req.arrayBuffer(), max = MEDIA_MAX[ext] || MEDIA_MAX_IMG;
     if (!buf.byteLength) return fail("빈 파일이에요.");
     if (buf.byteLength > max) return fail("파일이 너무 커요 (" + Math.round(max / 1048576) + "MB까지).", 413);
+    if (!mediaSignatureOk(ext, new Uint8Array(buf, 0, Math.min(buf.byteLength, 16)))) return fail("파일 내용이 " + ext + " 형식이 아니에요.", 415);
     const used = await env.DB.prepare("SELECT COALESCE(SUM(size), 0) AS n FROM media WHERE user_id = ?").bind(u.id).first();
     if (((used && used.n) || 0) + buf.byteLength > MEDIA_TOTAL) return fail("올린 파일이 너무 많아요 (500MB까지).", 413);
     const key = toHex(await crypto.subtle.digest("SHA-256", buf)) + "." + ext;
@@ -432,6 +447,8 @@ const siteRoutes = {
     const d = await body(req), n = Math.round(+d.n || 0);
     if (!(n >= 1 && n <= 1440)) return fail("폼 번호가 맞지 않아요.");
     if (!d.s || typeof d.s !== "object" || Array.isArray(d.s)) return fail("공개할 내용이 없어요.");
+    /* the page script puts a page's id into the markup, so it must be a plain word */
+    if (d.s.pages !== undefined && (!Array.isArray(d.s.pages) || d.s.pages.length > 60 || d.s.pages.some((p) => !p || typeof p !== "object" || typeof p.id !== "string" || !/^[\w-]{1,40}$/.test(p.id)))) return fail("페이지 정보가 맞지 않아요.");
     const media = d.media && typeof d.media === "object" ? d.media : {}, keys = [];
     for (const k of Object.keys(media)) {
       if (!/^[\w:.-]{1,80}$/.test(k) || !MEDIA_URL.test(String(media[k]))) return fail("사진 주소가 맞지 않아요.");
@@ -866,26 +883,37 @@ async function adminLog(env, req, u, key) {
   try { await env.DB.prepare("INSERT INTO admin_log (at, admin, action, target, ip) VALUES (?, ?, ?, ?, ?)").bind(Date.now(), u.email, key, target, req.headers.get("cf-connecting-ip") || "").run(); } catch (e) {}
 }
 
+/* headers every answer carries; the media route also forbids running anything from a file */
+const SECURITY_HEADERS = { "x-content-type-options": "nosniff", "referrer-policy": "strict-origin-when-cross-origin", "permissions-policy": "camera=(), microphone=(), geolocation=()", "strict-transport-security": "max-age=31536000", "x-frame-options": "SAMEORIGIN" };
+async function withSecurityHeaders(req, res) {
+  try {
+    const h = new Headers(res.headers);
+    for (const k in SECURITY_HEADERS) if (!h.has(k)) h.set(k, SECURITY_HEADERS[k]);
+    if (new URL(req.url).pathname.startsWith("/m/")) h.set("content-security-policy", "default-src 'none'; sandbox");
+    return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+  } catch (e) { return res; }
+}
 export default {
   /* the daily renewal (api/wrangler.jsonc → triggers) */
   async scheduled(event, env, ctx) { ctx.waitUntil(renewSubs(env).then(() => sweepSites(env))); },
-  async fetch(req, env, ctx) {
-    const url = new URL(req.url), key = req.method + " " + url.pathname.replace(/\/+$/, ""), fn = routes[key];
-    /* 이름.kor.gallery is a published site; 1440.kor.gallery itself is the static site (only /api/* is ours) */
-    if (url.hostname !== new URL(env.SITE_ORIGIN || "https://1440.kor.gallery").hostname) return serveSite(req, env, url, ctx);
-    if (!url.pathname.startsWith("/api/") && env.STATIC) return env.STATIC.fetch(req);
-    if (!fn) return fail("not found", 404);
-    if (req.method !== "GET" && key !== "POST /api/pay/return" && key !== "POST /api/pay/hook") { /* NICEPAY's posts come from its own servers */
-      const origin = req.headers.get("origin");
-      if (origin && origin !== url.origin && origin !== env.SITE_ORIGIN) return fail("forbidden", 403);
-      if (key === "PUT /api/media") { if (!origin) return fail("forbidden", 403); } /* a file, not JSON: it must say it comes from this site */
-      else if (!/application\/json/.test(req.headers.get("content-type") || "")) return fail("json only", 415);
-    }
-    try {
-      const u = await userOf(env, req);
-      if (url.pathname.startsWith("/api/admin/") && isAdmin(env, u)) await adminLog(env, req, u, key);
-      return await fn(env, req, u);
-    }
-    catch (e) { console.error("api error", key, e && e.message); return fail("잠시 문제가 생겼어요.", 500); } /* what went wrong shows in `wrangler tail`, not to the person */
-  }
+  async fetch(req, env, ctx) { return withSecurityHeaders(req, await handle(req, env, ctx)); }
 };
+async function handle(req, env, ctx) {
+  const url = new URL(req.url), key = req.method + " " + url.pathname.replace(/\/+$/, ""), fn = routes[key];
+  /* 이름.kor.gallery is a published site; 1440.kor.gallery itself is the static site (only /api/* is ours) */
+  if (url.hostname !== new URL(env.SITE_ORIGIN || "https://1440.kor.gallery").hostname) return serveSite(req, env, url, ctx);
+  if (!url.pathname.startsWith("/api/") && env.STATIC) return env.STATIC.fetch(req);
+  if (!fn) return fail("not found", 404);
+  if (req.method !== "GET" && key !== "POST /api/pay/return" && key !== "POST /api/pay/hook") { /* NICEPAY's posts come from its own servers */
+    const origin = req.headers.get("origin");
+    if (origin && origin !== url.origin && origin !== env.SITE_ORIGIN) return fail("forbidden", 403);
+    if (key === "PUT /api/media") { if (!origin) return fail("forbidden", 403); } /* a file, not JSON: it must say it comes from this site */
+    else if (!/application\/json/.test(req.headers.get("content-type") || "")) return fail("json only", 415);
+  }
+  try {
+    const u = await userOf(env, req);
+    if (url.pathname.startsWith("/api/admin/") && isAdmin(env, u)) await adminLog(env, req, u, key);
+    return await fn(env, req, u);
+  }
+  catch (e) { console.error("api error", key, e && e.message); return fail("잠시 문제가 생겼어요.", 500); } /* what went wrong shows in `wrangler tail`, not to the person */
+}

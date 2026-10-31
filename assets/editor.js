@@ -1624,7 +1624,7 @@
   /* a page other than the first is one screen of its own: the site's name and the pages along the top, a title and some words */
   function pageMarkup(pg, mob) {
     var name = esc(S.texts[T.site || T.defName] !== undefined ? S.texts[T.site || T.defName] : (T.site || T.defName)), nav = S.pages.filter(function (p) { return p.type === "page" && !p.hidden; });
-    var links = nav.map(function (p) { return '<a href="#" data-pg="' + p.id + '" class="lv-a' + (p.id === pg.id ? " on" : "") + '">' + esc(p.name) + '</a>'; }).join(" · ");
+    var links = nav.map(function (p) { return '<a href="#" data-pg="' + esc(p.id) + '" class="lv-a' + (p.id === pg.id ? " on" : "") + '">' + esc(p.name) + '</a>'; }).join(" · ");
     return '<div class="tp-row"><span class="tp-name">' + name + '</span><span>' + links + '</span><span></span></div>' +
       '<div class="pg-body" style="position:absolute;left:28px;right:28px;top:' + (mob ? 96 : 130) + 'px;bottom:56px;display:grid;align-content:start;gap:' + (mob ? 20 : 34) + 'px;overflow:hidden">' +
       '<h1 class="big pg-t" data-pgf="title" data-ph="제목" style="position:static;font-size:' + (mob ? 46 : 110) + 'px;margin:0">' + esc(pg.name) + '</h1>' +

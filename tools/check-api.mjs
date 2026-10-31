@@ -286,6 +286,19 @@ const sig = async (tid, amount, ediDate) => hex(tid + amount + ediDate + env.NIC
   t("media: needs log-in", (await put(null, img, "image/jpeg")).status === 401);
   t("media: needs this site", (await W.fetch(new Request(O + "/api/media", { method: "PUT", headers: { "content-type": "image/jpeg", cookie: ck }, body: img }), env)).status === 403);
   t("media: too big", (await put(null, new Uint8Array(10 * 1048576 + 1), "image/png", { cookie: ck })).status === 413);
+  { const html = new TextEncoder().encode("<script>alert(1)</script>");
+    t("media: a page called a picture", (await put(null, html, "image/png", { cookie: ck })).status === 415);
+    t("media: a picture called another kind", (await put(null, img, "image/png", { cookie: ck })).status === 415);
+    t("media: a picture called a model", (await put(null, img, "model/gltf-binary", { cookie: ck })).status === 415);
+    t("media: a real model", (await put(null, new TextEncoder().encode("glTF\x02\0\0\0"), "model/gltf-binary", { cookie: ck })).status === 200);
+    db.prepare("DELETE FROM media WHERE key LIKE '%.glb'").run(); for (const k of [...R2.keys()]) if (k.endsWith(".glb")) R2.delete(k); }
+  // every answer says what it is and may not be framed; a file may not run anything
+  { const h = (await put(null, img, "image/jpeg", { cookie: ck })).headers;
+    t("headers: no guessing of types", h.get("x-content-type-options") === "nosniff", h.get("x-content-type-options"));
+    t("headers: no framing, no referrer leak, no device access", h.get("x-frame-options") === "SAMEORIGIN" && h.get("referrer-policy") === "strict-origin-when-cross-origin" && /camera=\(\)/.test(h.get("permissions-policy") || ""));
+    t("headers: https only", /max-age=31536000/.test(h.get("strict-transport-security") || ""));
+    const m = await W.fetch(new Request("https://haneul.kor.gallery" + mu), env);
+    t("headers: a file may not run anything", /sandbox/.test(m.headers.get("content-security-policy") || "") && m.headers.get("x-content-type-options") === "nosniff"); }
   // the edge cache: a picture seen again is not read from R2 again, a copy lasts a day, and the page still says a year
   { const store = new Map(), pend = []; let gets = 0; const realGet = env.MEDIA.get;
     env.MEDIA.get = async function (k, o) { gets++; return realGet.call(this, k, o); };
@@ -314,6 +327,10 @@ const sig = async (tid, amount, ediDate) => hex(tid + amount + ediDate + env.NIC
   db.prepare("UPDATE users SET paid_until = ? WHERE email = 'site1@mail.com'").run(Date.now() + 30 * 86400000);
   t("publish: someone else's picture", (await s1("POST", "/api/site/publish", { ...snap, media: { "u-1": "/m/" + "a".repeat(64) + ".jpg" } })).status === 400);
   t("publish: not our address", (await s1("POST", "/api/site/publish", { ...snap, media: { "u-1": "https://evil.com/x.jpg" } })).status === 400);
+  for (const bad of ['p-1" onmouseover="alert(1)', "p'1", "p 1", "<b>", "x".repeat(41), "", 5])
+    t("publish: a page id that is not a plain word is refused (" + JSON.stringify(bad).slice(0, 24) + ")", (await s1("POST", "/api/site/publish", { ...snap, s: { ...snap.s, pages: [{ id: bad, type: "page", name: "x" }] } })).status === 400);
+  t("publish: pages must be a list", (await s1("POST", "/api/site/publish", { ...snap, s: { ...snap.s, pages: { id: "home" } } })).status === 400);
+  t("publish: ordinary page ids pass", (await s1("POST", "/api/site/publish", { ...snap, s: { ...snap.s, pages: [{ id: "home", type: "page", name: "홈" }, { id: "p-lx2k9a1b", type: "page", name: "소개" }] } })).status === 200);
   r = await s1("POST", "/api/site/publish", snap); t("publish", r.status === 200 && r.body.site.published > 0 && r.body.site.n === 161, r);
   /* the editor's folder marks the published form 공개 중: the server keeps which folder entry it was */
   r = await s1("POST", "/api/site/publish", { ...snap, fid: "161||" }); t("publish: remembers which folder entry", r.status === 200 && r.body.site.fid === "161||", r.body);

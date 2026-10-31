@@ -5,7 +5,7 @@
   function clean(v) {
     return (v || "").toLowerCase().replace(/[\s_]+/g, "-").replace(/[^a-z0-9-]/g, "").replace(/-{2,}/g, "-").replace(/^-+|-+$/g, "").slice(0, 30);
   }
-  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 
   /* a published site (이름.kor.gallery): the server puts the snapshot in window.SITE_VIEW and editor.js draws it without tools */
   var SV = window.SITE_VIEW && +window.SITE_VIEW.n ? window.SITE_VIEW : null;
