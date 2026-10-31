@@ -1,0 +1,6 @@
+# 맥과 윈도우에서 줄바꿈을 LF로 통일
+* text=auto eol=lf
+*.woff2 binary
+*.png binary
+*.jpg binary
+*.gz binary

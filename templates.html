@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>1440: 폼</title>
+  <meta name="description" content="이름.kor.gallery에 쓸 폼을 고르세요.">
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500&family=Archivo:wdth,wght@62..125,300..900&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,400&family=Nanum+Myeongjo:wght@400;700&family=UnifrakturMaguntia&family=Instrument+Serif:ital@0;1&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Big+Shoulders+Display:wght@500..900&family=Fraunces:opsz,wght@9..144,400..800&family=Unbounded:wght@400..800&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="assets/site.css?v=72">
+  <link rel="stylesheet" href="assets/templates.css?v=62">
+  <link rel="stylesheet" href="assets/editor.css?v=59">
+</head>
+<body class="page-templates">
+
+<!-- on the template picker the header carries the categories and the chosen address -->
+<header class="bar bar-pick">
+  <a class="home" href="./" aria-label="1440"><span class="t">1440</span><span class="mid"><img src="assets/favicon.png?v=1" alt="" width="64" height="64" decoding="async"></span></a>
+  <nav class="cats-links" aria-label="폼 분류">
+    <a href="#basic">빠른 설정</a>
+    <a href="#grad">졸업전시</a>
+    <a href="#graphic">포스터</a>
+    <a href="#populated">복합</a>
+    <a href="#blank">커스텀</a>
+  </nav>
+  <div class="bar-right">
+    <div class="cats-addr" id="catsAddr"></div>
+  </div>
+</header>
+
+<main class="pick" id="pick">
+  <section class="sec" id="shuffle" aria-labelledby="shuffleT">
+    <div class="shuffle-head">
+      <h2 class="sec-t" id="shuffleT">랜덤 <span class="m" id="shuffleNo">0000/1440</span></h2>
+    </div>
+    <div class="shuffle" id="shuffleStage"></div>
+  </section>
+
+  <section class="sec" id="basic" aria-labelledby="basicT">
+    <div class="sec-head"><h2 class="sec-t" id="basicT">빠른 설정</h2><span class="sec-n" id="basicN"></span></div>
+    <div class="basic" id="basicCols"></div>
+  </section>
+
+  <section class="sec" id="grad" aria-labelledby="gradT">
+    <div class="sec-head"><h2 class="sec-t" id="gradT">졸업전시</h2><span class="sec-n" data-count="grad"></span></div>
+    <div class="row" data-family="grad"></div>
+  </section>
+
+  <section class="sec" id="graphic" aria-labelledby="graphicT">
+    <div class="sec-head"><h2 class="sec-t" id="graphicT">포스터</h2><span class="sec-n" data-count="graphic"></span></div>
+    <div class="row" data-family="graphic"></div>
+  </section>
+
+  <section class="sec" id="populated" aria-labelledby="populatedT">
+    <div class="sec-head"><h2 class="sec-t" id="populatedT">복합</h2><span class="sec-n" data-count="populated"></span></div>
+    <div class="row" data-family="populated"></div>
+  </section>
+
+  <section class="sec" id="blank" aria-labelledby="blankT">
+    <div class="sec-head"><h2 class="sec-t" id="blankT">커스텀</h2><span class="sec-n" data-count="blank"></span></div>
+    <div class="row row-4" data-family="blank"></div>
+  </section>
+</main>
+
+
+<!-- large, working preview of one template -->
+<div class="preview" id="preview" hidden role="dialog" aria-modal="true" aria-labelledby="pvNo">
+  <div class="pv-box">
+    <div class="pv-top">
+      <b class="m pv-no" id="pvNo">0001/1440</b>
+      <div class="pv-modes" role="group" aria-label="화면 크기">
+        <button type="button" data-mode="desk" aria-pressed="true" aria-label="데스크톱" title="데스크톱"><svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="12" rx="1.2"/><path d="M9 20h6M12 16.5V20"/></svg></button>
+        <button type="button" data-mode="mob" aria-pressed="false" aria-label="모바일" title="모바일"><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/></svg></button>
+      </div>
+      <div class="pv-ends">
+        <button type="button" class="pv-open" aria-label="새 창에서 열기" title="새 창에서 열기"><svg viewBox="0 0 24 24"><path d="M8 16 17 7M9.5 7H17v7.5"/></svg></button>
+        <button type="button" class="pv-close" aria-label="닫기" title="닫기"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+    </div>
+    <div class="pv-stage-wrap">
+      <button type="button" class="shuffle-btn pv-prev" aria-label="이전 번호"><svg viewBox="0 0 24 24"><path d="M19 12H5M10.5 6.5 5 12l5.5 5.5"/></svg></button>
+      <div class="pv-stage" id="pvStage"></div>
+      <button type="button" class="shuffle-btn pv-next" aria-label="다음 번호"><svg viewBox="0 0 24 24"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg></button>
+    </div>
+    <div class="pv-bottom">
+      <p class="pv-hint" id="pvHint"></p>
+      <button type="button" class="pv-use">시작 <span aria-hidden="true">→</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="minute" title="하루 1,440분 중 지금"><span id="minute">0.0</span>/1440</div>
+
+<footer class="biz">
+  <nav class="biz-l" aria-label="약관">
+    <a href="./#terms" data-info="terms">서비스 약관</a>
+    <a href="./#privacy" data-info="privacy"><b>개인정보 처리방침</b></a>
+  </nav>
+  <dl>
+    <div class="q"><dt>상호</dt><dd>1440컴퍼니<span class="en"> · 1440company</span></dd></div>
+    <div><dt>대표</dt><dd>이현호</dd></div>
+    <div><dt>사업자등록번호</dt><dd>165-10-03434 <a class="ftc" href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=1651003434" target="_blank" rel="noopener">사업자정보 확인</a></dd></div>
+    <div><dt>통신판매업<span class="lg"> 신고번호</span></dt><dd>제2026-용인수지-3281호</dd></div>
+    <div class="q addr"><dt>주소</dt><dd>경기도 용인시 수지구 용구대로2790번길 7, 302-가12호(죽전동)</dd></div>
+    <div class="q"><dt>연락처</dt><dd><a href="tel:010-7907-1740">010-7907-1740</a></dd></div>
+    <div class="q"><dt>이메일</dt><dd><a href="mailto:1440unu@kor.gallery">1440unu@kor.gallery</a></dd></div>
+    <div><dt>호스팅</dt><dd>Cloudflare, Inc.</dd></div>
+  </dl>
+</footer>
+
+<script src="assets/common.js?v=6"></script>
+<script src="assets/photos.js?v=5"></script>
+<script src="assets/tpl-gen.js?v=38"></script>
+<script src="assets/templates.js?v=115"></script>
+<script src="assets/account.js?v=18"></script>
+<script src="assets/editor.js?v=93" defer></script>
+</body>
+</html>

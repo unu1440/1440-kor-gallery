@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>1440 — 포트폴리오·온라인 전시 사이트 빌더</title>
+  <meta name="description" content="디자이너와 아티스트를 위한 사이트 빌더. 나만의 이름.kor.gallery로 포트폴리오와 온라인 전시를 시작하세요.">
+  <link rel="canonical" href="https://1440.kor.gallery/">
+  <meta name="google-site-verification" content="CF_dlmZZhBVc3ImGYq7GdL7knus3o34LkixHuSPA4Hw">
+  <meta name="naver-site-verification" content="6f83559fb3ff895c3a7787dfec715e7a77abd1f1">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"1440","url":"https://1440.kor.gallery/","description":"디자이너와 아티스트를 위한 포트폴리오·온라인 전시 사이트 빌더","inLanguage":"ko"}</script>
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="1440">
+  <meta property="og:title" content="예술을 사랑하시나요? 합류하세요.">
+  <meta property="og:description" content="나만의 주소로 온라인 전시를 시작해보세요.">
+  <meta property="og:url" content="https://1440.kor.gallery/">
+  <meta property="og:image" content="https://1440.kor.gallery/assets/og-v2.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="600">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://1440.kor.gallery/assets/og-v2.png">
+  <link rel="icon" type="image/png" href="assets/favicon.png?v=1">
+  <!-- first-visit intro: hide everything but the title before the first paint -->
+  <script>
+    /* play the intro only on a fresh load: a first visit (typed address, bookmark,
+       link from another site) or a refresh. Skip it when arriving from a page of this
+       site (e.g. the 1440 logo) or via back/forward. */
+    (function () {
+      if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      var nav = performance.getEntriesByType && performance.getEntriesByType("navigation")[0];
+      var type = nav ? nav.type : "navigate";
+      var internal = false;
+      try { internal = !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (e) {}
+      if (type === "reload" || (type === "navigate" && !internal)) document.documentElement.classList.add("intro");
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="assets/site.css?v=72">
+</head>
+<body class="page-home">
+
+<header class="bar">
+  <a class="home" href="./" aria-label="1440"><span class="t">1440</span><span class="mid"><img src="assets/favicon.png?v=1" alt="" width="64" height="64" decoding="async"></span></a>
+  <nav class="menu" aria-label="주 메뉴">
+    <a href="templates.html">Form</a>
+    <a href="#" id="aboutLink" aria-expanded="false" aria-controls="infoOv">Information</a>
+    <span class="acct" id="acctSlot"><a href="#" id="loginLink" aria-expanded="false" aria-controls="acctOv">Login</a></span>
+  </nav>
+</header>
+
+<main class="hero">
+  <div class="lines">
+    <h1 aria-label="나만의 온라인 전시, 온라인 졸업전시, 포트폴리오, 갤러리, 아카이브, 스튜디오, 웹사이트">
+      <span class="typed" id="typed" aria-hidden="true"></span>
+      <span class="real" aria-hidden="true">나만의 <span class="rot" id="rot"><span class="w is-on">온라인 전시</span><span class="w">온라인 졸업전시</span><span class="w">포트폴리오</span><span class="w">갤러리</span><span class="w">아카이브</span><span class="w">스튜디오</span><span class="w">웹사이트</span></span></span>
+    </h1>
+    <div class="line2">
+    <p class="tagline" id="tagline" aria-hidden="true">내가 원하는 주소로.</p>
+    <form class="claim" id="claim" novalidate>
+      <label class="name" for="site">
+        <span class="sizer" id="sizer" aria-hidden="true"></span>
+        <input id="site" name="site" type="text" size="1" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="30" aria-label="원하는 주소 이름">
+        <span class="caret" aria-hidden="true"></span>
+      </label><span class="tld">.kor.gallery<button type="submit" class="go" aria-label="이 주소로 시작하기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></svg></button></span>
+    </form>
+    </div>
+    <p class="status" id="status" role="status"></p>
+  </div>
+  <div class="minute" title="하루 1,440분 중 지금"><span id="minute">0.0</span>/1440</div>
+</main>
+
+<!-- 정보: appears over the first page, laid out as a quiet two-column information page -->
+<div class="info-ov" id="infoOv" aria-hidden="true">
+  <div class="info-half">
+    <nav class="info-side" aria-label="Information 목차">
+      <a href="#about" data-to="about" class="on">1440</a>
+      <a href="#price" data-to="price">요금</a>
+      <span class="gap"></span>
+      <a href="#terms" data-to="terms">서비스 약관</a>
+      <a href="#privacy" data-to="privacy">개인정보 처리방침</a>
+      <a href="#copyright" data-to="copyright">저작권 지침</a>
+    </nav>
+
+    <div class="info-body">
+      <article class="info-page on" id="about">
+        <p class="info-title">"예술을 사랑하시나요?<br>합류하세요."</p>
+        <p>1440은 아티스트와 디자이너를 위한 웹사이트를 제공합니다. 나만의 주소로 온라인 전시를 시작해보세요.</p>
+      </article>
+
+      <article class="info-page" id="price">
+        <p class="info-title">요금</p>
+        <section class="pay">
+          <h2>구독</h2>
+          <ul class="ck">
+            <li><span class="b"></span><span class="t">매월</span><span class="v">4,900₩</span></li>
+          </ul>
+        </section>
+        <section class="pay">
+          <h2>이용권</h2>
+          <ul class="ck">
+            <li><span class="b"></span><span class="t">7일</span><span class="v">1,900₩</span></li>
+            <li><span class="b"></span><span class="t">30일</span><span class="v">4,900₩</span></li>
+            <li><span class="b"></span><span class="t">90일</span><span class="v">12,900₩</span></li>
+          </ul>
+        </section>
+        <section class="pay">
+          <details class="benefit"><summary><span>구독 및 이용권 상세정보</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg></summary><div class="benefit-body">
+            <ul class="ck">
+              <li><span class="b"></span><span class="t">이름.kor.gallery 주소로 나만의 온라인 전시·포트폴리오 사이트를 공개합니다.</span></li>
+              <li><span class="b"></span><span class="t">제공되는 폼 중에서 골라 글·사진·영상·3D 모델을 직접 편집합니다. 편집은 무료입니다.</span></li>
+              <li><span class="b"></span><span class="t">사진·영상·3D 파일을 계정당 500MB까지 올릴 수 있습니다.</span></li>
+              <li><span class="b"></span><span class="t">공개한 뒤에도 내용을 고쳐 다시 공개하거나, 언제든 공개를 멈출 수 있습니다.</span></li>
+            </ul>
+          </div></details>
+        </section>
+        <p class="rule">대학생은 첫 한 달을 무료로 제공하고 있습니다. 아이디어를 세상에 보여 주세요.</p>
+      </article>
+
+      <article class="info-page doc" id="terms">
+        <p class="info-title">서비스 약관</p>
+        <section><h2>제1조 (목적)</h2><p>이 약관은 1440컴퍼니(이하 “회사”)가 제공하는 1440 서비스(이하 “서비스”)를 이용하는 것과 관련하여 회사와 이용자의 권리, 의무, 책임과 그 밖에 필요한 사항을 정합니다.</p></section>
+        <section><h2>제2조 (정의)</h2><ul class="sq">
+          <li>“이용자”는 이 약관에 따라 서비스를 이용하는 사람을 말하고, “회원”은 가입해 계정을 가진 이용자를 말합니다.</li>
+          <li>“폼”은 회사가 제공하는 웹사이트의 틀(구성·글·사진·기능)을, “편집기”는 폼을 고치는 화면을 말합니다.</li>
+          <li>“사이트”는 회원이 편집기에서 만든 내용을 이름.kor.gallery 주소로 공개한 웹사이트를 말합니다.</li>
+          <li>“이용권”은 사이트를 공개할 수 있는 기간을 말하며, 한 번 결제하는 7일권·30일권·90일권과 매월 자동으로 결제되는 “월 구독”이 있습니다.</li>
+          <li>“콘텐츠”는 회원이 서비스에 올리거나 입력한 글, 사진, 영상, 3D 파일 등 모든 자료를 말합니다.</li></ul></section>
+        <section><h2>제3조 (약관의 게시와 변경)</h2><p>회사는 이 약관을 서비스 첫 화면의 Information에 게시합니다. 회사는 관련 법령을 어기지 않는 범위에서 약관을 바꿀 수 있으며, 바꿀 때는 시행일과 바꾸는 이유를 시행 7일 전부터 알립니다. 회원에게 불리하게 바꾸는 경우에는 시행 30일 전부터 알리고 가입한 이메일로도 알립니다. 회원은 바뀐 약관에 동의하지 않으면 이용계약을 해지할 수 있습니다.</p></section>
+        <section><h2>제4조 (가입과 이용계약)</h2><ul class="sq">
+          <li>이용계약은 이용자가 이 약관과 개인정보 처리방침에 동의하고, 가입한 이메일로 받은 확인 코드를 입력해 가입을 마치면 성립합니다.</li>
+          <li>만 14세 미만은 가입할 수 없습니다.</li>
+          <li>회사는 다른 사람의 이메일을 쓰는 등 거짓으로 신청한 경우 가입을 거절하거나 나중에 계약을 해지할 수 있습니다.</li></ul></section>
+        <section><h2>제5조 (서비스의 내용)</h2><ul class="sq">
+          <li>폼을 고르고 편집기에서 고치는 것은 가입하지 않아도 무료입니다. 편집 중인 내용(초안)은 이용자의 브라우저에 저장됩니다.</li>
+          <li>사이트를 공개하려면 가입과 이용권이 필요합니다. 계정 하나에 사이트 하나를 둘 수 있습니다.</li>
+          <li>회원은 계정 화면이나 편집기에서 언제든 사이트의 공개를 멈출 수 있습니다. 공개를 멈추면 사이트가 보이지 않게 되고 사이트에 쓰려고 올린 사진·영상·3D 파일은 지워지며, 사이트 주소와 편집한 내용은 남아 다시 공개할 수 있습니다. 공개를 멈춘다고 이용권이 줄거나 돌려받는 것은 아니며, 환불은 제8조에 따릅니다.</li>
+          <li>올릴 수 있는 파일은 사진(JPG·PNG·WebP·GIF, 한 장 10MB까지), 영상(MP4·WebM)과 3D 모델(GLB)(각 40MB까지)이며, 한 계정에 모두 합쳐 500MB까지입니다.</li>
+          <li>사이트 주소는 영문 소문자, 숫자, 하이픈(-)으로 정하며, 이미 쓰이는 주소와 회사가 쓰는 주소(1440, www, api, admin 등)는 쓸 수 없습니다.</li>
+          <li>학교 메일(.ac.kr, .edu 등)로 확인한 회원에게는 첫 한 달 이용권을 무료로 한 번 드립니다. 무료 기간이 끝나도 자동으로 결제되지 않습니다.</li></ul></section>
+        <section><h2>제6조 (요금과 결제)</h2><ul class="sq">
+          <li>요금: 7일권 1,900₩, 30일권 4,900₩, 90일권 12,900₩, 월 구독 매월 4,900₩(부가가치세 포함).</li>
+          <li>결제는 결제대행사 나이스페이먼츠를 통해 카드와 간편결제로 합니다. 결제하기 전에 상품과 금액을 확인하는 화면을 보여 드립니다.</li>
+          <li>7일권·30일권·90일권은 결제한 날수만큼 이용 기간이 늘어나며 자동으로 다시 결제되지 않습니다.</li>
+          <li>회사가 요금을 바꿀 때는 30일 전에 알리며, 이미 결제한 기간에는 적용하지 않습니다. 월 구독의 요금을 올릴 때는 회원이 동의한 경우에만 바뀐 요금으로 결제합니다.</li></ul></section>
+        <section><h2>제7조 (월 구독)</h2><ul class="sq">
+          <li>월 구독은 회원이 등록한 카드로 이용 기간이 끝나는 날 매월 4,900₩을 자동으로 결제하고 이용 기간을 30일 늘립니다. 결제할 때마다 이메일로 알려 드립니다.</li>
+          <li>구독은 카드 정보를 입력하는 화면에서 “매월 4,900₩ 자동 결제에 동의합니다”에 동의한 경우에만 시작됩니다.</li>
+          <li>결제가 되지 않으면 다시 시도하며, 세 번 실패하면 구독을 멈추고 이메일로 알려 드립니다.</li>
+          <li>회원은 계정 화면의 구독에서 언제든 해지할 수 있습니다. 해지하면 다음 결제부터 멈추고, 이미 결제한 기간은 끝까지 쓸 수 있습니다. 회사는 카드 번호를 보관하지 않으며, 해지하면 결제대행사에 등록한 결제 정보도 지웁니다.</li></ul></section>
+        <section><h2>제8조 (청약철회와 환불)</h2><ul class="sq">
+          <li>결제한 날(한국 시간) 안에 환불하면 전액을 돌려 드립니다.</li>
+          <li>그 뒤에 환불하면 7일권·30일권·90일권과 월 구독 모두 쓰지 않은 날수만큼 날짜 비율로 돌려 드립니다. 환불하는 날은 쓴 날로 셉니다. 수수료는 받지 않습니다.</li>
+          <li>월 구독을 환불하면 구독도 함께 멈춥니다. 환불 없이 해지만 하면 다음 결제부터 멈추고 이미 결제한 기간은 끝까지 쓸 수 있습니다.</li>
+          <li>이용권은 결제하는 즉시 사이트 공개에 쓸 수 있는 디지털 서비스입니다. 회사는 가입이나 결제 없이도 편집기를 무료로 써 볼 수 있게 하고 있으며, 「전자상거래 등에서의 소비자보호에 관한 법률」 제17조 제2항에 따라 이미 쓴 기간에 대해서는 청약철회가 제한될 수 있습니다. 다만 위 기준에 따른 환불은 언제든 할 수 있습니다.</li>
+          <li>서비스가 표시·광고한 내용과 다르거나 계약 내용과 다르게 제공된 경우에는, 서비스를 받은 날부터 3개월 안에, 그 사실을 안 날 또는 알 수 있었던 날부터 30일 안에 청약을 철회하고 전액을 돌려받을 수 있습니다.</li>
+          <li>환불은 계정 화면의 환불/취소에서 가장 최근 결제부터 할 수 있고, 환불한 날수만큼 이용 기간이 줄어듭니다. 이메일(1440unu@kor.gallery)로 요청해도 됩니다.</li>
+          <li>회사는 환불하기로 한 날부터 3영업일 안에 결제대행사에 결제 취소를 요청합니다. 늦어지면 늦어진 기간만큼 법령이 정한 지연배상금을 더해 드립니다. 카드사에 따라 실제로 돌려받기까지 며칠이 더 걸릴 수 있습니다.</li>
+          <li>미성년자가 법정대리인의 동의 없이 결제한 경우, 본인이나 법정대리인은 계약을 취소할 수 있습니다.</li></ul></section>
+        <section><h2>제9조 (이용권이 끝난 뒤)</h2><p>이용권(무료 기간과 월 구독 포함)이 끝나면 사이트는 7일 동안 그대로 공개되고, 그 뒤에는 사이트와 사이트에 쓰려고 올린 파일을 지웁니다. 회사는 공개 중인 사이트의 이용권이 끝나기 3일 전과 끝난 날에 지우는 날짜를 이메일로 알려 드립니다(자동으로 이어지는 월 구독은 제외). 지운 사이트와 파일은 되살릴 수 없습니다. 계정과 브라우저에 저장된 초안은 남아 있어, 이용권을 다시 결제하면 다시 공개할 수 있습니다. 사이트 주소는 지운 뒤 다른 회원이 쓸 수 있습니다.</p></section>
+        <section><h2>제10조 (회원 탈퇴)</h2><p>회원은 언제든 계정 화면의 탈퇴에서 비밀번호를 넣어 바로 탈퇴할 수 있고, 이메일(1440unu@kor.gallery)로 요청할 수도 있습니다. 탈퇴하면 월 구독이 멈추고, 사이트를 내리며 계정, 콘텐츠, 올린 파일을 바로 지웁니다. 다만 법령에 따라 보관해야 하는 결제 기록 등은 개인정보 처리방침에 정한 기간 동안 보관합니다. 남은 이용권은 제8조에 따라 환불받을 수 있습니다.</p></section>
+        <section><h2>제11조 (콘텐츠의 권리)</h2><ul class="sq">
+          <li>회원이 올린 콘텐츠의 저작권과 그 밖의 권리는 회원에게 있습니다.</li>
+          <li>회원은 서비스를 제공하는 데 필요한 범위(저장, 크기 조정 등 형식 변환, 복제, 사이트에 표시와 전송)에서 회사가 콘텐츠를 쓰도록 허락합니다. 이 허락은 콘텐츠를 지우거나 탈퇴하면 끝납니다. 회사는 회원의 동의 없이 콘텐츠를 광고나 홍보에 쓰지 않습니다.</li>
+          <li>공개한 사이트는 주소를 아는 누구나 볼 수 있고 검색엔진에 나올 수 있습니다.</li>
+          <li>공개한 사이트의 사진과 영상은 빠르게 보여 주기 위해 회사가 쓰는 전송망(Cloudflare)에 하루 동안 복사해 둘 수 있습니다. 파일을 지우거나 공개를 멈추거나 탈퇴하면 이 복사본도 하루 안에 보이지 않게 됩니다.</li></ul></section>
+        <section><h2>제12조 (회원의 의무)</h2><p>회원은 다음과 같은 콘텐츠를 올리거나 다음과 같은 행동을 해서는 안 됩니다.</p><ul class="sq">
+          <li>다른 사람의 저작권, 상표권, 초상권 등 권리를 침해하는 콘텐츠(영상과 영상에 들어간 음악 포함)</li>
+          <li>사이트에 넣은 외부 링크와 외부 영상(YouTube, Vimeo 등)의 내용은 그것을 넣은 회원이 책임지며, 불법정보나 방문자에게 피해를 주는 곳으로 이어지는 링크를 넣어서는 안 됩니다.</li>
+          <li>음란물, 다른 사람의 명예를 훼손하는 내용, 다른 사람의 개인정보를 동의 없이 공개하는 내용 등 「정보통신망 이용촉진 및 정보보호 등에 관한 법률」 제44조의7이 금지하는 불법정보</li>
+          <li>사기, 피싱, 악성 프로그램 배포처럼 방문자에게 피해를 주는 사이트</li>
+          <li>법령이 금지하거나 결제대행사·카드사가 취급을 제한하는 상품·서비스(성인물, 도박·사행성, 대출·유사투자자문, 가상자산 거래, 총포·도검·담배·마약류, 위조품 등)를 팔거나 광고하는 사이트</li>
+          <li>다른 사람의 이름이나 정보를 도용하는 것, 회사나 다른 기관을 사칭하는 것</li>
+          <li>서비스를 해킹하거나 비정상적으로 많은 요청을 보내는 등 운영을 방해하는 것</li></ul></section>
+        <section><h2>제13조 (게시 중단과 이용 제한)</h2><ul class="sq">
+          <li>자신의 권리가 침해되었다는 신고가 있으면, 회사는 법령에 따라 해당 콘텐츠를 임시로 보이지 않게 하는 등 필요한 조치를 하고 신고인과 회원에게 알립니다. 회원은 이에 대해 다시 게시해 달라고 요청할 수 있습니다. 신고 방법은 저작권 지침에 있습니다.</li>
+          <li>제12조를 어긴 콘텐츠는 내리거나 사이트를 중단할 수 있으며, 어긴 정도가 무겁거나 되풀이되면 이용을 제한하거나 계약을 해지할 수 있습니다. 이 경우 사유를 이메일로 알리고, 회원은 이의를 제기할 수 있습니다.</li>
+          <li>회사가 사이트를 내리거나 계약을 해지할 때는 사이트와 올린 파일, 필요하면 계정을 지울 수 있고, 지운 것은 되살릴 수 없습니다. 방문자나 제3자에게 피해가 계속되는 등 급한 경우에는 먼저 조치하고 바로 알립니다. 회사가 이렇게 지우는 일은 관리자 화면에서 이루어지며 그 기록은 2년 보관합니다.</li></ul></section>
+        <section><h2>제14조 (사이트에서 하는 거래)</h2><p>회원이 자신의 사이트에서 상품이나 서비스를 팔거나 광고하는 경우, 그 거래의 당사자는 회원과 구매자이며 회사는 거래의 당사자나 통신판매중개자가 아닙니다. 회사는 사이트를 만들고 공개하는 도구를 제공할 뿐 쇼핑몰이나 오픈마켓을 운영하거나 분양하지 않으며, 회원의 사이트에 결제 기능을 제공하지 않고, 사이트의 주문·문의·구독 양식은 지금은 내용을 보내거나 저장하지 않고 방문자에게 그렇게 안내합니다. 판매하는 회원은 통신판매업 신고와 표시 의무 등 관련 법령을 스스로 지켜야 합니다.</p></section>
+        <section><h2>제15조 (서비스의 변경과 중단)</h2><ul class="sq">
+          <li>회사는 점검, 설비 교체, 장애, 통신 두절 등의 사유로 서비스를 잠시 멈출 수 있으며, 미리 알릴 수 있는 경우에는 미리 알립니다.</li>
+          <li>회사가 유료 서비스를 끝낼 때는 30일 전에 알리고, 남은 이용 기간에 해당하는 금액을 돌려 드립니다.</li></ul></section>
+        <section><h2>제16조 (회사의 의무)</h2><p>회사는 법령과 이 약관을 지키며 서비스를 안정적으로 제공하기 위해 노력합니다. 회사는 개인정보 처리방침에 따라 회원의 개인정보를 보호하고, 회원의 문의와 불만을 이메일로 받아 빠르게 처리합니다.</p></section>
+        <section><h2>제17조 (책임)</h2><ul class="sq">
+          <li>회사는 고의 또는 과실로 회원에게 손해를 입힌 경우 관련 법령에 따라 배상합니다.</li>
+          <li>천재지변, 회사가 통제할 수 없는 통신·전력 장애 등 불가항력으로 생긴 손해, 회원의 잘못으로 생긴 손해, 회원이 올린 콘텐츠와 회원의 사이트에서 이루어진 거래로 생긴 손해에 대해서는 회사의 고의 또는 과실이 없는 한 책임지지 않습니다.</li>
+          <li>편집 초안은 이용자의 브라우저에 저장되므로, 브라우저의 저장 기록을 지우거나 기기를 바꾸면 사라질 수 있습니다. 중요한 내용은 공개해 두시기 바랍니다.</li></ul></section>
+        <section><h2>제18조 (분쟁 해결)</h2><p>서비스에 대한 문의와 불만은 이메일(<span class="nb">1440unu@kor.gallery</span>)이나 전화(<span class="nb">010-7907-1740</span>)로 받습니다. 회원은 회사와의 분쟁에 대해 한국소비자원, 전자거래분쟁조정위원회 등에 피해 구제나 조정을 신청할 수 있습니다.</p></section>
+        <section><h2>제19조 (준거법과 관할)</h2><p>이 약관과 서비스 이용에는 대한민국 법을 적용합니다. 소송은 「전자상거래 등에서의 소비자보호에 관한 법률」 제36조에 따라 제소 당시 회원의 주소를 관할하는 지방법원에 제기하며, 회원의 주소나 거소가 분명하지 않으면 민사소송법에 따른 관할 법원에 제기합니다.</p></section>
+        <p class="dim">시행일 2026년 10월 5일 · 1440컴퍼니 (대표 이현호)</p>
+      </article>
+
+      <article class="info-page doc" id="privacy">
+        <p class="info-title">개인정보 처리방침</p>
+        <p>1440컴퍼니(이하 “회사”)는 「개인정보 보호법」에 따라 이용자의 개인정보를 보호하고, 이와 관련한 고충을 빠르게 처리하기 위해 다음과 같이 개인정보 처리방침을 둡니다.</p>
+        <section><h2>1. 처리하는 개인정보와 목적</h2><ul class="sq">
+          <li>가입과 로그인: 이메일, 비밀번호(되돌릴 수 없게 암호화) — 회원 확인, 로그인, 결제와 이용권 만료 안내 등 서비스 알림</li>
+          <li>대학생 확인: 학교 메일, 확인 결과, 관리자 확인을 요청할 때 적은 학교 이름 — 대학생 무료 기간 제공</li>
+          <li>결제: 결제한 상품·금액·일시, 결제대행사 거래 번호, 월 구독의 카드사 이름과 카드 번호 끝 네 자리 — 요금 결제, 환불, 정산. 카드 번호, 유효기간, 생년월일, 카드 비밀번호는 저장하지 않고 암호화해 결제대행사에 바로 전달합니다.</li>
+          <li>사이트: 사이트 주소, 공개한 글과 설정, 사이트에 쓰려고 올린 사진과 3D 파일 — 사이트 공개</li>
+          <li>My hub: 마지막으로 편집한 폼과 홈에 둔 폼·프로젝트 목록 — 이어서 편집하기</li>
+          <li>자동으로 생기는 정보: 로그인 상태를 유지하는 쿠키, 로그인 실패와 확인 코드 요청 기록(이메일, IP 주소, 시각) — 부정 이용 방지와 보안</li>
+          <li>방문 통계(가입하지 않은 방문자 포함): 방문한 화면의 종류(첫 화면, 폼 목록, 편집기), 유입 경로(광고 주소의 utm 값이나 링크를 보낸 사이트 이름), 폰·컴퓨터 구분, 국가를 하루 단위 숫자로만 셉니다. 이름, 이메일, IP 주소 등 개인을 알아볼 수 있는 정보는 저장하지 않습니다 — 서비스 개선과 광고 효과 확인</li></ul>
+          <p>가입하지 않고 편집하면 고친 내용은 이용자의 브라우저에만 저장되고 회사로 보내지지 않습니다. 회사는 주민등록번호 등 고유식별정보와 민감정보를 처리하지 않습니다.</p></section>
+        <section><h2>2. 보유 기간</h2><p>개인정보는 탈퇴하거나 처리 목적을 이루면 지체 없이 파기합니다. 다만 다음은 정한 기간 동안 보관합니다.</p><ul class="sq">
+          <li>계약 또는 청약철회, 대금 결제와 재화 공급에 관한 기록: 5년 (전자상거래법)</li>
+          <li>소비자의 불만 또는 분쟁 처리에 관한 기록: 3년 (전자상거래법)</li>
+          <li>로그인 실패와 확인 코드 요청 기록: 30일</li>
+          <li>방문 통계(개인을 알아볼 수 없는 숫자): 400일</li>
+          <li>관리자가 개인정보를 보거나 바꾼 접속 기록: 2년 (개인정보의 안전성 확보조치 기준)</li>
+          <li>사이트와 올린 파일: 이용권이 끝나고 7일 뒤 파기</li>
+          <li>가입하다 그만둔 신청 정보: 확인 코드를 보낸 뒤 1일 안에 파기</li>
+          <li>대학생 무료 혜택을 받은 학교 메일: 탈퇴 뒤 같은 혜택을 두 번 받지 못하도록 원래 값을 알 수 없게 바꾼 값(해시)만 1년 보관</li></ul></section>
+        <section><h2>3. 처리 위탁</h2><p>회사는 서비스를 제공하기 위해 다음과 같이 개인정보 처리를 맡깁니다.</p><ul class="sq">
+          <li>Cloudflare, Inc. — 서비스 호스팅, 계정과 사이트 데이터 저장, 파일 저장</li>
+          <li>Resend, Inc. — 가입 확인 코드, 학교 메일 확인 코드, 결제 안내 이메일 발송</li>
+          <li>(주)나이스페이먼츠 — 카드·간편결제 처리, 월 구독 결제 정보 보관</li></ul></section>
+        <section><h2>4. 국외 이전</h2><p>위 위탁 중 일부는 대한민국 밖에서 처리됩니다. 이전을 원하지 않으면 가입하지 않을 수 있으나, 이 경우 계정과 사이트 공개 서비스를 이용할 수 없습니다.</p><ul class="sq">
+          <li>Cloudflare, Inc. (미국, 세계 각지의 데이터 센터) · privacy@cloudflare.com — 이메일, 암호화한 비밀번호, 결제·사이트·My hub 정보, 올린 파일, IP 주소 — 서비스 이용 시 네트워크로 수시 이전 — 호스팅과 저장 — 위 2의 보유 기간까지</li>
+          <li>Resend, Inc. (미국) · privacy@resend.com — 받는 사람 이메일과 메일 내용 — 메일을 보낼 때 네트워크로 이전 — 이메일 발송 — 발송 기록은 Resend에서 30일 보관 뒤 삭제</li></ul></section>
+        <section><h2>5. 제3자 제공</h2><p>회사는 이용자의 개인정보를 제3자에게 제공하지 않습니다. 다만 이용자가 동의하거나 법령에 특별한 규정이 있는 경우에는 예외로 합니다.</p></section>
+        <section><h2>6. 파기 절차와 방법</h2><p>파기할 개인정보는 데이터베이스와 저장소에서 지워 되살릴 수 없게 합니다. 법령에 따라 보관하는 정보는 다른 정보와 나누어 보관하고 기간이 지나면 지웁니다. 공개 사이트의 사진과 영상은 빠르게 보여 주려고 Cloudflare 전송망에 하루 동안 복사본이 남을 수 있으며, 원본을 지우면 이 복사본도 하루 안에 보이지 않게 됩니다. 이용자가 공개를 멈추거나 탈퇴한 경우와 회사가 서비스 약관에 따라 사이트나 계정을 지운 경우에도 같은 방식으로 파기합니다.</p></section>
+        <section><h2>7. 이용자의 권리와 행사 방법</h2><p>이용자는 언제든 자신의 개인정보를 열람, 정정, 삭제, 처리 정지해 달라고 요청하거나 동의를 철회(탈퇴)할 수 있습니다. 탈퇴는 계정 화면의 탈퇴에서 바로 할 수 있습니다. 그 밖의 요청은 이메일(1440unu@kor.gallery)로 요청하시면 10일 안에 처리하고 결과를 알려 드립니다. 대리인을 통해서도 요청할 수 있으며, 이 경우 위임장을 함께 보내 주세요.</p></section>
+        <section><h2>8. 안전성 확보 조치</h2><ul class="sq">
+          <li>모든 통신은 HTTPS로 암호화합니다.</li>
+          <li>비밀번호는 PBKDF2(SHA-256, 10만 번)로, 로그인 상태와 확인 코드는 SHA-256으로 바꿔 원래 값을 알 수 없게 저장합니다.</li>
+          <li>카드 정보는 저장하지 않으며, 결제대행사로 보낼 때 암호화합니다.</li>
+          <li>개인정보에는 대표자만 접근하며, 관리 계정에 접근을 제한합니다. 관리 계정의 접속 기록을 2년 보관하고 한 달에 한 번 이상 점검합니다. 로그인 실패가 반복되면 잠시 막습니다.</li></ul></section>
+        <section><h2>9. 쿠키와 브라우저 저장소</h2><p>로그인을 유지하는 쿠키 하나(sid)만 씁니다. 이 쿠키는 스크립트로 읽을 수 없고 60일 뒤 사라집니다. 편집 초안, My hub, 즐겨찾기는 이용자의 브라우저 저장소에 저장됩니다. 광고나 행태 추적을 위한 쿠키는 쓰지 않습니다. 방문 통계를 위한 유입 경로 값은 쿠키가 아니라 이 탭을 닫으면 사라지는 브라우저 저장소(sessionStorage)에만 둡니다. 브라우저 설정에서 쿠키를 막을 수 있으나, 그러면 로그인할 수 없습니다.</p></section>
+        <section><h2>10. 외부 서비스</h2><p>화면에 쓰는 글꼴과 일부 기능을 Google Fonts, jsDelivr, 나이스페이먼츠 결제창에서 불러옵니다. 이때 이용자의 IP 주소와 브라우저 정보가 해당 서비스에 전달될 수 있습니다. 방문 수는 쿠키를 쓰지 않는 Cloudflare 웹 분석으로도 셉니다.</p>
+          <p>회원이 공개 사이트에 YouTube나 Vimeo 영상을 넣은 경우, 방문자가 재생 단추를 누를 때 비로소 그 회사(Google, Vimeo)의 서버에 연결해 영상을 받으며 이때 방문자의 IP 주소와 브라우저 정보가 그 회사에 전달될 수 있습니다. 재생 단추를 누르기 전에는 연결하지 않으며, YouTube는 쿠키를 쓰지 않는 주소(youtube-nocookie.com)를 씁니다. 그 뒤의 처리는 해당 회사의 개인정보 처리방침에 따릅니다. 회원이 사이트에 넣은 링크를 눌러 다른 사이트로 이동한 경우에도 이동한 사이트의 방침이 적용됩니다.</p></section>
+        <section><h2>11. 공개 사이트의 방문자</h2><p>회원이 공개한 사이트를 방문하면, 서비스 운영과 보안을 위해 IP 주소 등 접속 기록이 호스팅사(Cloudflare)에서 처리될 수 있습니다. 회사는 사이트 방문자의 개인정보를 따로 수집하지 않으며, 사이트의 주문·문의·구독 양식에 적은 내용은 어디로도 보내거나 저장하지 않습니다. 회원이 자신의 사이트에서 방문자의 개인정보를 모으는 경우에는 회원이 그 처리자로서 법령을 지켜야 합니다.</p></section>
+        <section><h2>12. 만 14세 미만</h2><p>만 14세 미만은 가입할 수 없으며, 회사는 만 14세 미만의 개인정보를 알면서 수집하지 않습니다.</p></section>
+        <section><h2>13. 개인정보 보호책임자</h2><p>이현호 (대표) · 1440컴퍼니<br><a href="mailto:1440unu@kor.gallery">1440unu@kor.gallery</a> · <a href="tel:010-7907-1740">010-7907-1740</a></p></section>
+        <section><h2>14. 권익 침해 구제</h2><p>개인정보 침해에 대한 상담이나 분쟁 해결은 아래 기관에도 요청할 수 있습니다.</p><ul class="sq">
+          <li>개인정보분쟁조정위원회 1833-6972 (www.kopico.go.kr)</li>
+          <li>개인정보침해신고센터 118 (privacy.kisa.or.kr)</li>
+          <li>대검찰청 1301 (www.spo.go.kr)</li>
+          <li>경찰청 182 (ecrm.police.go.kr)</li></ul></section>
+        <section><h2>15. 바뀔 때</h2><p>이 처리방침이 바뀌면 시행 7일 전부터 이 페이지에 알리고, 이용자에게 불리하게 바뀌면 30일 전부터 알리고 이메일로도 알립니다.</p></section>
+        <p class="dim">시행일 2026년 10월 5일</p>
+      </article>
+
+      <article class="info-page doc" id="copyright">
+        <p class="info-title">저작권 지침</p>
+        <p>1440컴퍼니(이하 “회사”)는 「저작권법」 제102조와 제103조, 「정보통신망 이용촉진 및 정보보호 등에 관한 법률」 제44조의2에 따라 권리 침해 신고를 받아 처리합니다.</p>
+        <section><h2>1. 1440의 권리</h2><p>1440 서비스의 화면, 디자인, 폼, 코드, 문구의 저작권과 그 밖의 권리는 회사에 있습니다. 회원은 서비스 안에서 폼을 골라 자신의 사이트를 만드는 데 쓸 수 있으며, 폼이나 서비스의 일부를 1440 밖으로 복제, 배포, 판매하거나 비슷한 서비스를 만드는 데 쓸 수 없습니다.</p></section>
+        <section><h2>2. 회원의 콘텐츠</h2><ul class="sq">
+          <li>회원이 올린 글, 사진, 작품의 저작권은 회원에게 있습니다. 회사가 서비스를 제공하는 데 필요한 범위에서 쓰는 것은 서비스 약관 제11조에 따릅니다.</li>
+          <li>다른 사람의 저작물(사진, 그림, 글, 음악, 영상, 글꼴 등)을 올릴 때는 그 권리자의 허락을 받았거나 법이 허용하는 범위여야 합니다. 사람의 얼굴이 알아볼 수 있게 나오면 초상권, 상표가 나오면 상표권도 따로 있을 수 있습니다.</li>
+          <li>권리를 침해한 콘텐츠의 책임은 그 콘텐츠를 올린 회원에게 있습니다.</li></ul></section>
+        <section><h2>3. 폼에 들어 있는 기본 제공 자료</h2><p>폼의 사진, 3D 모델, 글은 모양을 보여 주기 위해 기본으로 들어 있는 자료입니다. 자신의 콘텐츠로 바꿔 쓰시기를 권합니다. 이 자료를 그대로 쓰는 경우에는 아래 라이선스 조건을 지켜야 합니다.</p><ul class="sq">
+          <li>사진: Unsplash 라이선스, Pexels 라이선스 (사진 자체를 그대로 팔거나, 사진 모음 서비스를 만드는 데 쓸 수 없음), 클리블랜드 미술관 오픈 액세스와 Openverse의 CC0</li>
+          <li>3D 모델: Poly Haven (CC0)</li>
+          <li>서체: SUIT, 마루 부리, 갈무리11 (SIL Open Font License · 서체 파일만 따로 팔 수 없음)</li></ul>
+          <p>사진마다의 원본 출처 목록은 이메일로 요청하시면 보내 드립니다.</p></section>
+        <section><h2>4. 저작권 침해 신고 (복제·전송 중단 요청)</h2><p>1440의 사이트에 내 저작물이 허락 없이 쓰였다면 아래 수령인에게 이메일이나 우편으로 복제·전송 중단을 요청해 주세요. 요청서에는 다음을 적어 주세요.</p><ul class="sq">
+          <li>요청하는 사람(권리자 또는 대리인)의 이름, 주소, 전화번호, 이메일</li>
+          <li>침해가 의심되는 사이트 주소와 해당 콘텐츠의 위치</li>
+          <li>권리자임을 보여 주는 자료(저작권 등록증, 원본 파일, 처음 공개한 곳 등). 대리인이면 위임장도 함께</li>
+          <li>위 내용이 사실이라는 확인과 서명(이메일은 이름을 적는 것으로 대신할 수 있음)</li></ul>
+          <p>회사는 요청을 받으면 즉시 해당 콘텐츠의 복제·전송을 중단하고, 그 사실을 콘텐츠를 올린 회원과 요청한 사람에게 알립니다. 정당한 권리 없이 중단을 요청해 다른 사람에게 손해를 입힌 사람은 그 손해를 배상해야 합니다(저작권법 제103조 제6항).</p></section>
+        <section><h2>5. 다시 게시해 달라는 요청 (재개 요청)</h2><p>중단 통보를 받은 회원은 자신의 콘텐츠가 정당한 권리에 따른 것이라면, 그 사실을 보여 주는 자료(직접 만든 자료, 이용 허락서, 계약서 등)를 붙여 재개를 요청할 수 있습니다. 회사는 재개 요청을 받으면 그 사실과 재개 예정일을 요청한 권리자에게 알리고, 재개 예정일에 콘텐츠를 다시 보여 줍니다. 재개 예정일은 재개 요청을 받은 날부터 7일 뒤부터 14일 안의 날로 정합니다. 다만 재개 예정일 전에 권리자가 그 회원을 상대로 소송을 냈다는 사실을 알려 온 경우에는 재개하지 않습니다.</p></section>
+        <section><h2>6. 저작권 외의 권리 침해 (명예훼손·사생활)</h2><p>사이트의 내용이 명예를 훼손하거나 사생활을 침해한다면, 침해 사실을 소명해 삭제나 반박 내용의 게재를 요청할 수 있습니다. 회사는 지체 없이 필요한 조치를 하고 신청인과 회원에게 알립니다. 권리 침해 여부를 판단하기 어렵거나 다툼이 예상되면 해당 콘텐츠를 최대 30일 동안 보이지 않게 하는 임시조치를 할 수 있습니다(정보통신망법 제44조의2).</p></section>
+        <section><h2>7. 반복 침해</h2><p>권리 침해로 콘텐츠가 중단된 일이 되풀이되는 회원은 사이트를 내리거나 계정을 해지할 수 있습니다(서비스 약관 제13조).</p></section>
+        <section><h2>8. 신고 수령인</h2><p>이현호 (대표) · 1440컴퍼니<br>이메일 <a href="mailto:1440unu@kor.gallery">1440unu@kor.gallery</a> · 전화 <a href="tel:010-7907-1740">010-7907-1740</a><br>주소 경기도 용인시 수지구 용구대로2790번길 7, 302-가12호(죽전동)</p></section>
+        <p class="dim">시행일 2026년 10월 5일</p>
+      </article>
+
+    </div>
+  </div>
+</div>
+
+<!-- 계정: Login, Sign up and, once in, the account, the student month and (for the admin) the requests; appears over the first page like Information -->
+<div class="info-ov acct-ov" id="acctOv" aria-hidden="true">
+  <div class="info-half">
+    <nav class="info-side" aria-label="계정">
+      <a href="#" data-to="login" class="g on">Log in</a>
+      <a href="#" data-to="signup" class="g">Sign up</a>
+      <a href="#" data-to="account" class="m">Account</a>
+      <a href="templates.html" class="m" data-v="hubSide">My hub</a>
+      <a href="#" class="m" id="logoutSide">Log out</a>
+      <a href="#" data-to="refund" class="r">환불/취소</a>
+      <a href="#" data-to="leave" class="m">탈퇴</a>
+      <a href="#" data-to="student" class="s">Student</a>
+      <a href="#" data-to="admin" class="a">Admin</a>
+      <a href="#" data-to="usage" class="a">사용량</a>
+      <a href="#" data-to="traffic" class="a">유입</a>
+    </nav>
+    <div class="info-body">
+      <article class="info-page" id="a-login">
+        <p class="info-title">Log in</p>
+        <form class="acct-f" data-f="login" novalidate>
+          <label class="fld"><span>이메일</span><input name="email" type="email" autocomplete="email" required></label>
+          <label class="fld"><span>비밀번호</span><input name="password" type="password" autocomplete="current-password" required></label>
+          <button class="acct-go" type="submit">Log in →</button>
+          <p class="acct-msg" role="status"></p>
+        </form>
+      </article>
+
+      <article class="info-page" id="a-signup">
+        <p class="info-title">Sign up</p>
+        <form class="acct-f" data-f="signup" novalidate>
+          <label class="fld"><span data-v="emailLbl">이메일</span><input name="email" type="email" autocomplete="email" required></label>
+          <label class="fld"><span>비밀번호 <em>8자 이상</em></span><input name="password" type="password" autocomplete="new-password" minlength="8" required></label>
+          <label class="ckx"><input type="checkbox" name="student"><span>대학생입니다 <em>학교 메일로 가입하면 첫 한 달 무료</em></span></label>
+          <label class="ckx"><input type="checkbox" name="agree" required><span>만 14세 이상이며, <a href="#terms" data-info="terms" class="u">서비스 약관</a>과 <a href="#privacy" data-info="privacy" class="u">개인정보 처리방침</a>에 동의합니다</span></label>
+          <button class="acct-go" type="submit">Sign up →</button>
+          <p class="acct-msg" role="status"></p>
+        </form>
+        <form class="acct-f" data-f="code" hidden novalidate>
+          <p data-v="codeTo"></p>
+          <label class="fld"><span>코드 <em>6자리</em></span><input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></label>
+          <button class="acct-go" type="submit">가입 마치기 →</button>
+          <p class="acct-alt"><button type="button" class="u" data-code="resend">코드 다시 받기</button> · <button type="button" class="u" data-code="back">처음으로</button></p>
+          <p class="acct-msg" role="status"></p>
+        </form>
+      </article>
+
+      <article class="info-page" id="a-account">
+        <p class="info-title" data-v="nick"></p>
+        <ul class="ck acct-dl">
+          <li><span class="b"></span><span class="t">이메일</span><span class="v" data-v="email"></span></li>
+          <li><span class="b"></span><span class="t">이용권</span><span class="v" data-v="plan"></span></li>
+          <li data-v="siteRow" hidden><span class="b"></span><span class="t">사이트</span><span class="v" data-v="siteLine"></span></li>
+        </ul>
+        <section class="pay sub">
+          <h2>구독</h2>
+          <p class="dim" data-v="subState"></p>
+          <ul class="ck" data-v="subOff">
+            <li><span class="b"></span><span class="t">매월</span><span class="v"><button type="button" class="u" data-sub="open">4,900₩</button></span></li>
+          </ul>
+          <form class="acct-f" data-f="sub" hidden novalidate autocomplete="on">
+            <label class="fld"><span>카드 번호</span><input name="cardNo" inputmode="numeric" autocomplete="cc-number" maxlength="19" required></label>
+            <label class="fld"><span>유효기간 <em>MM/YY</em></span><input name="exp" inputmode="numeric" autocomplete="cc-exp" maxlength="5" placeholder="MM/YY" required></label>
+            <label class="fld"><span>생년월일 <em>6자리 · 법인은 사업자번호</em></span><input name="idNo" inputmode="numeric" maxlength="10" autocomplete="off" required></label>
+            <label class="fld"><span>비밀번호 <em>앞 2자리</em></span><input name="cardPw" type="password" inputmode="numeric" maxlength="2" autocomplete="off" required></label>
+            <label class="ckx"><input type="checkbox" name="agree" required><span>매월 4,900₩ 자동 결제에 동의합니다 <em>이용권이 끝나는 날 결제 · 언제든 해지</em></span></label>
+            <button class="acct-go" type="submit">구독 시작 →</button>
+            <p class="acct-msg" role="status"></p>
+          </form>
+          <p data-v="subOn" hidden><button type="button" class="u" data-sub="cancel">해지</button></p>
+          <p class="acct-msg" role="status" data-v="subMsg"></p>
+        </section>
+        <section class="pay">
+          <h2>이용권</h2>
+          <ul class="ck">
+            <li><span class="b"></span><span class="t">7일</span><span class="v"><button type="button" class="u" data-pay="week">1,900₩</button></span></li>
+            <li><span class="b"></span><span class="t">30일</span><span class="v"><button type="button" class="u" data-pay="month">4,900₩</button></span></li>
+            <li><span class="b"></span><span class="t">90일</span><span class="v"><button type="button" class="u" data-pay="quarter">12,900₩</button></span></li>
+          </ul>
+          <p class="acct-msg" role="status" data-v="payMsg"></p>
+        </section>
+        <section class="pay">
+          <details class="benefit"><summary><span>구독 및 이용권 상세정보</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5"/></svg></summary><div class="benefit-body">
+            <ul class="ck">
+              <li><span class="b"></span><span class="t">이름.kor.gallery 주소로 나만의 온라인 전시·포트폴리오 사이트를 공개해요.</span></li>
+              <li><span class="b"></span><span class="t">제공되는 폼 중에서 골라 글·사진·영상·3D 모델을 직접 편집해요. 편집은 무료예요.</span></li>
+              <li><span class="b"></span><span class="t">사진·영상·3D 파일을 계정당 500MB까지 올릴 수 있어요.</span></li>
+              <li><span class="b"></span><span class="t">공개한 뒤에도 내용을 고쳐 다시 공개하거나, 언제든 공개를 멈출 수 있어요.</span></li>
+            </ul>
+          </div></details>
+        </section>
+      </article>
+
+      <article class="info-page" id="a-leave">
+        <p class="info-title">탈퇴</p>
+        <ul class="sq">
+          <li>사이트와 올린 사진, 계정이 바로 지워지고 되살릴 수 없어요.</li>
+          <li>월 구독은 멈춰요. 남은 이용권은 먼저 환불/취소에서 환불해 주세요.</li>
+          <li>결제 기록은 법에 따라 5년 동안 보관해요.</li>
+        </ul>
+        <form class="acct-f" data-f="leave" novalidate>
+          <label class="fld"><span>비밀번호</span><input name="password" type="password" autocomplete="current-password" required></label>
+          <button class="acct-go" type="submit">탈퇴하기 →</button>
+          <p class="acct-msg" role="status"></p>
+        </form>
+      </article>
+
+      <article class="info-page" id="a-refund">
+        <p class="info-title">환불/취소</p>
+        <ul class="sq">
+          <li>결제한 날(한국 시간) 안에 환불하면 전액을 돌려 드려요.</li>
+          <li>그 뒤에는 7일권·30일권·90일권과 월 구독 모두 쓰지 않은 날수만큼 돌려 드려요. 환불하는 날은 쓴 날로 셉니다.</li>
+          <li>월 구독을 환불하면 구독도 멈춰요. 환불 없이 해지만 하려면 계정의 구독에서 해지하세요.</li>
+          <li>가장 최근 결제부터 하나씩 환불되고, 환불한 날수만큼 이용 기간이 줄어요.</li>
+          <li><span>돌려받기까지 카드사에 따라 며칠 걸릴 수 있어요. 문의는 <a class="u" href="mailto:1440unu@kor.gallery">1440unu@kor.gallery</a></span></li>
+        </ul>
+        <section class="pay" data-v="rfBox">
+          <p data-v="rfText"></p>
+          <p><button type="button" class="u" data-refund></button></p>
+          <p class="acct-msg" role="status" data-v="rfMsg"></p>
+        </section>
+      </article>
+
+      <article class="info-page" id="a-student">
+        <p class="info-title">Student</p>
+        <p data-v="stuState"></p>
+        <form class="acct-f" data-f="send" novalidate>
+          <label class="fld"><span>학교 메일 <em>.ac.kr · .edu 등</em></span><input name="uni" type="email" autocomplete="off" required></label>
+          <button class="acct-go" type="submit">코드 보내기</button>
+          <p class="acct-msg" role="status"></p>
+        </form>
+        <form class="acct-f" data-f="verify" novalidate hidden>
+          <label class="fld"><span>메일로 받은 여섯 자리</span><input name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required></label>
+          <button class="acct-go" type="submit">확인</button>
+          <p class="acct-msg" role="status"></p>
+        </form>
+        <div class="two" data-v="reqBox">
+          <section>
+            <h2>관리자 확인 요청</h2>
+            <p>학교 메일이 .ac.kr이나 .edu로 끝나지 않으면, 학교 이름과 메일을 남겨 주세요. 확인한 뒤 한 달을 열어 드립니다.</p>
+          </section>
+          <section>
+            <form class="acct-f" data-f="request" novalidate>
+              <label class="fld"><span>학교 이름</span><input name="school" type="text" maxlength="80" required></label>
+              <label class="fld"><span>학교 메일</span><input name="uni" type="email" required></label>
+              <button class="acct-go" type="submit">요청</button>
+              <p class="acct-msg" role="status"></p>
+            </form>
+          </section>
+        </div>
+      </article>
+
+      <article class="info-page" id="a-usage">
+        <p class="info-title">사용량</p>
+        <p class="dim" data-v="usAt"></p>
+        <div class="us" data-v="usage"></div>
+      </article>
+
+      <article class="info-page" id="a-traffic">
+        <p class="info-title">유입</p>
+        <p class="dim" data-v="trAt"></p>
+        <div class="us" data-v="traffic"></div>
+      </article>
+
+      <article class="info-page" id="a-admin">
+        <p class="info-title">Admin</p>
+        <p class="dim">대학생 확인 요청을 받아들이거나 거절하고, 누구에게나 무료 한 달을 주거나 거둡니다.</p>
+        <section class="adm"><h2>요청</h2><div data-v="reqs"></div></section>
+        <section class="adm"><h2>사용자</h2><label class="fld adm-q"><span>찾기</span><input type="search" data-v="q" autocomplete="off"></label><div data-v="users"></div></section>
+        <p class="acct-msg" role="status" data-v="admMsg"></p>
+        <section class="adm"><h2>접속 기록</h2><p class="dim">관리자가 본 것과 바꾼 것. 2년 보관, 한 달에 한 번 살펴보세요.</p><div data-v="alog"></div></section>
+      </article>
+
+    </div>
+  </div>
+</div>
+
+<footer class="biz">
+  <nav class="biz-l" aria-label="약관">
+    <a href="./#terms" data-info="terms">서비스 약관</a>
+    <a href="./#privacy" data-info="privacy"><b>개인정보 처리방침</b></a>
+  </nav>
+  <dl>
+    <div class="q"><dt>상호</dt><dd>1440컴퍼니<span class="en"> · 1440company</span></dd></div>
+    <div><dt>대표</dt><dd>이현호</dd></div>
+    <div><dt>사업자등록번호</dt><dd>165-10-03434 <a class="ftc" href="https://www.ftc.go.kr/bizCommPop.do?wrkr_no=1651003434" target="_blank" rel="noopener">사업자정보 확인</a></dd></div>
+    <div><dt>통신판매업<span class="lg"> 신고번호</span></dt><dd>제2026-용인수지-3281호</dd></div>
+    <div class="q addr"><dt>주소</dt><dd>경기도 용인시 수지구 용구대로2790번길 7, 302-가12호(죽전동)</dd></div>
+    <div class="q"><dt>연락처</dt><dd><a href="tel:010-7907-1740">010-7907-1740</a></dd></div>
+    <div class="q"><dt>이메일</dt><dd><a href="mailto:1440unu@kor.gallery">1440unu@kor.gallery</a></dd></div>
+    <div><dt>호스팅</dt><dd>Cloudflare, Inc.</dd></div>
+  </dl>
+</footer>
+
+<script src="assets/common.js?v=6"></script>
+<script src="assets/site.js?v=25"></script>
+<script src="assets/account.js?v=18"></script>
+<script src="assets/acct-ui.js?v=23"></script>
+</body>
+</html>

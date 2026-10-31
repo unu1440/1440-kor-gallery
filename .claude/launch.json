@@ -1,0 +1,35 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "1440-static",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "tools/serve.py",
+        "8440"
+      ],
+      "port": 8440
+    },
+    {
+      "name": "1440-static-mac",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "tools/serve.py",
+        "8440"
+      ],
+      "port": 8440
+    },
+    {
+      "name": "1440-dist",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8441",
+        "--directory",
+        "dist"
+      ],
+      "port": 8441
+    }
+  ]
+}

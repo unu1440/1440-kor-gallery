@@ -1,0 +1,46 @@
+{
+  // 1440 accounts API: a second Worker that answers only 1440.kor.gallery/api/* (the site itself stays static assets).
+  // Not deployed by the site's GitHub workflows. Setting it up once (see CLAUDE.md → 계정):
+  //   npx wrangler d1 create kor-gallery-accounts            → put the database_id below
+  //   npx wrangler d1 execute kor-gallery-accounts --remote --file api/schema.sql
+  //   npx wrangler secret put RESEND_API_KEY -c api/wrangler.jsonc
+  //   npx wrangler deploy -c api/wrangler.jsonc
+  // Until it is deployed the pages fall back to the browser-only preview of accounts (assets/account.js).
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "kor-gallery-api",
+  "main": "worker.js",
+  "account_id": "8f5d3c3d30c383c3a9ca84eac2a9e325",
+  "compatibility_date": "2025-09-01",
+  "workers_dev": false,
+  /* /api/* on the site, and every 이름.kor.gallery (published sites). 1440.kor.gallery itself is the Worker kor-gallery
+     (custom domain); a more specific route or record (1440joljeon, img…) still wins over the * */
+  "routes": [
+    { "pattern": "1440.kor.gallery/api/*", "zone_name": "kor.gallery" },
+    { "pattern": "*.kor.gallery/*", "zone_name": "kor.gallery" },
+    /* the bare kor.gallery goes to 1440.kor.gallery (serveSite's 301), instead of the error page of a missing origin */
+    { "pattern": "kor.gallery/*", "zone_name": "kor.gallery" }
+  ],
+  /* the static site (templates.html, assets/), which draws the published sites too */
+  "services": [{ "binding": "STATIC", "service": "kor-gallery" }],
+  /* the pictures people put up for their sites: m/<sha-256>.<ext> */
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "kor-gallery-media" }],
+  // the monthly subscription is renewed once a day (00:15 UTC = 09:15 KST): see renewSubs in worker.js
+  "triggers": { "crons": ["15 0 * * *"] },
+  "vars": {
+    "ADMIN_EMAILS": "1440unu@kor.gallery",
+    "MAIL_FROM": "1440 <no-reply@kor.gallery>",
+    "SITE_ORIGIN": "https://1440.kor.gallery",
+    // NICEPAY (포스타트): the client key goes to the browser anyway, so it is not a secret.
+    // R2_ = live key, server approval (real money); S2_ = sandbox. The API host must match the key:
+    //   live "https://api.nicepay.co.kr", sandbox "https://sandbox-api.nicepay.co.kr".
+    // The matching secret key is put in by hand:  npx wrangler secret put NICEPAY_SECRET_KEY -c api/wrangler.jsonc
+    "NICEPAY_CLIENT_KEY": "R2_8f565a56d9bf446db59299d008df6afd",
+    "NICEPAY_API": "https://api.nicepay.co.kr",
+    /* for the admin's usage page (GraphQL Analytics; the token is the secret CF_API_TOKEN) */
+    "CF_ACCOUNT_ID": "8f5d3c3d30c383c3a9ca84eac2a9e325",
+    "D1_ID": "80a56aed-83ec-4cf5-b9ff-44084b5e0df7"
+  },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "kor-gallery-accounts", "database_id": "80a56aed-83ec-4cf5-b9ff-44084b5e0df7" }
+  ]
+}

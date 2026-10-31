@@ -1,13 +1,13 @@
-# kor.gallery 사례 정리
+# 1440.kor.gallery
 
-디자이너와 아티스트가 `이름.kor.gallery` 주소로 자기 전시·포트폴리오 사이트를 만드는 한국어 사이트 빌더, **1440.kor.gallery**를 혼자 기획하고 만들고 운영한 기록입니다.
+디자이너와 아티스트가 `이름.kor.gallery` 주소로 자기 전시·포트폴리오 사이트를 만드는 한국어 사이트 빌더입니다. 혼자 기획하고 만들고 운영했습니다.
 
-> **무료 서비스 전환:** 수익성 한계로 2026년 12월 25일부터 무료로 제공할 예정입니다.
-> **Free from 2026-12-25:** the service did not earn enough to justify charging for it, so it will become free to use.
+> **무료 서비스 전환과 GitHub 공개:** 수익성 한계로 2026년 12월 25일부터 서비스를 무료로 제공하고, 전환 이후 서비스 소스를 이 저장소에 공개합니다.
+> **Free from 2026-12-25, then open source:** the service did not earn enough to justify charging for it. It becomes free to use on 2026-12-25, and the source code is published in this repository after that.
 
-서버 코드는 비공개 저장소에 있습니다. 이 저장소에는 무엇을 만들었고 어떻게 설계했고 무엇을 배웠는지 정리하고, 화면 코드와 개발 도구 일부를 발췌해 올렸습니다.
+**In short.** I built and ran a Korean website builder alone: a form picker with 1,440 layouts, an in-browser editor, an account and payment server, and automatic publishing to `name.kor.gallery`. It launched on 2026-10-05. This repository holds the full source and the notes on what the project taught me.
 
-**In short.** I built and ran a Korean website builder alone: a form picker with 1,440 layouts, an in-browser editor, an account and payment server, and automatic publishing to `name.kor.gallery`. Launched on 2026-10-05, it will turn free on 2026-12-25 because revenue was too low to justify the work of charging. This repository records the design decisions and what the project taught me. The server code is private; selected front-end code and tools are included.
+공개 전에 이력에서 제3자 참고 자료와 개인 작업 메모를 지웠고, 작성자 정보를 정리했습니다. 키와 비밀번호는 코드에 없고 배포할 때 Wrangler와 GitHub의 비밀값으로 넣습니다.
 
 ## 무엇을 만들었나
 
@@ -37,24 +37,28 @@
 이름.kor.gallery ─────────────────────────── 같은 Worker가 공개본을 읽어 그려 줌
 ```
 
-- 정적 사이트는 빌드 도구 없이 파일 그대로 배포합니다. 배포는 GitHub Actions 버튼 두 개("미리보기 올리기", "사이트 개시")로만 합니다.
-- 서버는 Cloudflare 무료 플랜 안에서 돌아가게 설계했습니다.
-
-## 공개한 코드 (발췌)
+## 저장소 구성
 
 | 경로 | 내용 |
 |---|---|
-| `site/assets/tpl-gen.js` | 폼 생성기. 조합 규칙으로 폼 1,360개를 만듭니다 |
-| `site/assets/templates.js`, `templates.css` | 폼 고르기 화면과 미리보기 |
-| `site/assets/editor.js`, `editor.css` | 편집기 |
-| `site/assets/site.js`, `site.css`, `common.js` | 첫 화면과 공통 부분 |
-| `tools/check-templates.js` | 폼 1,440개가 서로 겹치지 않는지 검사하는 도구 |
-| `tools/serve.py`, `sheet.html` | 로컬 미리보기 서버와 폼을 한눈에 보는 개발용 페이지 |
-| `docs/BRAND.md` | 화면·메일·약관 문구의 말투 규칙 |
-| `docs/workflows/` | 배포 버튼 두 개의 GitHub Actions 파일(여기서는 실행되지 않음) |
-| `docs/credits/` | 서체·샘플 사진·3D 모델의 출처와 라이선스 |
+| `index.html`, `templates.html`, `assets/` | 정적 사이트. 빌드 도구 없이 파일 그대로 배포합니다 |
+| `assets/tpl-gen.js`, `templates.js` | 폼 생성기와 폼 고르기 화면 |
+| `assets/editor.js` | 편집기 |
+| `api/worker.js`, `api/schema.sql` | 계정·결제·공개 서버(Cloudflare Worker)와 D1 스키마 |
+| `tools/` | 폼 겹침 검사(`check-templates.js`), 계정 서버 시험(`check-api.mjs`), 로컬 서버 |
+| `.github/workflows/` | 배포 버튼 두 개: "미리보기 올리기", "사이트 개시" |
+| `BRAND.md` | 화면·메일·약관 문구의 말투 규칙 |
+| `assets/img/samples/CREDITS.md`, `assets/3d/CREDITS.md` | 샘플 사진과 3D 모델의 출처와 라이선스 |
 
-계정·결제 서버, 사진과 3D 파일, 설정 파일은 올리지 않았습니다. 그래서 이 저장소만으로는 실행되지 않습니다. 화면 코드는 사이트에 접속하면 브라우저에서 볼 수 있는 것과 같습니다. 별도 라이선스를 붙이지 않았으므로 모든 권리는 저자에게 있고, 읽고 참고하는 것은 환영합니다.
+## 실행
+
+```bash
+python3 tools/serve.py 8440     # http://localhost:8440
+node tools/check-templates.js   # 폼 검사
+node tools/check-api.mjs        # 계정 서버 시험, Node 22.5 이상
+```
+
+계정 서버가 없으면 계정 기능은 브라우저 안에서만 도는 미리보기 방식으로 동작하므로, 화면 쪽은 서버 없이 볼 수 있습니다. 서버는 `api/wrangler.jsonc` 머리의 순서대로 올립니다.
 
 ## 설계하며 정한 것
 
@@ -74,9 +78,10 @@
 - **법과 표시도 기능이다.** 첫 화면에 사업자 정보와 약관·처리방침 링크를 두고, 청약철회와 환불 조건을 결제 화면에 보여 주는 일이 코드만큼의 시간을 썼습니다.
 - **무료 한도가 설계를 정한다.** 하루 메일 100통, Worker 하루 10만 요청 같은 한도 때문에 가입 코드 발송 횟수를 제한하고, 사진은 브라우저에서 줄여 올리게 했습니다.
 - **혼자 운영하려면 검사 도구가 먼저다.** 폼 1,440개와 결제 흐름은 눈으로 확인할 수 없어서, 자동 검사를 먼저 만들었습니다.
-- **돈을 받는 서비스는 비용과 노력이 따라온다.** 결제, 환불, 안내 메일, 약관을 유지하는 일에 비해 수익이 충분하지 않았습니다. 그래서 2026년 12월 25일부터 무료로 전환하기로 했습니다.
+- **돈을 받는 서비스는 비용과 노력이 따라온다.** 결제, 환불, 안내 메일, 약관을 유지하는 일에 비해 수익이 충분하지 않았습니다. 그래서 2026년 12월 25일부터 무료로 전환하고, 코드를 공개하기로 했습니다.
 
 ## 서비스
 
 - 사이트: <https://1440.kor.gallery>
-- 이 저장소의 글은 서비스 코드와 문서를 직접 정리한 것입니다. 매출이나 가입자 수는 적지 않았습니다.
+- 이 글의 내용은 서비스 코드와 문서를 직접 정리한 것입니다. 매출이나 가입자 수는 적지 않았습니다.
+- 별도 라이선스를 붙이지 않았으므로 모든 권리는 저자에게 있고, 읽고 참고하는 것은 환영합니다. 샘플 사진, 3D 모델, 서체는 각자의 라이선스를 따릅니다(위 CREDITS 참고).
