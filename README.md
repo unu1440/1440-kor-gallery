@@ -4,6 +4,9 @@
 
 An online exhibition service. Designers and artists pick a form (template), edit it in the browser, and publish a portfolio site at `name.kor.gallery`. Built and operated by one person.
 
+> **무료 서비스 전환:** 수익성 한계로 2026년 12월 25일부터 무료로 제공할 예정입니다.
+> **Free from 2026-12-25:** the service does not earn enough to keep charging for it, so it will become free to use. The paid-pass and payment code in this repository describes the service up to that date.
+
 ## What is in this repository
 
 | Part | What it does |
