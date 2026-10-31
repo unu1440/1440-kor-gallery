@@ -1,0 +1,38 @@
+name: 미리보기 올리기
+
+# Every push (and the button) puts the site on a temporary workers.dev address.
+# 1440.kor.gallery is not touched. Skips quietly until the Cloudflare token is added.
+on:
+  push:
+    branches: [main, "claude/**"]
+  workflow_dispatch:
+
+concurrency:
+  group: preview
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: 템플릿 검사
+        run: node tools/check-templates.js
+      - name: 올릴 파일만 모으기
+        run: mkdir dist && cp -r index.html templates.html robots.txt sitemap.xml assets _headers dist/ && find dist -name '*.md' -delete
+      - name: 스크립트·스타일 압축 (주석 빼기, 원본은 그대로)
+        run: npx --yes esbuild@0.25.10 dist/assets/*.js dist/assets/*.css --minify --charset=utf8 --legal-comments=none --outdir=dist/assets --allow-overwrite --log-level=warning
+      - name: 토큰 확인
+        id: token
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then echo "CLOUDFLARE_API_TOKEN 비밀값이 없어 미리보기를 건너뜁니다."; echo "ok=false" >> "$GITHUB_OUTPUT"; else echo "ok=true" >> "$GITHUB_OUTPUT"; fi
+      - name: 미리보기 배포 (kor-gallery-preview.workers.dev)
+        if: steps.token.outputs.ok == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          # the action defaults to Wrangler 3.90, which cannot read wrangler.jsonc
+          wranglerVersion: "4.142.0"
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: deploy --env preview

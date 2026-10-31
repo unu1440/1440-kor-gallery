@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1440: 생성 템플릿 한눈에 보기</title>
+<!-- Development only: every generated template on one page, small, to spot broken layouts.
+     ?from=1&to=1440 · ?cat=graphic · ?layout=grid-4 · ?nav=left · ?w=360 (card width) · ?one=1 (first of each layout) · ?feat=marquee -->
+<link rel="stylesheet" href="../assets/site.css">
+<link rel="stylesheet" href="../assets/templates.css">
+<style>
+  body { padding: 16px; }
+  .sheet { display: grid; grid-template-columns: repeat(auto-fill, var(--w)); gap: 18px 12px; }
+  .sheet figure { margin: 0; font-size: 12px; }
+  .sheet .mac-view { box-shadow: 0 0 0 1px var(--ink-4); }
+  .sheet figcaption { margin-top: 4px; color: var(--ink-3); font-family: var(--mono); }
+  .sheet figcaption b { color: var(--ink); font-weight: 500; }
+</style>
+</head>
+<body>
+<p id="info" class="m"></p>
+<div class="sheet" id="sheet"></div>
+<script src="../assets/photos.js"></script>
+<script src="../assets/tpl-gen.js"></script>
+<script>
+  var q = new URLSearchParams(location.search), G = window.TPLGEN, PH = {};
+  PHOTOS.forEach(function (p) { PH[p[0]] = p; });
+  var env = { N: "haneul", plain: "haneul", esc: function (s) { return String(s).replace(/[&<>"]/g, ""); }, src: function (f) { return "../assets/img/samples/" + f + ".jpg"; },
+    photo: function (f) { var p = PH[f]; return { f: f, ko: p[1], g: p[2], en: G.enName(f) }; } };
+  var seen = {}, w = +(q.get("w") || 360), specs = G.catalogue(PHOTOS).specs.filter(function (s) {
+    return s.no >= +(q.get("from") || 1) && s.no <= +(q.get("to") || 1440) && (!q.get("cat") || s.cat === q.get("cat")) && (!q.get("layout") || s.layout === q.get("layout")) && (!q.get("nav") || s.nav === q.get("nav")) && (!q.get("feat") || s.feats.indexOf(q.get("feat")) >= 0) &&
+      (!q.get("one") || (!seen[s.layout + s.cat] && (seen[s.layout + s.cat] = 1)));
+  });
+  document.documentElement.style.setProperty("--w", w + "px");
+  document.getElementById("info").textContent = specs.length + " templates";
+  document.getElementById("sheet").innerHTML = specs.map(function (s) {
+    var r = G.render(s, env), f = G.FACES[s.face];
+    return '<figure><div class="mac-view"><div class="canvas" style="zoom:' + (w / 1440) + '"><div class="tp" style="--t-bg:' + s.bg + ';--t-ink:' + s.ink + ';--t-font:' + f[0] + ';--t-stretch:' + f[1] + ';' + r.style + '">' + r.html.replace(/ loading="lazy"/g, "") + '</div></div></div>' +
+      '<figcaption><b>' + String(s.no).padStart(4, "0") + '</b> ' + s.layout + ' · ' + s.nav + ' · ' + s.feats.join(" ") + '</figcaption></figure>';
+  }).join("");
+</script>
+</body>
+</html>

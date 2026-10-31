@@ -5,9 +5,9 @@
 > **무료 서비스 전환:** 수익성 한계로 2026년 12월 25일부터 무료로 제공할 예정입니다.
 > **Free from 2026-12-25:** the service did not earn enough to justify charging for it, so it will become free to use.
 
-실서비스 코드는 비공개 저장소에 있고, 이 저장소에는 무엇을 만들었고 어떻게 설계했고 무엇을 배웠는지만 정리했습니다.
+서버 코드는 비공개 저장소에 있습니다. 이 저장소에는 무엇을 만들었고 어떻게 설계했고 무엇을 배웠는지 정리하고, 화면 코드와 개발 도구 일부를 발췌해 올렸습니다.
 
-**In short.** I built and ran a Korean website builder alone: a form picker with 1,440 layouts, an in-browser editor, an account and payment server, and automatic publishing to `name.kor.gallery`. Launched on 2026-10-05, it will turn free on 2026-12-25 because revenue was too low to justify the work of charging. This repository records the design decisions and what the project taught me. The source code is private.
+**In short.** I built and ran a Korean website builder alone: a form picker with 1,440 layouts, an in-browser editor, an account and payment server, and automatic publishing to `name.kor.gallery`. Launched on 2026-10-05, it will turn free on 2026-12-25 because revenue was too low to justify the work of charging. This repository records the design decisions and what the project taught me. The server code is private; selected front-end code and tools are included.
 
 ## 무엇을 만들었나
 
@@ -39,6 +39,22 @@
 
 - 정적 사이트는 빌드 도구 없이 파일 그대로 배포합니다. 배포는 GitHub Actions 버튼 두 개("미리보기 올리기", "사이트 개시")로만 합니다.
 - 서버는 Cloudflare 무료 플랜 안에서 돌아가게 설계했습니다.
+
+## 공개한 코드 (발췌)
+
+| 경로 | 내용 |
+|---|---|
+| `site/assets/tpl-gen.js` | 폼 생성기. 조합 규칙으로 폼 1,360개를 만듭니다 |
+| `site/assets/templates.js`, `templates.css` | 폼 고르기 화면과 미리보기 |
+| `site/assets/editor.js`, `editor.css` | 편집기 |
+| `site/assets/site.js`, `site.css`, `common.js` | 첫 화면과 공통 부분 |
+| `tools/check-templates.js` | 폼 1,440개가 서로 겹치지 않는지 검사하는 도구 |
+| `tools/serve.py`, `sheet.html` | 로컬 미리보기 서버와 폼을 한눈에 보는 개발용 페이지 |
+| `docs/BRAND.md` | 화면·메일·약관 문구의 말투 규칙 |
+| `docs/workflows/` | 배포 버튼 두 개의 GitHub Actions 파일(여기서는 실행되지 않음) |
+| `docs/credits/` | 서체·샘플 사진·3D 모델의 출처와 라이선스 |
+
+계정·결제 서버, 사진과 3D 파일, 설정 파일은 올리지 않았습니다. 그래서 이 저장소만으로는 실행되지 않습니다. 화면 코드는 사이트에 접속하면 브라우저에서 볼 수 있는 것과 같습니다. 별도 라이선스를 붙이지 않았으므로 모든 권리는 저자에게 있고, 읽고 참고하는 것은 환영합니다.
 
 ## 설계하며 정한 것
 
